@@ -37,17 +37,21 @@ for p in 5201 5202 5203 5204 5205 5206; do iperf3 -s -D -p $p; done
 ```
 The iperf3 servers are only needed during the test. The route‑server daemon (BIRD/OpenBGPD) is not required yet.
 
-## 3. Provisioning procedure
+## 3. Provisioning procedure (everything driven from CMNODE01)
 
-1. On your laptop: `git clone https://github.com/vuckovic/TrafficGenerator && cd TrafficGenerator/deploy`
-2. `cp cluster.env.example cluster.env`, check the IP plan, and set `ROUTE_SERVER_IP=10.100.0.1` and `SINK_IP=10.100.0.1`.
-3. `ansible/inventory.ini` already lists CMNODE01–06 at 192.168.100.11–.16; only adjust `ansible_user` if needed.
-4. `cd ansible && ./bootstrap-ssh.sh pi` (skip this if Imager already installed your key).
-5. `ansible-playbook site.yml -e reboot=true` — installs all six nodes in parallel, reboots only nodes that need it (firmware config), and authorises CMNODE01's key on every node.
-6. On CMNODE01: `git clone …` then `./tests/cluster/connectivity_test.sh`
+1. SSH to CMNODE01 (192.168.100.11) as your normal user and get the bootstrap script:
+   ```bash
+   git clone https://github.com/vuckovic/TrafficGenerator.git ~/TrafficGenerator
+   bash ~/TrafficGenerator/deploy/controller-bootstrap.sh --route-server 10.100.0.1 --sink 10.100.0.1
+   ```
+   It installs the control tools (git, Ansible, sshpass, fping, jq, iperf3), creates `deploy/cluster.env`, creates an SSH key and installs it on all six nodes (asks the node password **once**), then prints a check table per node: SSH, OS, RAM, link, sudo, internet, model, plus an Ansible ping.
+2. When the table is clean: `bash ~/TrafficGenerator/deploy/controller-bootstrap.sh --install --test`
+   - `--install` runs the prerequisites installer on all six nodes in parallel (Ansible), rebooting only nodes that need it.
+   - `--test` then runs the automated test suite below.
+   - If a node needs a sudo password, Ansible asks for it once (BECOME password).
 
 Manual alternative (no Ansible), on each node:
-`sudo ./deploy/install-prereqs.sh --node-id N && sudo reboot`
+`sudo ./deploy/install-prereqs.sh --node-id N`, then reboot if the script says so.
 
 ## 4. Automated test cases (`tests/cluster/connectivity_test.sh`)
 
