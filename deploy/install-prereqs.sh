@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================================
 # TrafficGenerator - node prerequisites installer
-# Target : Raspberry Pi CM5 on DeskPi Super6C, Raspberry Pi OS Bookworm 64-bit
+# Target : Raspberry Pi CM5 on DeskPi Super6C, Raspberry Pi OS Trixie 64-bit (Bookworm also supported)
 # Usage  : sudo ./install-prereqs.sh --node-id N [--config cluster.env]
 #                                    [--skip-network] [--force] [--dry-run]
 # Idempotent: safe to run repeatedly. Run on every node (Ansible does this
@@ -99,8 +99,8 @@ step_preflight() {
   # shellcheck disable=SC1091
   source /etc/os-release
   case "${VERSION_CODENAME:-}" in
-    bookworm) ;;
-    trixie)   warn "Raspberry Pi OS Trixie detected; script targets Bookworm, continuing" ;;
+    trixie)   ;;
+    bookworm) log "Bookworm detected (supported; Trixie is the primary target)" ;;
     *)        (( FORCE )) || die "unsupported OS '${VERSION_CODENAME:-?}' (use --force)" ;;
   esac
   local model; model="$(tr -d '\0' < /proc/device-tree/model 2>/dev/null || echo unknown)"
@@ -262,7 +262,7 @@ step_hostname() {
 step_network() {
   (( SKIP_NETWORK )) && { log "--- network: skipped (--skip-network)"; return; }
   log "--- network (NetworkManager)"
-  command -v nmcli >/dev/null || die "nmcli not found (Bookworm should use NetworkManager)"
+  command -v nmcli >/dev/null || die "nmcli not found (Raspberry Pi OS uses NetworkManager)"
 
   # Management: static profile is created but NOT activated now, so an SSH
   # session over the old address survives. It takes over at next reboot.

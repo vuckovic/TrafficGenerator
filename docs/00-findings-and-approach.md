@@ -1,18 +1,33 @@
 # 00 — Findings, options and proposed approach
 
-Status: **DRAFT for review** · Stage 1 of the workflow (inspect → approach → install → test plan)
+Status: **Decisions confirmed 2026‑10‑16 (see §0)** · Stage 1 of the workflow (inspect → approach → install → test plan)
+
+## 0. Decisions confirmed (2026‑10‑16)
+
+| # | Question | Decision |
+|---|---|---|
+| Q2 | Meaning of BGP traffic | **Selectable in the UI**: stateless line‑rate BGP PDUs *and* stateful sessions to the route server |
+| Q3 | TCP/IP mode | **Crafted** (stateless) TCP/UDP/ICMP packets with user‑defined subnets |
+| Q4 | Implementation languages | Web interface/controller in **Python**, traffic generator in **C++** |
+| Q5 | 70 % CPU criterion | **Node average** (hottest core still reported for diagnosis) |
+| Q6 | Network layout | **No VLAN tagging** for now; route server on board port **ETH0**; everything on the internal switch |
+| Q7 | Board port ETH1 | Free (internal switch) — used for laptop / web UI access |
+| Q8 | Attached PDF | Camera ISP spec attached by mistake; ignored |
+| Q9 | OS | **Raspberry Pi OS Trixie** (Bookworm still supported by the installer) |
+
+Block diagram: `docs/assets/super6c-block-diagram.png` (from DeskPi; the vendor drew it for CM4).
 
 ## 1. Findings from the inputs
 
 | # | Source | Finding | Consequence |
 |---|---|---|---|
-| F1 | Super6C README | Nodes are interconnected by an onboard **RTL8370N 8‑port gigabit switch**: 6 ports → one per module, 2 ports → the external RJ45 jacks (ETH1, ETH2). | Each CM5 has **exactly one 1 GbE link**. The "two gigabit cards" are two uplink ports of the same switch, not two NICs per node. |
-| F2 | Super6C README | No switch management interface is documented (unmanaged as shipped). | No VLAN membership enforcement, no port isolation. Broadcast, multicast and unknown‑unicast frames are flooded to **both** ETH1 and ETH2. |
+| F1 | Super6C README | Nodes are interconnected by an onboard **RTL8370N 8‑port gigabit switch**: 6 ports → one per module, 2 ports → the external RJ45 jacks (ETH0, ETH1). | Each CM5 has **exactly one 1 GbE link**. The "two gigabit cards" are two uplink ports of the same switch, not two NICs per node. |
+| F2 | Super6C README | No switch management interface is documented (unmanaged as shipped). | No VLAN membership enforcement, no port isolation. Broadcast, multicast and unknown‑unicast frames are flooded to **both** ETH0 and ETH1. |
 | F3 | Super6C README | Per‑module DC‑DC, 100 W PSU (19–24 V DC or ATX 12 V), M.2 2280 M‑key (PCIe x1) and microSD per module, 3× 12 V fan headers. | Six CM5 under sustained load plus NVMe must be power‑ and thermal‑checked (test M2, T10). |
 | F4 | Super6C README / resellers | Board is designed for CM4; resellers now list CM5 support. | CM5 boot, PCIe and Ethernet must be verified on this exact board revision (test T02). |
 | F5 | CM5 platform | BCM2712, 4× Cortex‑A76 @ 2.4 GHz; Ethernet MAC lives in the RP1 I/O controller (Linux `macb` driver). | Kernel AF_PACKET always works. Native (zero‑copy) AF_XDP support in this driver is **unverified** — treat it as an optional optimisation. |
-| F6 | Attached PDF | `RP-008158-DS-1` is the **Raspberry Pi Image Signal Processor (PiSP)** spec — camera pipeline registers. | Not relevant to networking. Was a different document intended? |
-| F7 | Constraints | 1 Gbit/s total egress via ETH2 shared by 6 nodes. | Each node needs only ~167 Mbit/s. Worst case (64‑byte frames) = 1.488 Mpps total ≈ **248 kpps per node**; at IMIX ≈ 60 kpps per node. |
+| F6 | Attached PDF | `RP-008158-DS-1` is the **Raspberry Pi Image Signal Processor (PiSP)** spec — attached by mistake. | Ignored. The CM5 design files (`.dts` device trees) are not needed: we use stock Raspberry Pi OS kernels. |
+| F7 | Constraints | 1 Gbit/s total towards the route server on ETH0, shared by 6 nodes. | Each node needs only ~167 Mbit/s. Worst case (64‑byte frames) = 1.488 Mpps total ≈ **248 kpps per node**; at IMIX ≈ 60 kpps per node. |
 | F8 | Constraints | 4× 16 GB, 2× 8 GB RAM. | RAM is irrelevant for packet generation; it only matters for BGP RIBs (a full IPv4+IPv6 table fits easily in 8 GB). Work is split by **CPU**, which is identical on all six. |
 
 ## 2. Decisions — options, strongest argument, evidence, recommendation
@@ -26,7 +41,7 @@ Status: **DRAFT for review** · Stage 1 of the workflow (inspect → approach �
 | C. M.2 PCIe NIC per node (e.g. i226 2.5 GbE) | True physical separation of mgmt and traffic — the only option that literally meets "one port for UI, the other for simulation" per node. |
 
 - **Evidence that changes the decision:** T04 fails (switch drops tagged frames) → B. Leak test M1 shows test data frames on the ETH1 side → put a managed switch/firewall on ETH1 or go to C.
-- **Recommendation:** A, with B as a config switch (`TRAFFIC_MODE`). The installer already supports both.
+- **Decision (2026‑10‑16): B — untagged, separate subnet** (`TRAFFIC_MODE=untagged`, the new default). A remains available in the installer for later.
 
 ### D2. Packet I/O engine (C++ data plane)
 
@@ -49,7 +64,7 @@ Status: **DRAFT for review** · Stage 1 of the workflow (inspect → approach �
 | C. Both, selectable in the UI. | Covers control‑plane and data‑plane experiments. |
 
 - **Evidence:** if your experiments need the DUT to install routes → A is mandatory. If you only analyse traffic on the wire → B suffices.
-- **Recommendation:** C, building B first (it carries the 1 Gbit/s acceptance test), then A.
+- **Decision:** C — both, selectable in the UI. Build order: B first (it carries the 1 Gbit/s acceptance test), then A.
 
 ### D4. Control plane and web interface
 
@@ -60,7 +75,7 @@ Status: **DRAFT for review** · Stage 1 of the workflow (inspect → approach �
 | C. Go controller | Single static binary, good concurrency. |
 
 - Agent↔controller: REST/JSON (header‑only `cpp-httplib`) for commands and a 1 s stats push — minimal dependencies.
-- **Recommendation:** A. **Evidence that changes it:** you require a pure C++ codebase → B.
+- **Decision:** A — Python web interface/controller, C++ generator agents.
 
 ### D5. Cluster orchestration
 
@@ -73,10 +88,10 @@ Status: **DRAFT for review** · Stage 1 of the workflow (inspect → approach �
 
 ## 3. Overall recommendation and the single biggest risk
 
-**Recommendation:** VLAN‑separated traffic on the single onboard link (D1‑A), an AF_PACKET C++ agent on each node with one pinned TX worker per core (max 3 of 4 cores, 1 left for OS/IRQ/agent), a FastAPI controller + web UI on tgen1, and Ansible + systemd for deployment.
+**Recommendation:** subnet‑separated, untagged traffic on the single onboard link (D1‑B), an AF_PACKET C++ agent on each node with one pinned TX worker per core (max 3 of 4 cores, 1 left for OS/IRQ/agent), a FastAPI controller + web UI on tgen1, and Ansible + systemd for deployment.
 
-**Single biggest risk:** management and test traffic **share one physical link per node behind an unmanaged switch**. Any generator mistake — unknown destination MAC, broadcast, or spoofed prefixes — is flooded out of ETH1 into whatever network the web UI sits on (potentially the faculty LAN).
-Mitigations built into the plan: the generator will refuse to start without a resolved next‑hop MAC; it will never emit broadcast/multicast data; leak test M1 runs before any generator work; and ETH1 should connect to an isolated lab switch or a firewalled port, not directly to the campus network.
+**Single biggest risk:** management and test traffic **share one physical link per node and one unmanaged switch** with no VLAN separation. Any generator mistake — unknown destination MAC, broadcast, or spoofed prefixes — is flooded to every port, including the ETH1 side where the web UI user sits, and onward if ETH1 is ever bridged to the faculty LAN.
+Mitigations built into the plan: the generator will refuse to start without a resolved next‑hop MAC (the route server); it will never emit broadcast/multicast data; leak test M1 runs before any generator work; and ETH1 should stay on a laptop or isolated lab switch, never directly on the campus network.
 
 ## 4. Minimal implementation approach (phases)
 

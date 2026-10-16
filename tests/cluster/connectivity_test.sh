@@ -54,14 +54,19 @@ cpu_start() {  # seconds
     on "$n" "nohup mpstat -P ALL 1 $1 > /tmp/tgen_mpstat.txt 2>&1 &" </dev/null
   done
 }
-cpu_collect() {  # label -> prints "max core % (node)" and appends details
-  local n worst=0 worst_node=0 v
+cpu_collect() {  # label -> prints "<worst node avg %> <node> <worst single core %>"
+  # Acceptance criterion (decided 2026-10-16): NODE AVERAGE CPU <= 70 %.
+  local n worst=0 worst_node=0 core_max=0 line avg core
   for n in $(nodes); do
-    v=$(on "$n" "awk '\$1==\"Average:\" && \$2 ~ /^[0-9]+\$/ {u=100-\$NF; if(u>m)m=u} END{printf \"%.0f\", m}' /tmp/tgen_mpstat.txt")
-    echo "  $1 node$n max-core-util=${v:-?}%" >> "$OUT/cpu.txt"
-    if [[ -n "$v" ]] && (( v > worst )); then worst=$v; worst_node=$n; fi
+    line=$(on "$n" "awk '\$1==\"Average:\" && \$2==\"all\" {a=100-\$NF}
+                      \$1==\"Average:\" && \$2 ~ /^[0-9]+\$/ {u=100-\$NF; if(u>m)m=u}
+                      END{printf \"%.0f %.0f\", a, m}' /tmp/tgen_mpstat.txt" </dev/null)
+    read -r avg core <<<"$line"
+    echo "  $1 node$n avg=${avg:-?}% max-core=${core:-?}%" >> "$OUT/cpu.txt"
+    if [[ -n "${avg:-}" ]] && (( avg > worst )); then worst=$avg; worst_node=$n; fi
+    if [[ -n "${core:-}" ]] && (( core > core_max )); then core_max=$core; fi
   done
-  echo "${worst} ${worst_node}"
+  echo "${worst} ${worst_node} ${core_max}"
 }
 
 start_iperf_servers() {
@@ -73,7 +78,7 @@ start_iperf_servers() {
 stop_iperf_servers() { local n; for n in $(nodes); do on "$n" "pkill -x iperf3" </dev/null; done; }
 
 echo "TrafficGenerator cluster test  $(date -Is)  config=$CONFIG" | tee "$SUMMARY"
-echo "traffic mode=$TRAFFIC_MODE iface=$(tif) sink=${SINK_IP:-none}" | tee -a "$SUMMARY"
+echo "traffic mode=$TRAFFIC_MODE iface=$(tif) route-server=${ROUTE_SERVER_IP:-none} sink=${SINK_IP:-none}" | tee -a "$SUMMARY"
 echo "----------------------------------------------------------------" | tee -a "$SUMMARY"
 
 # ---------------------------------------------------------------- T01 SSH ---
@@ -124,7 +129,7 @@ mesh_ping() {  # id label ipfunc
                   || result "$id" FAIL "${label}: loss from$bad (see ping.txt)"
 }
 want T03 && mesh_ping T03 "mgmt mesh"    mgmt_ip
-want T04 && mesh_ping T04 "traffic mesh (VLAN ${TRAFFIC_VLAN} through RTL8370N)" traffic_ip
+want T04 && mesh_ping T04 "traffic mesh (${TRAFFIC_MODE} on $(tif))" traffic_ip
 
 # --------------------------------------------------------------- T05 MTU ----
 if want T05; then
@@ -175,21 +180,21 @@ if want T08 && (( ! QUICK )); then
       > "$OUT/t08_${n}_${m}.json" &
   done
   wait; sleep 2
-  read -r cpu cpun < <(cpu_collect T08)
+  read -r cpu cpun coremax < <(cpu_collect T08)
   stop_iperf_servers
   total=0; bad=""
   for f in "$OUT"/t08_*.json; do
     mb=$(jq -r '.end.sum_received.bits_per_second // 0' "$f" | awk '{printf "%d", $1/1e6}')
     total=$((total + mb)); (( mb >= 850 )) || bad+=" $(basename "$f" .json):${mb}"
   done
-  [[ -z "$bad" ]] && result T08 PASS "6 concurrent flows, aggregate ${total} Mbit/s; max core ${cpu}% (node${cpun})" \
+  [[ -z "$bad" ]] && result T08 PASS "6 concurrent flows, aggregate ${total} Mbit/s; CPU node-avg max ${cpu}% (node${cpun}), hottest core ${coremax}%" \
                   || result T08 FAIL "aggregate ${total} Mbit/s, slow:$bad"
 fi
 
 # ----------------------------- T09 aggregate 1 Gbit/s to external sink ------
 if want T09; then
   if [[ -z "${SINK_IP}" ]]; then
-    result T09 SKIP "SINK_IP not set (connect a sink on ETH2, see test plan)"
+    result T09 SKIP "SINK_IP not set (iperf3 host on board port ETH0, see test plan)"
   else
     per=$(( 950 / NODE_COUNT ))
     cpu_start $((DUR + 2))
@@ -198,7 +203,7 @@ if want T09; then
         </dev/null > "$OUT/t09_${n}.json" &
     done
     wait; sleep 2
-    read -r cpu cpun < <(cpu_collect T09)
+    read -r cpu cpun coremax < <(cpu_collect T09)
     total=0; lossmax=0
     for f in "$OUT"/t09_*.json; do
       mb=$(jq -r '.end.sum.bits_per_second // 0' "$f" | awk '{printf "%d", $1/1e6}')
@@ -207,9 +212,9 @@ if want T09; then
       awk -v a="$lp" -v b="$lossmax" 'BEGIN{exit !(a>b)}' && lossmax=$lp
     done
     if (( total >= 900 )) && awk -v l="$lossmax" 'BEGIN{exit !(l<0.5)}'; then
-      result T09 PASS "ETH2 uplink ${total} Mbit/s UDP, max loss ${lossmax}%, max core ${cpu}% (node${cpun})"
+      result T09 PASS "ETH0 port ${total} Mbit/s UDP, max loss ${lossmax}%, CPU node-avg max ${cpu}% (node${cpun})"
     else
-      result T09 FAIL "ETH2 uplink ${total} Mbit/s, max loss ${lossmax}%"
+      result T09 FAIL "ETH0 port ${total} Mbit/s, max loss ${lossmax}%"
     fi
   fi
 fi
@@ -226,6 +231,25 @@ if want T10; then
   done
   [[ -z "$bad" ]] && result T10 PASS "no throttling, all < 80 C after load" \
                   || result T10 FAIL "$bad"
+fi
+
+# ------------------------------------------- T11 route server reachability -
+if want T11; then
+  if [[ -z "${ROUTE_SERVER_IP:-}" ]]; then
+    result T11 SKIP "ROUTE_SERVER_IP not set"
+  else
+    bad=""
+    for n in $(nodes); do
+      on "$n" "fping -q -c 10 -p 50 ${ROUTE_SERVER_IP} 2>&1 | grep -q '/0%'" </dev/null || bad+=" node$n"
+      if on "$n" "timeout 3 bash -c '</dev/tcp/${ROUTE_SERVER_IP}/179' 2>/dev/null" </dev/null; then
+        echo "node$n: TCP/179 open on route server" >> "$OUT/route_server.txt"
+      else
+        echo "node$n: TCP/179 closed/filtered (OK before BGP is configured)" >> "$OUT/route_server.txt"
+      fi
+    done
+    [[ -z "$bad" ]] && result T11 PASS "route server ${ROUTE_SERVER_IP} reachable from all nodes, 0% loss (BGP port: route_server.txt)" \
+                    || result T11 FAIL "route server unreachable/lossy from:$bad"
+  fi
 fi
 
 echo "----------------------------------------------------------------" | tee -a "$SUMMARY"
