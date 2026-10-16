@@ -138,10 +138,11 @@ unset PW
 
 # ------------------------------------------------------ 4. node checks ------
 log "--- 4/5 node checks"
-printf '  %-9s %-15s %-6s %-8s %-6s %-9s %-5s %-5s %s\n' NODE IP SSH OS RAM LINK SUDO NET MODEL | tee -a "$LOG"
-ALL_OK=1; NEED_K=0
+printf '  %-9s %-15s %-4s %-8s %-4s %-9s %-4s %-4s %-5s %-6s %s\n' NODE IP SSH OS RAM LINK SUDO NET INST TRAFIP MODEL | tee -a "$LOG"
+ALL_OK=1; NEED_K=0; NOT_INSTALLED=()
 for (( n=1; n<=NODE_COUNT; n++ )); do
   ip="$(mgmt_ip "$n")"; name="${NAMES[$((n-1))]}"
+  tip="${TRAFFIC_PREFIX}.$((TRAFFIC_HOST_BASE + n))"
   info=$(ssh "${SSH_OPTS[@]}" -o BatchMode=yes "${SSH_USER}@${ip}" "
     . /etc/os-release
     printf 'host=%s\n' \"\$(hostname)\"
@@ -150,11 +151,14 @@ for (( n=1; n<=NODE_COUNT; n++ )); do
     printf 'link=%s\n' \"\$(cat /sys/class/net/${MGMT_IFACE}/speed 2>/dev/null)/\$(cat /sys/class/net/${MGMT_IFACE}/duplex 2>/dev/null)\"
     printf 'sudo=%s\n' \"\$(sudo -n true 2>/dev/null && echo yes || echo pw)\"
     printf 'net=%s\n' \"\$(timeout 5 getent hosts deb.debian.org >/dev/null && echo yes || echo no)\"
+    printf 'inst=%s\n' \"\$(test -f /etc/tgen/node.conf && echo yes || echo no)\"
+    printf 'tip=%s\n' \"\$(ip -4 -o addr show dev ${MGMT_IFACE} | grep -q ' ${tip}/' && echo yes || echo no)\"
     printf 'model=%s\n' \"\$(tr -d '\0' </proc/device-tree/model | sed 's/Raspberry Pi //')\"
   " 2>/dev/null) || { printf '  %-9s %-15s %s\n' "$name" "$ip" "${c_bad}no SSH${c_off}" | tee -a "$LOG"; ALL_OK=0; continue; }
   g() { echo "$info" | sed -n "s/^$1=//p"; }
-  printf '  %-9s %-15s %-6s %-8s %-6s %-9s %-5s %-5s %s\n' \
-    "$name" "$ip" yes "$(g os)" "$(g ram)" "$(g link)" "$(g sudo)" "$(g net)" "$(g model)" | tee -a "$LOG"
+  printf '  %-9s %-15s %-4s %-8s %-4s %-9s %-4s %-4s %-5s %-6s %s\n' \
+    "$name" "$ip" yes "$(g os)" "$(g ram)" "$(g link)" "$(g sudo)" "$(g net)" "$(g inst)" "$(g tip)" "$(g model)" | tee -a "$LOG"
+  [[ "$(g inst)" == yes ]] || { NOT_INSTALLED+=("$name"); }
   [[ "$(g host)" == "$name" ]] || { note "${ip} reports hostname '$(g host)', expected ${name}"; }
   [[ "$(g os)" == trixie || "$(g os)" == bookworm ]] || { note "${name}: unsupported OS '$(g os)'"; ALL_OK=0; }
   [[ "$(g link)" == "1000/full" ]] || note "${name}: link $(g link), expected 1000/full"
@@ -164,6 +168,9 @@ for (( n=1; n<=NODE_COUNT; n++ )); do
   [[ "$(g ram)" == "$expected_ram" ]] || note "${name}: RAM $(g ram), cluster.env says ${expected_ram}"
 done
 (( NEED_K )) && note "some nodes need a sudo password: Ansible will ask for it (BECOME password)"
+if (( ${#NOT_INSTALLED[@]} )); then
+  note "installer has NOT run on: ${NOT_INSTALLED[*]}  -> run with --install (tests will fail until then)"
+fi
 
 # Ansible connectivity
 cd "${DEPLOY}/ansible"

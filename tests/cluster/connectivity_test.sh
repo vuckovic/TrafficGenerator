@@ -103,10 +103,12 @@ if want T02; then
       echo tip=\$(ip -4 -o addr show dev $(tif) | grep -c $(traffic_ip "$n")/)
       echo thr=\$(vcgencmd get_throttled 2>/dev/null | cut -d= -f2)
       echo temp=\$(vcgencmd measure_temp 2>/dev/null | grep -oE '[0-9.]+')
+      echo inst=\$(test -f /etc/tgen/node.conf && echo yes || echo no)
       echo mem=\$(awk '/MemTotal/{printf \"%d\", \$2/1048576+0.5}' /proc/meminfo)" </dev/null)
     echo "$(nname "$n"): $(echo "$info" | tr '\n' ' ')" >> "$OUT/nodes.txt"
     get() { echo "$info" | sed -n "s/^$1=//p"; }
     [[ "$(get speed)" == 1000 && "$(get duplex)" == full ]] || bad+=" $(nname "$n"):link=$(get speed)/$(get duplex)"
+    [[ "$(get inst)" == yes ]]                              || bad+=" $(nname "$n"):INSTALLER-NOT-RUN"
     [[ "$(get gov)" == "${CPU_GOVERNOR}" ]]                 || bad+=" $(nname "$n"):gov=$(get gov)"
     [[ "$(get tip)" == 1 ]]                                 || bad+=" $(nname "$n"):no-traffic-ip"
     [[ "$(get model)" == *Compute_Module_5* ]]              || bad+=" $(nname "$n"):model"
@@ -117,17 +119,32 @@ if want T02; then
 fi
 
 # ------------------------------------------------ T03/T04 full-mesh ping ----
-mesh_ping() {  # id label ipfunc
-  local id="$1" label="$2" fn="$3" bad="" n m targets
+mesh_ping() {  # id label ipfunc  -> reports failing DIRECTED PAIRS, not just sources
+  local id="$1" label="$2" fn="$3" bad="" n m targets ip loss
+  declare -A ip2name=()
+  for m in $(nodes); do ip2name[$($fn "$m")]="$(nname "$m")"; done
   for n in $(nodes); do
     targets=""; for m in $(nodes); do (( m != n )) && targets+=" $($fn "$m")"; done
     out=$(on "$n" "fping -q -c 20 -p 20 $targets 2>&1" </dev/null)
     echo "== $(nname "$n") $label" >> "$OUT/ping.txt"; echo "$out" >> "$OUT/ping.txt"
-    echo "$out" | grep -qE 'loss = [0-9]+/[0-9]+/[1-9]|100%' && bad+=" $(nname "$n")"
-    echo "$out" | grep -q 'xmt/rcv' || bad+=" $(nname "$n")(no-output)"
+    echo "$out" | grep -q 'xmt/rcv' || { bad+=" $(nname "$n")(fping-no-output)"; continue; }
+    while read -r ip loss; do
+      [[ "$loss" == 0 ]] || bad+=" $(nname "$n")->${ip2name[$ip]:-$ip}(${loss}%)"
+    done < <(echo "$out" | sed -n 's#^\([0-9.]*\) *: xmt/rcv/%loss = [0-9]*/[0-9]*/\([0-9]*\)%.*#\1 \2#p')
   done
-  [[ -z "$bad" ]] && result "$id" PASS "${label}: 30 directed pairs x20 pings, 0% loss" \
-                  || result "$id" FAIL "${label}: loss from$bad (see ping.txt)"
+  # summarise targets that fail from every other node (= that node is the problem)
+  local hint="" name cnt
+  for m in $(nodes); do
+    name="$(nname "$m")"; cnt=$(grep -o -- "->${name}(" <<<"$bad" | wc -l)
+    (( cnt >= NODE_COUNT - 1 )) && hint+=" ${name}"
+  done
+  if [[ -z "$bad" ]]; then
+    result "$id" PASS "${label}: 30 directed pairs x20 pings, 0% loss"
+  elif [[ -n "$hint" ]]; then
+    result "$id" FAIL "${label}: unreachable from all others:${hint} (check its address with: ip -4 addr show ${MGMT_IFACE})"
+  else
+    result "$id" FAIL "${label}: lossy pairs:$bad (see ping.txt)"
+  fi
 }
 want T03 && mesh_ping T03 "mgmt mesh"    mgmt_ip
 want T04 && mesh_ping T04 "traffic mesh (${TRAFFIC_MODE} on $(tif))" traffic_ip
@@ -148,6 +165,9 @@ fi
 if want T06; then
   bad=""
   for n in $(nodes); do
+    if ! on "$n" "command -v chronyc >/dev/null" </dev/null; then
+      bad+=" $(nname "$n")(chrony-not-installed)"; continue
+    fi
     off=$(on "$n" "chronyc -n tracking | awk '/System time/{print \$4}'" </dev/null)
     echo "$(nname "$n") offset=${off}s" >> "$OUT/time.txt"
     awk -v o="${off:-9}" 'BEGIN{exit !(o<0.001 && o>-0.001)}' || bad+=" $(nname "$n")(${off:-?}s)"
