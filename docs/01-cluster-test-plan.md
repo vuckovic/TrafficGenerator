@@ -8,16 +8,16 @@ The Super6C block diagram (`docs/assets/super6c-block-diagram.png`) shows that a
 
 ```
                  Super6C internal gigabit switch (unmanaged)
-   +-----------------------------------------------------------+
-   | tgen1  tgen2  tgen3  tgen4  tgen5  tgen6                   |
-   |   |      |      |      |      |      |                    |
-   |  [p1]  [p2]   [p3]   [p4]   [p5]   [p6]    [ETH0]  [ETH1]  |
-   +-----------------------------------------------|-------|----+
-                                                   |       |
-        route server  10.100.0.1/24  --------------+       +-- laptop / web UI access
-        (+ iperf3 servers for T09)                           192.168.50.x/24
+   +---------------------------------------------------------------------+
+   | CMNODE01 CMNODE02 CMNODE03 CMNODE04 CMNODE05 CMNODE06               |
+   |   .11      .12      .13      .14      .15      .16                  |
+   |  [p1]     [p2]     [p3]     [p4]     [p5]     [p6]   [ETH0]  [ETH1] |
+   +-------------------------------------------------------|-------|-----+
+                                                           |       |
+        route server  10.100.0.1/24  ----------------------+       +-- laptop / web UI
+        (+ iperf3 servers for T09)                                     192.168.100.x/24
 
-   one L2 segment:  mgmt 192.168.50.0/24  +  traffic 10.100.0.0/24 (untagged, eth0)
+   one L2 segment:  mgmt 192.168.100.0/24  +  traffic 10.100.0.0/24 (untagged, eth0)
 ```
 
 ## 2. Prerequisites
@@ -25,7 +25,8 @@ The Super6C block diagram (`docs/assets/super6c-block-diagram.png`) shows that a
 Hardware
 - 6× CM5 seated, with heatsinks; fans connected to the 12 V headers.
 - Storage per node flashed with **Raspberry Pi OS Lite 64‑bit (Trixie)**.
-- Use Raspberry Pi Imager's advanced options to set user `pi`, enable SSH with your public key, and set hostnames `tgen1`–`tgen6`.
+- Existing node names and management addresses are **kept**: CMNODE01–CMNODE06 = 192.168.100.11–.16 (CMNODE01–04 16 GB, CMNODE05–06 8 GB). The installer never changes them (`MGMT_MODE=keep`); it only adds the traffic address 10.100.0.11–.16 to the existing connection, live, without dropping SSH.
+- `SSH_USER` in `cluster.env` and `ansible_user` in `inventory.ini` must match your login user (default `pi`).
 - **Internet access for the nodes during installation** (apt). See open question Q1 in `00-findings-and-approach.md`.
 - ETH0 → route server host. ETH1 → your laptop (or a lab switch) for SSH and the web UI.
 
@@ -40,11 +41,10 @@ The iperf3 servers are only needed during the test. The route‑server daemon (B
 
 1. On your laptop: `git clone https://github.com/vuckovic/TrafficGenerator && cd TrafficGenerator/deploy`
 2. `cp cluster.env.example cluster.env`, check the IP plan, and set `ROUTE_SERVER_IP=10.100.0.1` and `SINK_IP=10.100.0.1`.
-3. Edit `ansible/inventory.ini`: set `ansible_host` to each node's **current** (DHCP) address.
+3. `ansible/inventory.ini` already lists CMNODE01–06 at 192.168.100.11–.16; only adjust `ansible_user` if needed.
 4. `cd ansible && ./bootstrap-ssh.sh pi` (skip this if Imager already installed your key).
-5. `ansible-playbook site.yml -e reboot=true` — installs all six nodes in parallel, reboots them onto their static IPs, and authorises tgen1's key on every node.
-6. Update `inventory.ini` to the static IPs (`192.168.50.11`–`.16`).
-7. On tgen1: `git clone …` then `./tests/cluster/connectivity_test.sh`
+5. `ansible-playbook site.yml -e reboot=true` — installs all six nodes in parallel, reboots only nodes that need it (firmware config), and authorises CMNODE01's key on every node.
+6. On CMNODE01: `git clone …` then `./tests/cluster/connectivity_test.sh`
 
 Manual alternative (no Ansible), on each node:
 `sudo ./deploy/install-prereqs.sh --node-id N && sudo reboot`
@@ -53,7 +53,7 @@ Manual alternative (no Ansible), on each node:
 
 | ID | Test | Method | Pass criterion |
 |---|---|---|---|
-| T01 | SSH reachability | tgen1 → every node over mgmt | all 6 respond |
+| T01 | SSH reachability | CMNODE01 → every node over mgmt | all 6 respond |
 | T02 | Node configuration | OS, model, link, governor, traffic IP, throttling | 1000/full, `performance`, traffic IP present, CM5, `throttled=0x0` |
 | T03 | Mgmt full mesh | `fping` 20 pkts from each node to the other 5 | 0 % loss on all 30 directed pairs |
 | T04 | Traffic full mesh | same, on the 10.100.0.0/24 addresses | 0 % loss |
@@ -78,8 +78,8 @@ Note: T08/T09 CPU numbers come from iperf3, so they are only a **baseline**. The
 | M1 | **Leak test (safety)** | On the laptop at ETH1: `sudo tcpdump -eni <if> 'net 10.100.0.0/24 and not arp'` while running `--only T09` | no (or only a handful of initial) UDP data frames — the switch has learned the route server's MAC on ETH0 |
 | M2 | Power | Meter on the PSU input during T08 | below 80 % of the PSU rating; no node resets |
 | M3 | Reboot persistence | Press the board reset, wait 2 min, run `--quick` | all PASS without manual steps |
-| M4 | Node loss | Power‑cycle a single node mid‑test (or remove one CM5) | the remaining nodes still pass T03/T04 (no cluster‑wide dependency except chrony on tgen1) |
-| M5 | Web UI port reachability | From the laptop: `curl -v http://192.168.50.11:8080` | TCP connection refused (nothing listening yet) — proves routing, not firewalling |
+| M4 | Node loss | Power‑cycle a single node mid‑test (or remove one CM5) | the remaining nodes still pass T03/T04 (no cluster‑wide dependency except chrony on CMNODE01) |
+| M5 | Web UI port reachability | From the laptop: `curl -v http://192.168.100.11:8080` | TCP connection refused (nothing listening yet) — proves routing, not firewalling |
 
 ## 6. What to send back
 

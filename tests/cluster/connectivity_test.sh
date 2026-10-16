@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================================
 # TrafficGenerator - cluster connectivity & operations test
-# Run on the controller node (tgen1) as user pi after install + reboot:
+# Run on the controller node (CMNODE01) as SSH_USER after install + reboot:
 #   ./connectivity_test.sh [--config /etc/tgen/cluster.env] [--quick] [--only T03,T07]
 # Exit code = number of failed tests. Results in ~/tgen-test-results/<ts>/
 # ============================================================================
@@ -36,7 +36,8 @@ SUMMARY="$OUT/summary.txt"
 mgmt_ip()    { echo "${MGMT_PREFIX}.$((MGMT_HOST_BASE + $1))"; }
 traffic_ip() { echo "${TRAFFIC_PREFIX}.$((TRAFFIC_HOST_BASE + $1))"; }
 tif()        { [[ "$TRAFFIC_MODE" == vlan ]] && echo "${MGMT_IFACE}.${TRAFFIC_VLAN}" || echo "$MGMT_IFACE"; }
-on()         { local n="$1"; shift; ssh "${SSH_OPTS[@]}" "pi@$(mgmt_ip "$n")" "$@"; }
+on()         { local n="$1"; shift; ssh "${SSH_OPTS[@]}" "${SSH_USER:-pi}@$(mgmt_ip "$n")" "$@"; }
+nname()      { echo "${NODE_HOSTNAMES[$(( $1 - 1 ))]:-node$1}"; }
 nodes()      { seq 1 "$NODE_COUNT"; }
 next_node()  { echo $(( $1 % NODE_COUNT + 1 )); }
 
@@ -62,7 +63,7 @@ cpu_collect() {  # label -> prints "<worst node avg %> <node> <worst single core
                       \$1==\"Average:\" && \$2 ~ /^[0-9]+\$/ {u=100-\$NF; if(u>m)m=u}
                       END{printf \"%.0f %.0f\", a, m}' /tmp/tgen_mpstat.txt" </dev/null)
     read -r avg core <<<"$line"
-    echo "  $1 node$n avg=${avg:-?}% max-core=${core:-?}%" >> "$OUT/cpu.txt"
+    echo "  $1 $(nname "$n") avg=${avg:-?}% max-core=${core:-?}%" >> "$OUT/cpu.txt"
     if [[ -n "${avg:-}" ]] && (( avg > worst )); then worst=$avg; worst_node=$n; fi
     if [[ -n "${core:-}" ]] && (( core > core_max )); then core_max=$core; fi
   done
@@ -84,7 +85,7 @@ echo "----------------------------------------------------------------" | tee -a
 # ---------------------------------------------------------------- T01 SSH ---
 if want T01; then
   bad=""
-  for n in $(nodes); do on "$n" true </dev/null || bad+=" node$n"; done
+  for n in $(nodes); do on "$n" true </dev/null || bad+=" $(nname "$n")"; done
   [[ -z "$bad" ]] && result T01 PASS "SSH to all ${NODE_COUNT} nodes via mgmt" \
                   || { result T01 FAIL "SSH failed:$bad"; echo "Cannot continue without SSH"; exit 99; }
 fi
@@ -103,13 +104,13 @@ if want T02; then
       echo thr=\$(vcgencmd get_throttled 2>/dev/null | cut -d= -f2)
       echo temp=\$(vcgencmd measure_temp 2>/dev/null | grep -oE '[0-9.]+')
       echo mem=\$(awk '/MemTotal/{printf \"%d\", \$2/1048576+0.5}' /proc/meminfo)" </dev/null)
-    echo "node$n: $(echo "$info" | tr '\n' ' ')" >> "$OUT/nodes.txt"
+    echo "$(nname "$n"): $(echo "$info" | tr '\n' ' ')" >> "$OUT/nodes.txt"
     get() { echo "$info" | sed -n "s/^$1=//p"; }
-    [[ "$(get speed)" == 1000 && "$(get duplex)" == full ]] || bad+=" node$n:link=$(get speed)/$(get duplex)"
-    [[ "$(get gov)" == "${CPU_GOVERNOR}" ]]                 || bad+=" node$n:gov=$(get gov)"
-    [[ "$(get tip)" == 1 ]]                                 || bad+=" node$n:no-traffic-ip"
-    [[ "$(get model)" == *Compute_Module_5* ]]              || bad+=" node$n:model"
-    [[ "$(get thr)" == 0x0 ]]                               || bad+=" node$n:throttled=$(get thr)"
+    [[ "$(get speed)" == 1000 && "$(get duplex)" == full ]] || bad+=" $(nname "$n"):link=$(get speed)/$(get duplex)"
+    [[ "$(get gov)" == "${CPU_GOVERNOR}" ]]                 || bad+=" $(nname "$n"):gov=$(get gov)"
+    [[ "$(get tip)" == 1 ]]                                 || bad+=" $(nname "$n"):no-traffic-ip"
+    [[ "$(get model)" == *Compute_Module_5* ]]              || bad+=" $(nname "$n"):model"
+    [[ "$(get thr)" == 0x0 ]]                               || bad+=" $(nname "$n"):throttled=$(get thr)"
   done
   [[ -z "$bad" ]] && result T02 PASS "1000/full, governor, traffic IP, CM5, not throttled (see nodes.txt)" \
                   || result T02 FAIL "$bad"
@@ -121,9 +122,9 @@ mesh_ping() {  # id label ipfunc
   for n in $(nodes); do
     targets=""; for m in $(nodes); do (( m != n )) && targets+=" $($fn "$m")"; done
     out=$(on "$n" "fping -q -c 20 -p 20 $targets 2>&1" </dev/null)
-    echo "== node$n $label" >> "$OUT/ping.txt"; echo "$out" >> "$OUT/ping.txt"
-    echo "$out" | grep -qE 'loss = [0-9]+/[0-9]+/[1-9]|100%' && bad+=" node$n"
-    echo "$out" | grep -q 'xmt/rcv' || bad+=" node$n(no-output)"
+    echo "== $(nname "$n") $label" >> "$OUT/ping.txt"; echo "$out" >> "$OUT/ping.txt"
+    echo "$out" | grep -qE 'loss = [0-9]+/[0-9]+/[1-9]|100%' && bad+=" $(nname "$n")"
+    echo "$out" | grep -q 'xmt/rcv' || bad+=" $(nname "$n")(no-output)"
   done
   [[ -z "$bad" ]] && result "$id" PASS "${label}: 30 directed pairs x20 pings, 0% loss" \
                   || result "$id" FAIL "${label}: loss from$bad (see ping.txt)"
@@ -148,8 +149,8 @@ if want T06; then
   bad=""
   for n in $(nodes); do
     off=$(on "$n" "chronyc -n tracking | awk '/System time/{print \$4}'" </dev/null)
-    echo "node$n offset=${off}s" >> "$OUT/time.txt"
-    awk -v o="${off:-9}" 'BEGIN{exit !(o<0.001 && o>-0.001)}' || bad+=" node$n(${off:-?}s)"
+    echo "$(nname "$n") offset=${off}s" >> "$OUT/time.txt"
+    awk -v o="${off:-9}" 'BEGIN{exit !(o<0.001 && o>-0.001)}' || bad+=" $(nname "$n")(${off:-?}s)"
   done
   [[ -z "$bad" ]] && result T06 PASS "chrony offset < 1 ms on all nodes" \
                   || result T06 FAIL "offset too large:$bad"
@@ -187,7 +188,7 @@ if want T08 && (( ! QUICK )); then
     mb=$(jq -r '.end.sum_received.bits_per_second // 0' "$f" | awk '{printf "%d", $1/1e6}')
     total=$((total + mb)); (( mb >= 850 )) || bad+=" $(basename "$f" .json):${mb}"
   done
-  [[ -z "$bad" ]] && result T08 PASS "6 concurrent flows, aggregate ${total} Mbit/s; CPU node-avg max ${cpu}% (node${cpun}), hottest core ${coremax}%" \
+  [[ -z "$bad" ]] && result T08 PASS "6 concurrent flows, aggregate ${total} Mbit/s; CPU node-avg max ${cpu}% ($(nname "$cpun")), hottest core ${coremax}%" \
                   || result T08 FAIL "aggregate ${total} Mbit/s, slow:$bad"
 fi
 
@@ -212,7 +213,7 @@ if want T09; then
       awk -v a="$lp" -v b="$lossmax" 'BEGIN{exit !(a>b)}' && lossmax=$lp
     done
     if (( total >= 900 )) && awk -v l="$lossmax" 'BEGIN{exit !(l<0.5)}'; then
-      result T09 PASS "ETH0 port ${total} Mbit/s UDP, max loss ${lossmax}%, CPU node-avg max ${cpu}% (node${cpun})"
+      result T09 PASS "ETH0 port ${total} Mbit/s UDP, max loss ${lossmax}%, CPU node-avg max ${cpu}% ($(nname "$cpun"))"
     else
       result T09 FAIL "ETH0 port ${total} Mbit/s, max loss ${lossmax}%"
     fi
@@ -224,10 +225,10 @@ if want T10; then
   bad=""
   for n in $(nodes); do
     t=$(on "$n" "vcgencmd get_throttled | cut -d= -f2; vcgencmd measure_temp | grep -oE '[0-9.]+'" </dev/null | tr '\n' ' ')
-    echo "node$n throttled/temp: $t" >> "$OUT/thermal.txt"
+    echo "$(nname "$n") throttled/temp: $t" >> "$OUT/thermal.txt"
     read -r thr temp <<<"$t"
-    [[ "$thr" == 0x0 ]] || bad+=" node$n:thr=$thr"
-    awk -v x="${temp:-99}" 'BEGIN{exit !(x<80)}' || bad+=" node$n:${temp}C"
+    [[ "$thr" == 0x0 ]] || bad+=" $(nname "$n"):thr=$thr"
+    awk -v x="${temp:-99}" 'BEGIN{exit !(x<80)}' || bad+=" $(nname "$n"):${temp}C"
   done
   [[ -z "$bad" ]] && result T10 PASS "no throttling, all < 80 C after load" \
                   || result T10 FAIL "$bad"
@@ -240,11 +241,11 @@ if want T11; then
   else
     bad=""
     for n in $(nodes); do
-      on "$n" "fping -q -c 10 -p 50 ${ROUTE_SERVER_IP} 2>&1 | grep -q '/0%'" </dev/null || bad+=" node$n"
+      on "$n" "fping -q -c 10 -p 50 ${ROUTE_SERVER_IP} 2>&1 | grep -q '/0%'" </dev/null || bad+=" $(nname "$n")"
       if on "$n" "timeout 3 bash -c '</dev/tcp/${ROUTE_SERVER_IP}/179' 2>/dev/null" </dev/null; then
-        echo "node$n: TCP/179 open on route server" >> "$OUT/route_server.txt"
+        echo "$(nname "$n"): TCP/179 open on route server" >> "$OUT/route_server.txt"
       else
-        echo "node$n: TCP/179 closed/filtered (OK before BGP is configured)" >> "$OUT/route_server.txt"
+        echo "$(nname "$n"): TCP/179 closed/filtered (OK before BGP is configured)" >> "$OUT/route_server.txt"
       fi
     done
     [[ -z "$bad" ]] && result T11 PASS "route server ${ROUTE_SERVER_IP} reachable from all nodes, 0% loss (BGP port: route_server.txt)" \

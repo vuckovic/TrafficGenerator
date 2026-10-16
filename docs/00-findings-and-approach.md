@@ -13,6 +13,7 @@ Status: **Decisions confirmed 2026‑10‑16 (see §0)** · Stage 1 of the workf
 | Q6 | Network layout | **No VLAN tagging** for now; route server on board port **ETH0**; everything on the internal switch |
 | Q7 | Board port ETH1 | Free (internal switch) — used for laptop / web UI access |
 | Q8 | Attached PDF | Camera ISP spec attached by mistake; ignored |
+| — | Node names / addresses | **Kept as installed**: CMNODE01–06 = 192.168.100.11–.16 (`MGMT_MODE=keep`) |
 | Q9 | OS | **Raspberry Pi OS Trixie** (Bookworm still supported by the installer) |
 
 Block diagram: `docs/assets/super6c-block-diagram.png` (from DeskPi; the vendor drew it for CM4).
@@ -70,7 +71,7 @@ Block diagram: `docs/assets/super6c-block-diagram.png` (from DeskPi; the vendor 
 
 | Option | Strongest argument |
 |---|---|
-| A. **C++ agents (data plane) + Python FastAPI controller + lightweight JS frontend** on tgen1 | UI iteration is fast and easy for students to extend; the controller is not performance‑critical. |
+| A. **C++ agents (data plane) + Python FastAPI controller + lightweight JS frontend** on CMNODE01 | UI iteration is fast and easy for students to extend; the controller is not performance‑critical. |
 | B. All C++ (Drogon/Crow controller) | Single language and toolchain. |
 | C. Go controller | Single static binary, good concurrency. |
 
@@ -88,7 +89,7 @@ Block diagram: `docs/assets/super6c-block-diagram.png` (from DeskPi; the vendor 
 
 ## 3. Overall recommendation and the single biggest risk
 
-**Recommendation:** subnet‑separated, untagged traffic on the single onboard link (D1‑B), an AF_PACKET C++ agent on each node with one pinned TX worker per core (max 3 of 4 cores, 1 left for OS/IRQ/agent), a FastAPI controller + web UI on tgen1, and Ansible + systemd for deployment.
+**Recommendation:** subnet‑separated, untagged traffic on the single onboard link (D1‑B), an AF_PACKET C++ agent on each node with one pinned TX worker per core (max 3 of 4 cores, 1 left for OS/IRQ/agent), a FastAPI controller + web UI on CMNODE01, and Ansible + systemd for deployment.
 
 **Single biggest risk:** management and test traffic **share one physical link per node and one unmanaged switch** with no VLAN separation. Any generator mistake — unknown destination MAC, broadcast, or spoofed prefixes — is flooded to every port, including the ETH1 side where the web UI user sits, and onward if ETH1 is ever bridged to the faculty LAN.
 Mitigations built into the plan: the generator will refuse to start without a resolved next‑hop MAC (the route server); it will never emit broadcast/multicast data; leak test M1 runs before any generator work; and ETH1 should stay on a laptop or isolated lab switch, never directly on the campus network.

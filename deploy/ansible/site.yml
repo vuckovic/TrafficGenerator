@@ -42,13 +42,13 @@
   gather_facts: false
   become: false
   tasks:
-    - name: Create controller SSH key for user pi
+    - name: Create controller SSH key
       ansible.builtin.command:
-        cmd: ssh-keygen -t ed25519 -N "" -f /home/pi/.ssh/id_ed25519
-        creates: /home/pi/.ssh/id_ed25519
+        cmd: ssh-keygen -t ed25519 -N "" -f /home/{{ ansible_user }}/.ssh/id_ed25519
+        creates: /home/{{ ansible_user }}/.ssh/id_ed25519
     - name: Read controller public key
       ansible.builtin.slurp:
-        src: /home/pi/.ssh/id_ed25519.pub
+        src: /home/{{ ansible_user }}/.ssh/id_ed25519.pub
       register: ctrl_pub
 
 - name: Authorize controller key on all nodes
@@ -58,7 +58,7 @@
   tasks:
     - name: Install controller public key
       ansible.builtin.lineinfile:
-        path: /home/pi/.ssh/authorized_keys
+        path: "/home/{{ ansible_user }}/.ssh/authorized_keys"
         line: "{{ hostvars[groups['controller'][0]].ctrl_pub.content | b64decode | trim }}"
         create: true
         mode: "0600"

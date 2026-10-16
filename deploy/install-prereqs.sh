@@ -87,7 +87,9 @@ if ! [[ "$NODE_ID" =~ ^[1-9][0-9]*$ ]] || (( NODE_ID > NODE_COUNT )); then
 fi
 touch "$LOG_FILE"
 
-HOSTNAME_NEW="${HOSTNAME_PREFIX}${NODE_ID}"
+HOSTNAME_NEW="${NODE_HOSTNAMES[$((NODE_ID-1))]}"
+[[ -n "$HOSTNAME_NEW" ]] || die "no NODE_HOSTNAMES entry for node ${NODE_ID}"
+[[ "$MGMT_MODE" == "dhcp" ]] && MGMT_MODE="keep"   # legacy alias
 IS_CONTROLLER=0; (( NODE_ID == CONTROLLER_NODE )) && IS_CONTROLLER=1
 
 log "=== TrafficGenerator prerequisites: node ${NODE_ID} (${HOSTNAME_NEW}) ==="
@@ -111,6 +113,15 @@ step_preflight() {
   [[ "$speed" == "1000" ]] || warn "${MGMT_IFACE} link speed is '${speed}', expected 1000"
   local mem_gb; mem_gb=$(( $(awk '/MemTotal/{print $2}' /proc/meminfo) / 1024 / 1024 + 1 ))
   log "memory: ~${mem_gb} GB (config says ${NODE_RAM_GB[$((NODE_ID-1))]} GB)"
+  local want_ip; want_ip="$(mgmt_ip "$NODE_ID")"
+  if ip -4 -o addr show dev "$MGMT_IFACE" | grep -q " ${want_ip}/"; then
+    log "mgmt address ${want_ip} present on ${MGMT_IFACE}"
+  else
+    warn "expected mgmt address ${want_ip} not found on ${MGMT_IFACE} - check --node-id / cluster.env"
+  fi
+  if [[ "${HOSTNAME,,}" != "${HOSTNAME_NEW,,}" ]] && [[ "$(hostname)" != "$HOSTNAME_NEW" ]]; then
+    warn "hostname is '$(hostname)', cluster.env says '${HOSTNAME_NEW}' for node ${NODE_ID}"
+  fi
   timeout 10 getent hosts deb.debian.org >/dev/null || die "no DNS/internet for apt"
 }
 
@@ -241,19 +252,21 @@ step_boot_config() {
 # --------------------------------------------------------------- hostname ---
 step_hostname() {
   log "--- hostname/hosts"
-  if [[ "$(hostname)" != "$HOSTNAME_NEW" ]]; then
+  if [[ "$MGMT_MODE" == "static" ]] && [[ "$(hostname)" != "$HOSTNAME_NEW" ]]; then
     run hostnamectl set-hostname "$HOSTNAME_NEW"
-  fi
-  local hosts="" n
+  fi   # MGMT_MODE=keep: existing hostname is never changed
+  local hosts="" n name
   for (( n=1; n<=NODE_COUNT; n++ )); do
-    hosts+="$(mgmt_ip "$n")	${HOSTNAME_PREFIX}${n}"$'\n'
-    hosts+="$(traffic_ip "$n")	${HOSTNAME_PREFIX}${n}-t"$'\n'
+    name="${NODE_HOSTNAMES[$((n-1))]}"
+    hosts+="$(mgmt_ip "$n")	${name}"$'\n'
+    hosts+="$(traffic_ip "$n")	${name}-t"$'\n'
   done
   hosts="${hosts%$'\n'}"
+  local me; me="$(hostname)"
   if grep -q '^127\.0\.1\.1' /etc/hosts; then
-    run sed -i "s/^127\.0\.1\.1.*/127.0.1.1\t${HOSTNAME_NEW}/" /etc/hosts
+    run sed -i "s/^127\.0\.1\.1.*/127.0.1.1\t${me}/" /etc/hosts
   else
-    run sh -c "printf '127.0.1.1\t%s\n' '${HOSTNAME_NEW}' >> /etc/hosts"
+    run sh -c "printf '127.0.1.1\t%s\n' '${me}' >> /etc/hosts"
   fi
   upsert_block /etc/hosts "$hosts" || true
 }
@@ -285,7 +298,7 @@ step_network() {
         run nmcli con mod "$c" connection.autoconnect no
     done < <(nmcli -t -f NAME,TYPE con show)
   else
-    log "MGMT_MODE=dhcp: leaving management config untouched"
+    log "MGMT_MODE=keep: existing management config (name/IP) left untouched"
   fi
 
   local tip; tip="$(traffic_ip "$NODE_ID")"
@@ -300,11 +313,24 @@ step_network() {
     fi
     run nmcli con up tgen-traffic >/dev/null || warn "tgen-traffic not up yet (will be after reboot)"
   else
-    # untagged fallback: secondary address on the management profile
+    # untagged: traffic subnet as secondary address on the management profile
+    local prof
     if [[ "$MGMT_MODE" == "static" ]]; then
-      run nmcli con mod tgen-mgmt +ipv4.addresses "${tip}/${TRAFFIC_CIDR}"
+      prof="tgen-mgmt"
     else
-      warn "TRAFFIC_MODE=untagged with MGMT_MODE=dhcp: add ${tip}/${TRAFFIC_CIDR} manually"
+      prof="$(nmcli -t -f NAME,DEVICE con show --active | awk -F: -v d="$MGMT_IFACE" '$2==d{print $1; exit}')"
+      [[ -n "$prof" ]] || { warn "no active NetworkManager profile on ${MGMT_IFACE}; add ${tip}/${TRAFFIC_CIDR} manually"; return; }
+    fi
+    if nmcli -g ipv4.addresses con show "$prof" | tr ',' '\n' | grep -q "^ *${tip}/"; then
+      log "traffic address ${tip} already in profile '${prof}'"
+    else
+      run nmcli con mod "$prof" +ipv4.addresses "${tip}/${TRAFFIC_CIDR}"
+      log "added traffic address ${tip}/${TRAFFIC_CIDR} to profile '${prof}'"
+      if [[ "$MGMT_MODE" == "keep" ]]; then
+        # reapply adds the address live without bouncing the link (SSH survives)
+        run nmcli device reapply "$MGMT_IFACE" \
+          || { warn "live reapply failed; address active after reboot"; REBOOT_NEEDED=1; }
+      fi
     fi
   fi
 }
