@@ -212,19 +212,34 @@ if want T08 && (( ! QUICK )); then
                   || result T08 FAIL "aggregate ${total} Mbit/s, slow:$bad"
 fi
 
-# ----------------------------- T09 aggregate 1 Gbit/s to external sink ------
+# ----------------------------- T09 aggregate 1 Gbit/s into one port --------
+# SINK_IP = external host on ETH0 (route server)   -> all 6 nodes send to it
+# SINK_IP = a node's traffic IP (e.g. 10.100.0.16)  -> stand-in: that node runs
+#           the iperf3 servers itself, the other 5 nodes send to it
 if want T09; then
   if [[ -z "${SINK_IP}" ]]; then
-    result T09 SKIP "SINK_IP not set (iperf3 host on board port ETH0, see test plan)"
+    result T09 SKIP "SINK_IP not set (route server on ETH0, or a node's traffic IP as stand-in)"
   else
-    per=$(( 950 / NODE_COUNT ))
+    sink_node=0
+    for n in $(nodes); do [[ "$(traffic_ip "$n")" == "$SINK_IP" ]] && sink_node=$n; done
+    senders=(); for n in $(nodes); do (( n != sink_node )) && senders+=("$n"); done
+    if (( sink_node )); then
+      where="stand-in sink $(nname "$sink_node")"
+      on "$sink_node" "pkill -x iperf3; for p in \$(seq 5201 $((5200 + NODE_COUNT))); do iperf3 -s -D -B ${SINK_IP} -p \$p; done" </dev/null
+      sleep 1
+    else
+      where="ETH0 port (${SINK_IP})"
+    fi
+    per=$(( 950 / ${#senders[@]} ))
+    rm -f "$OUT"/t09_*.json
     cpu_start $((DUR + 2))
-    for n in $(nodes); do
+    for n in "${senders[@]}"; do
       on "$n" "iperf3 -J -u -l 1400 -b ${per}M -t $DUR -c ${SINK_IP} -p $((5200 + n)) -B $(traffic_ip "$n")" \
         </dev/null > "$OUT/t09_${n}.json" &
     done
     wait; sleep 2
     read -r cpu cpun coremax < <(cpu_collect T09)
+    (( sink_node )) && on "$sink_node" "pkill -x iperf3" </dev/null
     total=0; lossmax=0
     for f in "$OUT"/t09_*.json; do
       mb=$(jq -r '.end.sum.bits_per_second // 0' "$f" | awk '{printf "%d", $1/1e6}')
@@ -233,9 +248,9 @@ if want T09; then
       awk -v a="$lp" -v b="$lossmax" 'BEGIN{exit !(a>b)}' && lossmax=$lp
     done
     if (( total >= 900 )) && awk -v l="$lossmax" 'BEGIN{exit !(l<0.5)}'; then
-      result T09 PASS "ETH0 port ${total} Mbit/s UDP, max loss ${lossmax}%, CPU node-avg max ${cpu}% ($(nname "$cpun"))"
+      result T09 PASS "${where}: ${#senders[@]} senders, ${total} Mbit/s UDP, max loss ${lossmax}%, CPU node-avg max ${cpu}% ($(nname "$cpun"))"
     else
-      result T09 FAIL "ETH0 port ${total} Mbit/s, max loss ${lossmax}%"
+      result T09 FAIL "${where}: ${#senders[@]} senders, ${total} Mbit/s, max loss ${lossmax}%"
     fi
   fi
 fi
