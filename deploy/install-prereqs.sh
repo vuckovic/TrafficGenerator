@@ -426,7 +426,11 @@ main() {
     log "warnings (${#WARNINGS[@]}):"; printf '   - %s\n' "${WARNINGS[@]}" | tee -a "$LOG_FILE"
   fi
   if (( REBOOT_NEEDED )); then
-    log "REBOOT REQUIRED (new mgmt IP $(mgmt_ip "$NODE_ID") / firmware config takes effect)"
+    if [[ "$MGMT_MODE" == "static" ]]; then
+      log "REBOOT REQUIRED (static mgmt IP $(mgmt_ip "$NODE_ID") and/or firmware config take effect)"
+    else
+      log "REBOOT REQUIRED (firmware config, e.g. Wi-Fi/BT disabled, takes effect; IP unchanged)"
+    fi
     touch /var/run/reboot-required
   fi
 }
