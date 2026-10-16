@@ -4,7 +4,6 @@ Distributed BGP and TCP/IP traffic generator for IXP research, running on a
 6‑node Raspberry Pi CM5 cluster (DeskPi Super6C).
 
 **Status:** cluster provisioned and validated (see `docs/02-cluster-baseline.md`); specification in review.
-starts after the cluster test plan passes and the specification is approved.
 
 | Path | Purpose |
 |---|---|
@@ -17,7 +16,7 @@ starts after the cluster test plan passes and the specification is approved.
 | `deploy/install-prereqs.sh` | Idempotent per‑node installer (Raspberry Pi OS Trixie 64‑bit; Bookworm also supported) |
 | `deploy/cluster.env.example` | Cluster IP plan and tuning parameters |
 | `deploy/ansible/` | Parallel provisioning of all 6 nodes |
-| `tests/cluster/connectivity_test.sh` | Automated test suite T01–T10 |
+| `tests/cluster/connectivity_test.sh` | Automated test suite T01–T12; `link_diag.sh` link error matrix |
 
 Quick start (on CMNODE01):
 
