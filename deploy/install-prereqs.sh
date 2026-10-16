@@ -146,16 +146,24 @@ step_packages() {
   # avoid interactive debconf prompts
   echo "iperf3 iperf3/start_daemon boolean false" | debconf-set-selections
   echo "wireshark-common wireshark-common/install-setuid boolean false" | debconf-set-selections
-  run apt-get update -qq
-  run apt-get install -y -qq --no-install-recommends "${REQUIRED_PKGS[@]}" \
+  # Wait (up to 15 min) for any other apt/dpkg process - e.g. automatic
+  # updates or an earlier interrupted run - instead of failing immediately.
+  local APT=(apt-get -o DPkg::Lock::Timeout=900 -o Dpkg::Options::=--force-confold)
+  if pgrep -x 'apt-get|apt|dpkg|unattended-upgr' >/dev/null; then
+    log "another package manager is running: $(pgrep -a -x 'apt-get|apt|dpkg|unattended-upgr' | head -3 | tr '\n' ';') - waiting for it"
+  fi
+  # recover from a previously interrupted dpkg run
+  run dpkg --configure -a >/dev/null 2>&1 || warn "dpkg --configure -a reported problems"
+  run "${APT[@]}" update -qq
+  run "${APT[@]}" install -y -qq --no-install-recommends "${REQUIRED_PKGS[@]}" \
     || die "required package install failed"
   local p
   for p in "${OPTIONAL_PKGS[@]}"; do
-    run apt-get install -y -qq --no-install-recommends "$p" >/dev/null 2>&1 \
+    run "${APT[@]}" install -y -qq --no-install-recommends "$p" >/dev/null 2>&1 \
       || warn "optional package unavailable: $p"
   done
   if (( IS_CONTROLLER )); then
-    run apt-get install -y -qq --no-install-recommends "${CONTROLLER_PKGS[@]}" \
+    run "${APT[@]}" install -y -qq --no-install-recommends "${CONTROLLER_PKGS[@]}" \
       || die "controller package install failed"
   fi
   # allow tgen binaries to use raw sockets without root later (setcap at deploy)

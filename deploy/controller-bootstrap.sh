@@ -63,8 +63,8 @@ sudo -n true 2>/dev/null || { log "sudo password needed for package install:"; s
 log "--- 1/5 installing control tools"
 export DEBIAN_FRONTEND=noninteractive
 echo "iperf3 iperf3/start_daemon boolean false" | sudo debconf-set-selections
-sudo apt-get update -qq
-sudo apt-get install -y -qq --no-install-recommends \
+sudo apt-get -o DPkg::Lock::Timeout=900 update -qq
+sudo apt-get -o DPkg::Lock::Timeout=900 install -y -qq --no-install-recommends \
   git ansible sshpass openssh-client fping jq iperf3 sysstat tmux curl ca-certificates \
   python3 >/dev/null
 ok "git $(git --version | awk '{print $3}'), $(ansible --version | head -1), fping, jq, iperf3"
