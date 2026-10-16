@@ -82,6 +82,24 @@ echo "TrafficGenerator cluster test  $(date -Is)  config=$CONFIG" | tee "$SUMMAR
 echo "traffic mode=$TRAFFIC_MODE iface=$(tif) route-server=${ROUTE_SERVER_IP:-none} sink=${SINK_IP:-none}" | tee -a "$SUMMARY"
 echo "----------------------------------------------------------------" | tee -a "$SUMMARY"
 
+# ------------------------------------------- link error counter snapshots --
+ERR_RE='fcs|frame_check|symbol|crc|align|length_field|jabber|oversize|undersize|rx_.*err|tx_.*err|drop|overrun|carrier'
+err_snapshot() {  # tag -> $OUT/linkerr_<tag>_<node>.txt  (name value)
+  local n
+  for n in $(nodes); do
+    on "$n" "sudo -n /usr/sbin/ethtool -S ${MGMT_IFACE} 2>/dev/null | grep -iE '${ERR_RE}' | awk -F: '{gsub(/ /,\"\",\$1); print \$1, \$2+0}'" \
+      </dev/null > "$OUT/linkerr_$1_${n}.txt" 2>/dev/null
+  done
+}
+docker_check() {
+  local n c out=""
+  for n in $(nodes); do
+    c=$(on "$n" "command -v docker >/dev/null && sudo -n docker ps -q 2>/dev/null | wc -l || echo 0" </dev/null)
+    (( ${c:-0} > 0 )) && out+=" $(nname "$n")(${c} containers)"
+  done
+  echo "$out"
+}
+
 # ---------------------------------------------------------------- T01 SSH ---
 if want T01; then
   bad=""
@@ -89,6 +107,8 @@ if want T01; then
   [[ -z "$bad" ]] && result T01 PASS "SSH to all ${NODE_COUNT} nodes via mgmt" \
                   || { result T01 FAIL "SSH failed:$bad"; echo "Cannot continue without SSH"; exit 99; }
 fi
+
+err_snapshot before
 
 # ------------------------------------------------------- T02 node config ----
 if want T02; then
@@ -285,6 +305,27 @@ if want T11; then
     done
     [[ -z "$bad" ]] && result T11 PASS "route server ${ROUTE_SERVER_IP} reachable from all nodes, 0% loss (BGP port: route_server.txt)" \
                     || result T11 FAIL "route server unreachable/lossy from:$bad"
+  fi
+fi
+
+# ------------------------------------- T12 link errors during the test run -
+if want T12; then
+  err_snapshot after
+  bad="" ; detail=""
+  for n in $(nodes); do
+    [[ -s "$OUT/linkerr_before_${n}.txt" ]] || { detail+=" $(nname "$n")(no-counters)"; continue; }
+    d=$(awk 'NR==FNR{b[$1]=$2; next} ($2-b[$1])>0 {printf "%s+%d ", $1, $2-b[$1]}' \
+          "$OUT/linkerr_before_${n}.txt" "$OUT/linkerr_after_${n}.txt")
+    tot=$(awk '{s+=$2} END{print s+0}' "$OUT/linkerr_after_${n}.txt")
+    echo "$(nname "$n"): total-since-boot=${tot} delta-this-run: ${d:-none}" >> "$OUT/linkerrors.txt"
+    [[ -n "$d" ]] && bad+=" $(nname "$n")[${d% }]"
+  done
+  dk=$(docker_check)
+  [[ -n "$dk" ]] && echo "docker running on:$dk (uses CPU, alters iptables)" >> "$OUT/linkerrors.txt"
+  if [[ -z "$bad" ]]; then
+    result T12 PASS "no new link errors on any node during this run${dk:+; NOTE docker running on:$dk}${detail:+;$detail}"
+  else
+    result T12 FAIL "link errors grew during run:$bad - reseat module/check slot (linkerrors.txt)"
   fi
 fi
 

@@ -68,6 +68,7 @@ Manual alternative (no Ansible), on each node:
 | T09 | **1 Gbit/s into one switch port** | 6 nodes × UDP 158 Mbit/s → route server; or, **without a route server**, `SINK_IP=10.100.0.16` makes CMNODE06 a stand‑in receiver and 5 nodes × 190 Mbit/s send to it; + CPU | aggregate ≥ 900 Mbit/s, loss < 0.5 % |
 | T10 | Thermal | throttle flags and temperature after load | `0x0`, < 80 °C |
 | T11 | Route server reachability (SKIP until a route server exists) | `fping` from every node, plus a TCP/179 probe (informational) | 0 % loss from all 6 |
+| T12 | Link errors during the run | `ethtool -S` error counters (CRC/FCS, symbol, drops) snapshotted before T02 and after T11; also notes nodes running Docker | no counter increases on any node (details in `linkerrors.txt`) |
 
 CPU is reported as **node average** (the acceptance criterion: ≤ 70 %, ≤ 90 % accepted initially), with the hottest single core alongside for diagnosis. Per‑node detail is in `cpu.txt`.
 
