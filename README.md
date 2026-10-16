@@ -3,13 +3,16 @@
 Distributed BGP and TCP/IP traffic generator for IXP research, running on a
 6‑node Raspberry Pi CM5 cluster (DeskPi Super6C).
 
-**Status:** Stage 1 — provisioning and cluster validation. Generator code
+**Status:** cluster provisioned and validated (see `docs/02-cluster-baseline.md`); specification in review.
 starts after the cluster test plan passes and the specification is approved.
 
 | Path | Purpose |
 |---|---|
 | `docs/00-findings-and-approach.md` | Hardware findings, design options, recommendation, risks |
 | `docs/01-cluster-test-plan.md` | Provisioning procedure and connectivity/operations tests |
+| `docs/02-cluster-baseline.md` | Accepted cluster test result (reference) |
+| `docs/03-specification.md` | Full specification (draft, open decisions D1–D8) |
+| `docs/04-ui-controls.md` | Web interface controls for confirmation |
 | `deploy/controller-bootstrap.sh` | Run on CMNODE01: control tools, SSH keys to all nodes, node checks, `--install`, `--test` |
 | `deploy/install-prereqs.sh` | Idempotent per‑node installer (Raspberry Pi OS Trixie 64‑bit; Bookworm also supported) |
 | `deploy/cluster.env.example` | Cluster IP plan and tuning parameters |
