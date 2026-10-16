@@ -124,17 +124,19 @@ if want T02; then
       echo thr=\$(vcgencmd get_throttled 2>/dev/null | cut -d= -f2)
       echo temp=\$(vcgencmd measure_temp 2>/dev/null | grep -oE '[0-9.]+')
       echo inst=\$(test -f /etc/tgen/node.conf && echo yes || echo no)
+      echo eee=\$(sudo -n /usr/sbin/ethtool --show-eee ${MGMT_IFACE} 2>/dev/null | grep -qE 'EEE status: enabled' && echo on || echo off)
       echo mem=\$(awk '/MemTotal/{printf \"%d\", \$2/1048576+0.5}' /proc/meminfo)" </dev/null)
     echo "$(nname "$n"): $(echo "$info" | tr '\n' ' ')" >> "$OUT/nodes.txt"
     get() { echo "$info" | sed -n "s/^$1=//p"; }
     [[ "$(get speed)" == 1000 && "$(get duplex)" == full ]] || bad+=" $(nname "$n"):link=$(get speed)/$(get duplex)"
     [[ "$(get inst)" == yes ]]                              || bad+=" $(nname "$n"):INSTALLER-NOT-RUN"
+    [[ "$(get eee)" == off ]]                               || bad+=" $(nname "$n"):EEE-ON"
     [[ "$(get gov)" == "${CPU_GOVERNOR}" ]]                 || bad+=" $(nname "$n"):gov=$(get gov)"
     [[ "$(get tip)" == 1 ]]                                 || bad+=" $(nname "$n"):no-traffic-ip"
     [[ "$(get model)" == *Compute_Module_5* ]]              || bad+=" $(nname "$n"):model"
     [[ "$(get thr)" == 0x0 ]]                               || bad+=" $(nname "$n"):throttled=$(get thr)"
   done
-  [[ -z "$bad" ]] && result T02 PASS "1000/full, governor, traffic IP, CM5, not throttled (see nodes.txt)" \
+  [[ -z "$bad" ]] && result T02 PASS "1000/full, EEE off, governor, traffic IP, CM5, not throttled (see nodes.txt)" \
                   || result T02 FAIL "$bad"
 fi
 

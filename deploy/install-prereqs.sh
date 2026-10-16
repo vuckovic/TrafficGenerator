@@ -205,21 +205,30 @@ EOF
 
 # --------------------------------------------- CPU governor / NIC tuning ----
 step_tuning_service() {
-  log "--- tuning service (governor=${CPU_GOVERNOR}, EEE off, ring max)"
+  log "--- tuning (governor=${CPU_GOVERNOR}, EEE off, ring max) - boot + every link-up"
   local script
   script=$(cat <<EOF
 #!/usr/bin/env bash
-# Applied at every boot by tgen-tuning.service
+# TrafficGenerator host tuning. Run by tgen-tuning.service at boot and by the
+# NetworkManager dispatcher on every link-up of ${MGMT_IFACE}. Logs to journal.
+IF=${MGMT_IFACE}
+ETH=/usr/sbin/ethtool
+say() { logger -t tgen-tuning "\$*"; echo "tgen-tuning: \$*"; }
 for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
   echo ${CPU_GOVERNOR} > "\$g" 2>/dev/null || true
 done
-IF=${MGMT_IFACE}
-# Energy Efficient Ethernet adds latency jitter on bursty TX
-ethtool --set-eee "\$IF" eee off 2>/dev/null || true
-# maximise descriptor rings if driver supports it
-read -r RXM TXM < <(ethtool -g "\$IF" 2>/dev/null | awk '/Pre-set maximums/{f=1} f&&/^RX:/{r=\$2} f&&/^TX:/{t=\$2; print r, t; exit}')
-[[ -n "\${RXM:-}" ]] && ethtool -G "\$IF" rx "\$RXM" tx "\$TXM" 2>/dev/null || true
-# larger TX queue for burst absorption
+# wait up to 30 s for the PHY/link (the boot-time run happens very early)
+for _ in \$(seq 1 30); do [[ "\$(cat /sys/class/net/\$IF/carrier 2>/dev/null)" == 1 ]] && break; sleep 1; done
+# Energy Efficient Ethernet: low-power idle between sparse packets loses /
+# corrupts frames on this board (seen as FCS errors + lost pings). Turn off.
+# Only acts when EEE is on, so the renegotiation it causes cannot loop.
+if \$ETH --show-eee "\$IF" 2>/dev/null | grep -qE 'EEE status: enabled'; then
+  if \$ETH --set-eee "\$IF" eee off; then say "EEE disabled on \$IF (link renegotiates)"
+  else say "WARNING: could not disable EEE on \$IF"; fi
+fi
+# maximise descriptor rings if the driver supports it
+read -r RXM TXM < <(\$ETH -g "\$IF" 2>/dev/null | awk '/Pre-set maximums/{f=1} f&&/^RX:/{r=\$2} f&&/^TX:/{t=\$2; print r, t; exit}')
+if [[ -n "\${RXM:-}" ]]; then \$ETH -G "\$IF" rx "\$RXM" tx "\$TXM" 2>/dev/null || true; fi
 ip link set dev "\$IF" txqueuelen 10000 || true
 exit 0
 EOF
@@ -229,8 +238,8 @@ EOF
   unit=$(cat <<'EOF'
 [Unit]
 Description=TrafficGenerator host tuning
-After=network-pre.target
-Wants=network-pre.target
+After=network-online.target NetworkManager.service
+Wants=network-online.target
 
 [Service]
 Type=oneshot
@@ -242,7 +251,25 @@ WantedBy=multi-user.target
 EOF
 )
   write_file /etc/systemd/system/tgen-tuning.service "$unit" && run systemctl daemon-reload
-  run systemctl enable --now tgen-tuning.service >/dev/null
+  run systemctl enable tgen-tuning.service >/dev/null 2>&1
+  # re-apply on every link-up (EEE is renegotiated whenever the link comes up)
+  local disp
+  disp=$(cat <<EOF
+#!/bin/sh
+# NetworkManager dispatcher: re-apply TrafficGenerator tuning on link-up
+[ "\$1" = "${MGMT_IFACE}" ] && [ "\$2" = "up" ] && /usr/local/sbin/tgen-tuning.sh >/dev/null 2>&1 &
+exit 0
+EOF
+)
+  write_file /etc/NetworkManager/dispatcher.d/50-tgen-tuning "$disp" \
+    && run chmod 0755 /etc/NetworkManager/dispatcher.d/50-tgen-tuning
+  # apply now (restart, because an already-active oneshot would not re-run)
+  run systemctl restart tgen-tuning.service
+  if /usr/sbin/ethtool --show-eee "$MGMT_IFACE" 2>/dev/null | grep -qE 'EEE status: enabled'; then
+    warn "EEE still enabled on ${MGMT_IFACE} after tuning - check: journalctl -t tgen-tuning"
+  else
+    log "EEE: $(/usr/sbin/ethtool --show-eee "$MGMT_IFACE" 2>&1 | grep -m1 'EEE status' | sed 's/^[[:space:]]*//')"
+  fi
 }
 
 # --------------------------------------------------------------- firmware ---
