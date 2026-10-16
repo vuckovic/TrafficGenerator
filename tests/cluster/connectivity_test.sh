@@ -1,0 +1,233 @@
+#!/usr/bin/env bash
+# ============================================================================
+# TrafficGenerator - cluster connectivity & operations test
+# Run on the controller node (tgen1) as user pi after install + reboot:
+#   ./connectivity_test.sh [--config /etc/tgen/cluster.env] [--quick] [--only T03,T07]
+# Exit code = number of failed tests. Results in ~/tgen-test-results/<ts>/
+# ============================================================================
+# shellcheck disable=SC2015,SC2029,SC1091  # A&&B||C safe: result() always returns 0
+set -uo pipefail
+export LC_ALL=C
+
+CONFIG="/etc/tgen/cluster.env"
+QUICK=0
+ONLY=""
+DUR=10                      # iperf seconds
+PASS=0; FAIL=0; SKIP=0
+SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new)
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --config) CONFIG="$2"; shift 2 ;;
+    --quick)  QUICK=1; DUR=5; shift ;;
+    --only)   ONLY="$2"; shift 2 ;;
+    -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
+    *) echo "unknown option $1"; exit 2 ;;
+  esac
+done
+[[ -f "$CONFIG" ]] || { echo "config not found: $CONFIG"; exit 2; }
+# shellcheck source=../../deploy/cluster.env.example
+source "$CONFIG"
+
+OUT="${HOME}/tgen-test-results/$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$OUT"
+SUMMARY="$OUT/summary.txt"
+
+mgmt_ip()    { echo "${MGMT_PREFIX}.$((MGMT_HOST_BASE + $1))"; }
+traffic_ip() { echo "${TRAFFIC_PREFIX}.$((TRAFFIC_HOST_BASE + $1))"; }
+tif()        { [[ "$TRAFFIC_MODE" == vlan ]] && echo "${MGMT_IFACE}.${TRAFFIC_VLAN}" || echo "$MGMT_IFACE"; }
+on()         { local n="$1"; shift; ssh "${SSH_OPTS[@]}" "pi@$(mgmt_ip "$n")" "$@"; }
+nodes()      { seq 1 "$NODE_COUNT"; }
+next_node()  { echo $(( $1 % NODE_COUNT + 1 )); }
+
+want() { [[ -z "$ONLY" || ",$ONLY," == *",$1,"* ]]; }
+result() {   # id status message
+  local id="$1" st="$2" msg="$3"
+  case "$st" in PASS) ((PASS++)) ;; FAIL) ((FAIL++)) ;; *) ((SKIP++)) ;; esac
+  printf '%-4s %-5s %s\n' "$id" "$st" "$msg" | tee -a "$SUMMARY"
+  return 0
+}
+
+# --------------------------------------------------- CPU sampling helpers ---
+cpu_start() {  # seconds
+  local n; for n in $(nodes); do
+    on "$n" "nohup mpstat -P ALL 1 $1 > /tmp/tgen_mpstat.txt 2>&1 &" </dev/null
+  done
+}
+cpu_collect() {  # label -> prints "max core % (node)" and appends details
+  local n worst=0 worst_node=0 v
+  for n in $(nodes); do
+    v=$(on "$n" "awk '\$1==\"Average:\" && \$2 ~ /^[0-9]+\$/ {u=100-\$NF; if(u>m)m=u} END{printf \"%.0f\", m}' /tmp/tgen_mpstat.txt")
+    echo "  $1 node$n max-core-util=${v:-?}%" >> "$OUT/cpu.txt"
+    if [[ -n "$v" ]] && (( v > worst )); then worst=$v; worst_node=$n; fi
+  done
+  echo "${worst} ${worst_node}"
+}
+
+start_iperf_servers() {
+  local n; for n in $(nodes); do
+    on "$n" "pkill -x iperf3; iperf3 -s -D -B $(traffic_ip "$n") -p 5201" </dev/null
+  done
+  sleep 1
+}
+stop_iperf_servers() { local n; for n in $(nodes); do on "$n" "pkill -x iperf3" </dev/null; done; }
+
+echo "TrafficGenerator cluster test  $(date -Is)  config=$CONFIG" | tee "$SUMMARY"
+echo "traffic mode=$TRAFFIC_MODE iface=$(tif) sink=${SINK_IP:-none}" | tee -a "$SUMMARY"
+echo "----------------------------------------------------------------" | tee -a "$SUMMARY"
+
+# ---------------------------------------------------------------- T01 SSH ---
+if want T01; then
+  bad=""
+  for n in $(nodes); do on "$n" true </dev/null || bad+=" node$n"; done
+  [[ -z "$bad" ]] && result T01 PASS "SSH to all ${NODE_COUNT} nodes via mgmt" \
+                  || { result T01 FAIL "SSH failed:$bad"; echo "Cannot continue without SSH"; exit 99; }
+fi
+
+# ------------------------------------------------------- T02 node config ----
+if want T02; then
+  bad=""
+  for n in $(nodes); do
+    info=$(on "$n" "
+      . /etc/os-release; echo os=\$VERSION_CODENAME
+      echo model=\$(tr -d '\0' </proc/device-tree/model | tr ' ' _)
+      echo speed=\$(cat /sys/class/net/${MGMT_IFACE}/speed)
+      echo duplex=\$(cat /sys/class/net/${MGMT_IFACE}/duplex)
+      echo gov=\$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
+      echo tip=\$(ip -4 -o addr show dev $(tif) | grep -c $(traffic_ip "$n")/)
+      echo thr=\$(vcgencmd get_throttled 2>/dev/null | cut -d= -f2)
+      echo temp=\$(vcgencmd measure_temp 2>/dev/null | grep -oE '[0-9.]+')
+      echo mem=\$(awk '/MemTotal/{printf \"%d\", \$2/1048576+0.5}' /proc/meminfo)" </dev/null)
+    echo "node$n: $(echo "$info" | tr '\n' ' ')" >> "$OUT/nodes.txt"
+    get() { echo "$info" | sed -n "s/^$1=//p"; }
+    [[ "$(get speed)" == 1000 && "$(get duplex)" == full ]] || bad+=" node$n:link=$(get speed)/$(get duplex)"
+    [[ "$(get gov)" == "${CPU_GOVERNOR}" ]]                 || bad+=" node$n:gov=$(get gov)"
+    [[ "$(get tip)" == 1 ]]                                 || bad+=" node$n:no-traffic-ip"
+    [[ "$(get model)" == *Compute_Module_5* ]]              || bad+=" node$n:model"
+    [[ "$(get thr)" == 0x0 ]]                               || bad+=" node$n:throttled=$(get thr)"
+  done
+  [[ -z "$bad" ]] && result T02 PASS "1000/full, governor, traffic IP, CM5, not throttled (see nodes.txt)" \
+                  || result T02 FAIL "$bad"
+fi
+
+# ------------------------------------------------ T03/T04 full-mesh ping ----
+mesh_ping() {  # id label ipfunc
+  local id="$1" label="$2" fn="$3" bad="" n m targets
+  for n in $(nodes); do
+    targets=""; for m in $(nodes); do (( m != n )) && targets+=" $($fn "$m")"; done
+    out=$(on "$n" "fping -q -c 20 -p 20 $targets 2>&1" </dev/null)
+    echo "== node$n $label" >> "$OUT/ping.txt"; echo "$out" >> "$OUT/ping.txt"
+    echo "$out" | grep -qE 'loss = [0-9]+/[0-9]+/[1-9]|100%' && bad+=" node$n"
+    echo "$out" | grep -q 'xmt/rcv' || bad+=" node$n(no-output)"
+  done
+  [[ -z "$bad" ]] && result "$id" PASS "${label}: 30 directed pairs x20 pings, 0% loss" \
+                  || result "$id" FAIL "${label}: loss from$bad (see ping.txt)"
+}
+want T03 && mesh_ping T03 "mgmt mesh"    mgmt_ip
+want T04 && mesh_ping T04 "traffic mesh (VLAN ${TRAFFIC_VLAN} through RTL8370N)" traffic_ip
+
+# --------------------------------------------------------------- T05 MTU ----
+if want T05; then
+  bad=""
+  for n in $(nodes); do
+    m=$(next_node "$n")
+    on "$n" "ping -q -c 3 -M do -s 1472 -I $(tif) $(traffic_ip "$m") >/dev/null 2>&1" </dev/null \
+      || bad+=" $n->$m"
+  done
+  [[ -z "$bad" ]] && result T05 PASS "1500-byte frames DF across traffic net" \
+                  || result T05 FAIL "MTU 1500 DF failed:$bad"
+fi
+
+# --------------------------------------------------------- T06 time sync ----
+if want T06; then
+  bad=""
+  for n in $(nodes); do
+    off=$(on "$n" "chronyc -n tracking | awk '/System time/{print \$4}'" </dev/null)
+    echo "node$n offset=${off}s" >> "$OUT/time.txt"
+    awk -v o="${off:-9}" 'BEGIN{exit !(o<0.001 && o>-0.001)}' || bad+=" node$n(${off:-?}s)"
+  done
+  [[ -z "$bad" ]] && result T06 PASS "chrony offset < 1 ms on all nodes" \
+                  || result T06 FAIL "offset too large:$bad"
+fi
+
+# ---------------------------------------------- T07 pairwise throughput -----
+if want T07; then
+  start_iperf_servers; bad=""
+  for n in $(nodes); do
+    m=$(next_node "$n")
+    bps=$(on "$n" "iperf3 -J -t $DUR -c $(traffic_ip "$m") -B $(traffic_ip "$n")" </dev/null \
+          | tee "$OUT/t07_${n}_${m}.json" | jq -r '.end.sum_received.bits_per_second // 0')
+    mbps=$(awk -v b="${bps:-0}" 'BEGIN{printf "%d", b/1e6}')
+    echo "  $n->$m ${mbps} Mbit/s" >> "$OUT/throughput.txt"
+    (( mbps >= 900 )) || bad+=" $n->$m:${mbps}"
+  done
+  stop_iperf_servers
+  [[ -z "$bad" ]] && result T07 PASS "each node pair >= 900 Mbit/s TCP (sequential)" \
+                  || result T07 FAIL "below 900 Mbit/s:$bad"
+fi
+
+# ------------------------------- T08 all nodes concurrently (switch fabric) -
+if want T08 && (( ! QUICK )); then
+  start_iperf_servers; cpu_start $((DUR + 2))
+  for n in $(nodes); do
+    m=$(next_node "$n")
+    on "$n" "iperf3 -J -t $DUR -c $(traffic_ip "$m") -B $(traffic_ip "$n")" </dev/null \
+      > "$OUT/t08_${n}_${m}.json" &
+  done
+  wait; sleep 2
+  read -r cpu cpun < <(cpu_collect T08)
+  stop_iperf_servers
+  total=0; bad=""
+  for f in "$OUT"/t08_*.json; do
+    mb=$(jq -r '.end.sum_received.bits_per_second // 0' "$f" | awk '{printf "%d", $1/1e6}')
+    total=$((total + mb)); (( mb >= 850 )) || bad+=" $(basename "$f" .json):${mb}"
+  done
+  [[ -z "$bad" ]] && result T08 PASS "6 concurrent flows, aggregate ${total} Mbit/s; max core ${cpu}% (node${cpun})" \
+                  || result T08 FAIL "aggregate ${total} Mbit/s, slow:$bad"
+fi
+
+# ----------------------------- T09 aggregate 1 Gbit/s to external sink ------
+if want T09; then
+  if [[ -z "${SINK_IP}" ]]; then
+    result T09 SKIP "SINK_IP not set (connect a sink on ETH2, see test plan)"
+  else
+    per=$(( 950 / NODE_COUNT ))
+    cpu_start $((DUR + 2))
+    for n in $(nodes); do
+      on "$n" "iperf3 -J -u -l 1400 -b ${per}M -t $DUR -c ${SINK_IP} -p $((5200 + n)) -B $(traffic_ip "$n")" \
+        </dev/null > "$OUT/t09_${n}.json" &
+    done
+    wait; sleep 2
+    read -r cpu cpun < <(cpu_collect T09)
+    total=0; lossmax=0
+    for f in "$OUT"/t09_*.json; do
+      mb=$(jq -r '.end.sum.bits_per_second // 0' "$f" | awk '{printf "%d", $1/1e6}')
+      lp=$(jq -r '.end.sum.lost_percent // 100' "$f")
+      total=$((total + mb))
+      awk -v a="$lp" -v b="$lossmax" 'BEGIN{exit !(a>b)}' && lossmax=$lp
+    done
+    if (( total >= 900 )) && awk -v l="$lossmax" 'BEGIN{exit !(l<0.5)}'; then
+      result T09 PASS "ETH2 uplink ${total} Mbit/s UDP, max loss ${lossmax}%, max core ${cpu}% (node${cpun})"
+    else
+      result T09 FAIL "ETH2 uplink ${total} Mbit/s, max loss ${lossmax}%"
+    fi
+  fi
+fi
+
+# ---------------------------------------------------- T10 thermal after load -
+if want T10; then
+  bad=""
+  for n in $(nodes); do
+    t=$(on "$n" "vcgencmd get_throttled | cut -d= -f2; vcgencmd measure_temp | grep -oE '[0-9.]+'" </dev/null | tr '\n' ' ')
+    echo "node$n throttled/temp: $t" >> "$OUT/thermal.txt"
+    read -r thr temp <<<"$t"
+    [[ "$thr" == 0x0 ]] || bad+=" node$n:thr=$thr"
+    awk -v x="${temp:-99}" 'BEGIN{exit !(x<80)}' || bad+=" node$n:${temp}C"
+  done
+  [[ -z "$bad" ]] && result T10 PASS "no throttling, all < 80 C after load" \
+                  || result T10 FAIL "$bad"
+fi
+
+echo "----------------------------------------------------------------" | tee -a "$SUMMARY"
+echo "PASS=$PASS FAIL=$FAIL SKIP=$SKIP   results: $OUT" | tee -a "$SUMMARY"
+exit "$FAIL"

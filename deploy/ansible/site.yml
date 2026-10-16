@@ -1,0 +1,64 @@
+# Provision all Super6C nodes in parallel.
+#   ansible-playbook site.yml                 # install everything
+#   ansible-playbook site.yml -e reboot=true  # and reboot nodes that need it
+- name: TrafficGenerator node prerequisites
+  hosts: tgen
+  gather_facts: true
+  vars:
+    reboot: false
+    remote_dir: /opt/tgen-install
+  tasks:
+    - name: Check architecture
+      ansible.builtin.assert:
+        that: ansible_architecture == "aarch64"
+        fail_msg: "64-bit Raspberry Pi OS required"
+
+    - name: Copy installer and config
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ remote_dir }}/"
+        mode: "0755"
+      loop:
+        - ../install-prereqs.sh
+        - ../cluster.env
+
+    - name: Run installer
+      ansible.builtin.command:
+        cmd: "{{ remote_dir }}/install-prereqs.sh --node-id {{ node_id }} --config {{ remote_dir }}/cluster.env"
+      register: install_out
+      changed_when: "'wrote' in install_out.stdout or 'updated' in install_out.stdout"
+
+    - name: Show installer warnings
+      ansible.builtin.debug:
+        msg: "{{ install_out.stdout_lines | select('search', 'WARN|REBOOT') | list }}"
+
+    - name: Reboot if required
+      ansible.builtin.reboot:
+        reboot_timeout: 300
+      when: reboot | bool and ('REBOOT REQUIRED' in install_out.stdout)
+
+- name: Controller key distribution (controller can ssh to every node)
+  hosts: controller
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Create controller SSH key for user pi
+      ansible.builtin.command:
+        cmd: ssh-keygen -t ed25519 -N "" -f /home/pi/.ssh/id_ed25519
+        creates: /home/pi/.ssh/id_ed25519
+    - name: Read controller public key
+      ansible.builtin.slurp:
+        src: /home/pi/.ssh/id_ed25519.pub
+      register: ctrl_pub
+
+- name: Authorize controller key on all nodes
+  hosts: tgen
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Install controller public key
+      ansible.builtin.lineinfile:
+        path: /home/pi/.ssh/authorized_keys
+        line: "{{ hostvars[groups['controller'][0]].ctrl_pub.content | b64decode | trim }}"
+        create: true
+        mode: "0600"
