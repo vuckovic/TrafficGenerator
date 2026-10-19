@@ -1,0 +1,19 @@
+# TrafficGenerator controller + web interface (P3), CMNODE01 only.
+[Unit]
+Description=TrafficGenerator controller and web interface
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=tgen
+WorkingDirectory=/opt/tgen/controller
+ExecStart=/opt/tgen/venv/bin/uvicorn tgen_controller.app:app --host 0.0.0.0 --port 8080
+Restart=on-failure
+RestartSec=2
+# protected share of CMNODE01 (spec §10.2)
+CPUWeight=1000
+MemoryMin=4800M
+OOMScoreAdjust=-500
+
+[Install]
+WantedBy=multi-user.target

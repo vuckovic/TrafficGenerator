@@ -129,14 +129,14 @@ step_preflight() {
 REQUIRED_PKGS=(
   build-essential g++ cmake ninja-build pkg-config git gdb ccache
   libpcap-dev libbpf-dev libssl-dev libcap2-bin
-  libspdlog-dev libfmt-dev nlohmann-json3-dev libyaml-cpp-dev
+  libspdlog-dev libfmt-dev nlohmann-json3-dev libyaml-cpp-dev libasio-dev libcpp-httplib-dev
   libgtest-dev libgmock-dev
   iproute2 ethtool iperf3 tcpdump fping chrony sysstat jq
   python3 python3-venv python3-pip
 )
 OPTIONAL_PKGS=(
   libxdp-dev xdp-tools bpftool linux-perf tshark nload htop
-  lldpd stress-ng libbenchmark-dev
+  lldpd stress-ng libbenchmark-dev bird2
 )
 CONTROLLER_PKGS=( ansible sshpass )
 
@@ -162,6 +162,11 @@ step_packages() {
     run "${APT[@]}" install -y -qq --no-install-recommends "$p" >/dev/null 2>&1 \
       || warn "optional package unavailable: $p"
   done
+  # bird2 is only used as a stand-in DUT, started on demand by tools/tgen_p2.py;
+  # the distribution's own BIRD service must not hold port 179
+  if systemctl list-unit-files bird.service >/dev/null 2>&1; then
+    run systemctl disable --now bird.service >/dev/null 2>&1 || true
+  fi
   if (( IS_CONTROLLER )); then
     run "${APT[@]}" install -y -qq --no-install-recommends "${CONTROLLER_PKGS[@]}" \
       || die "controller package install failed"

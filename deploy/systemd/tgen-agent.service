@@ -1,0 +1,19 @@
+# TrafficGenerator agent (daemon mode, P3). In P2 the agent runs per benchmark
+# via tools/tgen_p2.py, which applies the same limits with `systemd-run --scope`.
+[Unit]
+Description=TrafficGenerator agent (emulated BGP routers / data plane)
+After=network-online.target tgen-tuning.service
+Wants=network-online.target
+
+[Service]
+User=tgen
+ExecStart=/opt/tgen/bin/tgen-agent --serve 0.0.0.0:9100
+AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+Restart=on-failure
+RestartSec=2
+LimitNOFILE=65536
+# generator is the first to go under memory pressure (spec §10.2)
+OOMScoreAdjust=500
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# fake ssh for the loopback simulation: each "host" gets its own home directory
+while [[ "$1" == -* ]]; do [[ "$1" == -o ]] && shift; shift; done
+host="${1#*@}"; shift
+d="$SIM_ROOT/$host"; mkdir -p "$d"
+cd "$d" && HOME="$d" exec bash -c "$*"

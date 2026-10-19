@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# no systemd in the simulation: drop options, run the command
+while [[ "$1" == -* ]]; do case "$1" in -p) shift 2;; *) shift;; esac; done
+exec "$@"

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+while [[ "$1" == -* ]]; do [[ "$1" == -o ]] && shift; shift; done
+map() { if [[ "$1" == *@*:* ]]; then h="${1#*@}"; h="${h%%:*}"; echo "$SIM_ROOT/$h/${1#*:}"; else echo "$1"; fi; }
+src=$(map "$1"); dst=$(map "$2"); mkdir -p "$(dirname "$dst")"; exec cp -p "$src" "$dst"

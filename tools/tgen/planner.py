@@ -70,13 +70,6 @@ def build(sc: Scenario, nodes: list[NodeSpec], now_ms: int | None = None) -> tup
             idx += 1
     total_prefixes = sum(len(r["prefixes"]) for r in routers)
 
-    # timeline is fixed only after prefix generation (which can take seconds),
-    # so that establish_at is really in the future when the agents start
-    now_ms = now_ms or int(time.time() * 1000)
-    t_est = now_ms + int(sc.establish_delay_s * 1000)
-    t_ann = t_est + int(sc.establish_window_s * 1000)
-    t_wd = t_ann + int(sc.converge_timeout_s * 1000) if sc.withdraw else None
-    t_end = (t_wd if t_wd else t_ann + int(sc.converge_timeout_s * 1000)) + int(sc.withdraw_timeout_s * 1000)
 
     plans: dict[str, dict] = {}
     for node in nodes:
@@ -86,8 +79,7 @@ def build(sc: Scenario, nodes: list[NodeSpec], now_ms: int | None = None) -> tup
             "dut": {"ip": sc.dut_ip, "asn": sc.dut_asn, "role": sc.role},
             "hold_time": sc.hold_time, "announce_rate": sc.announce_rate, "per_update": sc.per_update,
             "sample_mod": sc.sample_mod, "cores": node.cores,
-            "timing": {"establish_at": t_est, "announce_at": t_ann, "withdraw_at": t_wd, "end_at": t_end,
-                       "establish_per_s": sc.establish_per_s},
+            "timing": {},
             "routers": [{
                 "name": r["name"], "asn": r["asn"], "ip": r["ip"], "prefixes": r["prefixes"],
                 "receive": "timestamps",
@@ -98,12 +90,27 @@ def build(sc: Scenario, nodes: list[NodeSpec], now_ms: int | None = None) -> tup
     meta = {
         "run_id": sc.run_id, "scenario": sc.__dict__, "nodes": [n.__dict__ for n in nodes],
         "router_counts": dict(zip([n.name for n in nodes], counts)),
-        "timing": {"establish_at": t_est, "announce_at": t_ann, "withdraw_at": t_wd, "end_at": t_end},
+        "timing": {},
         "routers": [{k: v for k, v in r.items() if k != "prefixes"} | {"prefix_count": len(r["prefixes"])}
                     for r in routers],
         "total_prefixes": total_prefixes,
     }
+    set_timeline(plans, meta, sc, now_ms)
     return plans, meta
+
+
+def set_timeline(plans: dict[str, dict], meta: dict, sc: Scenario, now_ms: int | None = None) -> None:
+    """(Re)sets the absolute timeline. Call it right before the agents start:
+    prefix generation and deployment can take a while."""
+    now_ms = now_ms or int(time.time() * 1000)
+    t_est = now_ms + int(sc.establish_delay_s * 1000)
+    t_ann = t_est + int(sc.establish_window_s * 1000)
+    t_wd = t_ann + int(sc.converge_timeout_s * 1000) if sc.withdraw else None
+    t_end = (t_wd if t_wd else t_ann + int(sc.converge_timeout_s * 1000)) + int(sc.withdraw_timeout_s * 1000)
+    timing = {"establish_at": t_est, "announce_at": t_ann, "withdraw_at": t_wd, "end_at": t_end}
+    meta["timing"] = dict(timing)
+    for p in plans.values():
+        p["timing"] = timing | {"establish_per_s": sc.establish_per_s}
 
 
 def bird_config(meta: dict, dut_ip: str, dut_asn: int, multihop: bool = False, log_file: str | None = None) -> str:
