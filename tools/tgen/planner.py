@@ -40,6 +40,7 @@ class Scenario:
     withdraw: bool = True
     withdraw_timeout_s: float = 120.0
     establish_per_s: float = 0.0
+    skip_ips: list[str] = field(default_factory=list)   # never give these to routers (DUT, nodes)
 
 
 def split(total: int, nodes: list[NodeSpec]) -> list[int]:
@@ -57,11 +58,22 @@ def build(sc: Scenario, nodes: list[NodeSpec], now_ms: int | None = None) -> tup
     asns = generate_asns(sc.routers_total, sc.seed, exclude=[sc.dut_asn])
     taken: set = set()
     first_ip = int(ipaddress.ip_address(sc.router_ip_first))
+    skip = {sc.dut_ip, *sc.skip_ips}
+    ip_cursor = first_ip
+
+    def next_ip() -> str:
+        nonlocal ip_cursor
+        while str(ipaddress.ip_address(ip_cursor)) in skip:
+            ip_cursor += 1
+        ip = str(ipaddress.ip_address(ip_cursor))
+        ip_cursor += 1
+        return ip
+
     routers = []
     idx = 0
     for node, n in zip(nodes, counts):
         for _ in range(n):
-            ip = str(ipaddress.ip_address(first_ip + idx))
+            ip = next_ip()
             routers.append({
                 "name": f"R{idx + 1:02d}", "node": node.name, "asn": asns[idx], "ip": ip,
                 "prefixes": generate_prefixes(sc.prefixes_per_router, sc.seed * 1000 + idx, sc.pool,

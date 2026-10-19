@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
-# fake ssh for the loopback simulation: each "host" gets its own home directory
+# fake ssh for the loopback simulation: each "host" gets its own home directory;
+# the mock MikroTik (10.100.0.111) is answered by mock_routeros.py
 while [[ "$1" == -* ]]; do [[ "$1" == -o ]] && shift; shift; done
 host="${1#*@}"; shift
 d="$SIM_ROOT/$host"; mkdir -p "$d"
+if [[ "$host" == "10.100.0.111" ]]; then
+  MOCK_HOME="$d" exec python3 "$(dirname "$0")/mock_routeros.py" "$@"
+fi
 cd "$d" && HOME="$d" exec bash -c "$*"

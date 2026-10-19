@@ -314,3 +314,4 @@ D1 own C++ BGP speaker on Asio, reusing the encoder · D2 one admin password · 
 | Date | Change | Reason |
 |---|---|---|
 | 2026‑10‑19 | Default prefix pool = **10.0.0.0/8 without 10.100.0.0/16, lengths /24–/28** (was 198.18.0.0/15, /24) | 198.18.0.0/15 holds only 512 /24s; the default scale needs 600 000 distinct prefixes. The new default holds > 1 M and stays private. "Public‑looking" /24s remain an opt‑in for realism with an isolated DUT. |
+| 2026‑10‑19 | **MikroTik RouterOS 7 DUT adapter** (`tools/tgen/dut_mikrotik.py`, `tgen_p2.py --dut mikrotik`): before a run the tool pushes one BGP connection per emulated router (IP and AS) over SSH, and removes them afterwards. Router addresses skip the DUT and node IPs. A route‑limit guard defaults to 20 000. | The user attached a CRS106 (RouterOS 7.11) as the first real DUT. This implements the optional SSH DUT access of Q3 (§5.3) for MikroTik. |

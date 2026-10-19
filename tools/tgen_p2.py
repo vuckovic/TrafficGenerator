@@ -30,6 +30,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "tools"))
 from tgen.analyze import analyze, gate  # noqa: E402
+from tgen.dut_mikrotik import DEFAULT_MAX_ROUTES, DutError, MikroTik, render_rsc  # noqa: E402
 from tgen.planner import NodeSpec, Scenario, bird_config, build, set_timeline  # noqa: E402
 
 SSH_OPTS = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=5", "-o", "StrictHostKeyChecking=accept-new"]
@@ -124,8 +125,15 @@ def cpu_summary(mpstat_text: str, t_from: float, t_to: float) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", default=str(REPO / "deploy" / "cluster.env"))
-    ap.add_argument("--dut-node", default="CMNODE06", help="node running BIRD as stand-in DUT")
+    ap.add_argument("--dut", default="bird", choices=["bird", "mikrotik"],
+                    help="bird = BIRD 2 stand-in on --dut-node; mikrotik = external RouterOS 7 device at --dut-ip")
+    ap.add_argument("--dut-node", default="CMNODE06", help="node running BIRD as stand-in DUT (--dut bird)")
+    ap.add_argument("--dut-ip", default="10.100.0.111", help="DUT address (--dut mikrotik)")
+    ap.add_argument("--dut-user", default="admin", help="DUT SSH user; password from TGEN_DUT_PASSWORD or prompt")
     ap.add_argument("--dut-asn", type=int, default=64500)
+    ap.add_argument("--dut-max-routes", type=int, default=DEFAULT_MAX_ROUTES,
+                    help="refuse larger runs against small hardware DUTs (routes the DUT must hold)")
+    ap.add_argument("--keep-dut-config", action="store_true", help="leave the BGP neighbours on the DUT after the run")
     ap.add_argument("--nodes", default="", help="router nodes, comma list (default: all except the DUT node)")
     ap.add_argument("--routers", type=int, default=60)
     ap.add_argument("--prefixes", type=int, default=10_000)
@@ -142,12 +150,33 @@ def main() -> int:
     env = load_env(Path(args.config))
     cl = Cluster(env)
     names = env["NODE_HOSTNAMES"]
-    if args.dut_node not in names:
+    external = args.dut == "mikrotik"
+    if not external and args.dut_node not in names:
         sys.exit(f"unknown DUT node {args.dut_node}")
-    router_nodes = [n for n in (args.nodes.split(",") if args.nodes else names) if n and n != args.dut_node]
+    # with an external DUT every node can host routers; with BIRD the DUT node is reserved
+    router_nodes = [n for n in (args.nodes.split(",") if args.nodes else names)
+                    if n and (external or n != args.dut_node)]
     controller = names[0]
     nodes = [NodeSpec(n, 0.7 if n == controller else 1.0, [1, 2, 3]) for n in router_nodes]
-    dut_ip = cl.traffic[args.dut_node]
+    dut_ip = args.dut_ip if external else cl.traffic[args.dut_node]
+    dut_label = f"MikroTik {args.dut_ip}" if external else f"BIRD on {args.dut_node}"
+    dut_routes = args.routers * args.prefixes
+    if external and dut_routes > args.dut_max_routes:
+        sys.exit(f"{args.routers} x {args.prefixes} = {dut_routes} routes is above --dut-max-routes "
+                 f"{args.dut_max_routes} for this DUT (a CRS106 has 128 MB RAM). Reduce --routers/--prefixes, "
+                 "or raise --dut-max-routes deliberately.")
+    mt = None
+    if external:
+        mt = MikroTik(args.dut_ip, args.dut_user)
+        mt.ask_password_if_needed()
+        try:
+            res = mt.resources()
+        except DutError as e:
+            sys.exit(f"cannot reach the DUT: {e}")
+        log(f"DUT: {res['board']} RouterOS {res['version']}, CPU {res['cpu']} load {res['cpu_load']}, "
+            f"memory free {res['free_memory']} of {res['total_memory']}")
+        if int(res["version"].split(".")[0]) < 7:
+            sys.exit("RouterOS 7 required on the DUT")
 
     out = Path.home() / "tgen-test-results" / time.strftime("p2-%Y%m%d-%H%M%S")
     out.mkdir(parents=True)
@@ -155,6 +184,7 @@ def main() -> int:
 
     agent = Path(REPO / "agent" / "build" / "tgen-agent") if args.no_build else build_agent()
     sc = Scenario(run_id=out.name, dut_ip=dut_ip, dut_asn=args.dut_asn, role=args.role,
+                  skip_ips=list(cl.traffic.values()),
                   routers_total=args.routers, prefixes_per_router=args.prefixes, seed=args.seed,
                   announce_rate=args.rate, per_update=args.per_update,
                   establish_delay_s=15, establish_window_s=20,
@@ -166,19 +196,30 @@ def main() -> int:
 
     added: dict[str, list[str]] = {}
     bird_started = False
+    dut_configured = False
+    results: list[dict] = []
+    cpu: dict = {}
     try:
-        # --- DUT stand-in: BIRD 2 on the DUT node -----------------------------
-        log(f"starting BIRD 2 route server on {args.dut_node} ({dut_ip}, AS {args.dut_asn})")
-        cl.ssh(args.dut_node, f"mkdir -p {REMOTE_DIR}")
-        cl.ssh(args.dut_node, "command -v bird >/dev/null || sudo apt-get install -y -qq bird2 >/dev/null; "
-                              "sudo systemctl disable --now bird >/dev/null 2>&1; true", timeout=600)
-        conf = out / "bird.conf"
-        conf.write_text(bird_config(meta, dut_ip, args.dut_asn, multihop=args.bird_multihop,
-                                    log_file="/var/log/tgen-bird.log"))
-        cl.put(args.dut_node, conf, f"{REMOTE_DIR}/bird.conf")
-        cl.ssh(args.dut_node, f"sudo pkill -x bird; sleep 0.5; sudo truncate -s0 /var/log/tgen-bird.log 2>/dev/null; "
-                              f"sudo bird -c {REMOTE_DIR}/bird.conf -s /run/tgen-bird.ctl -P /run/tgen-bird.pid")
-        bird_started = True
+        if external:
+            # --- external DUT: push the BGP neighbours of this run --------------------
+            rsc = render_rsc(meta, dut_ip, args.dut_asn, args.role)
+            (out / "dut-config.rsc").write_text(rsc)
+            n = mt.push(rsc, expected=len(meta["routers"]))
+            dut_configured = True
+            log(f"DUT configured: {n} BGP connections (comment \"tgen\"), role {args.role}, AS {args.dut_asn}")
+        else:
+            # --- DUT stand-in: BIRD 2 on the DUT node -----------------------------
+            log(f"starting BIRD 2 route server on {args.dut_node} ({dut_ip}, AS {args.dut_asn})")
+            cl.ssh(args.dut_node, f"mkdir -p {REMOTE_DIR}")
+            cl.ssh(args.dut_node, "command -v bird >/dev/null || sudo apt-get install -y -qq bird2 >/dev/null; "
+                                  "sudo systemctl disable --now bird >/dev/null 2>&1; true", timeout=600)
+            conf = out / "bird.conf"
+            conf.write_text(bird_config(meta, dut_ip, args.dut_asn, multihop=args.bird_multihop,
+                                        log_file="/var/log/tgen-bird.log"))
+            cl.put(args.dut_node, conf, f"{REMOTE_DIR}/bird.conf")
+            cl.ssh(args.dut_node, f"sudo pkill -x bird; sleep 0.5; sudo truncate -s0 /var/log/tgen-bird.log 2>/dev/null; "
+                                  f"sudo bird -c {REMOTE_DIR}/bird.conf -s /run/tgen-bird.ctl -P /run/tgen-bird.pid")
+            bird_started = True
 
         # --- agents, router addresses -----------------------------------------
         def prep(n: str) -> None:
@@ -214,7 +255,7 @@ def main() -> int:
                    "while time.time()<end:\n"
                    " time.sleep(1); t1,i1=rd()\n"
                    " print(int(time.time()), round(100.0*(i1-i0)/max(1,t1-t0),1), flush=True); t0,i0=t1,i1\n")
-        for n in [*router_nodes, args.dut_node]:
+        for n in sorted(set([*router_nodes] + ([] if external else [args.dut_node]))):
             cl.ssh(n, f"nohup python3 -c {shlex.quote(sampler)} > {REMOTE_DIR}/cpu.txt 2>/dev/null < /dev/null &")
 
         # --- run ----------------------------------------------------------------
@@ -236,10 +277,21 @@ def main() -> int:
         mid = tm["announce_at"] / 1000 + 5
         while time.time() < tm["end_at"] / 1000 + 20 and any(p.poll() is None for p in procs.values()):
             if mid and time.time() > mid:
-                r = cl.ssh(args.dut_node, "sudo birdc -s /run/tgen-bird.ctl show protocols | grep -c Established; "
-                                          "sudo birdc -s /run/tgen-bird.ctl show memory | tail -1", check=False)
-                (out / "bird-mid.txt").write_text(r.stdout)
-                log("BIRD mid-run: " + " | ".join(r.stdout.split("\n")[:2]).strip() + " sessions Established")
+                if external:
+                    try:
+                        sess = mt.sessions()
+                        (out / "dut-sessions-mid.txt").write_text(sess)
+                        res = mt.resources()
+                        (out / "dut-resources-mid.json").write_text(json.dumps(res))
+                        log(f"DUT mid-run: {sess.count('established')} sessions established, "
+                            f"CPU load {res['cpu_load']}, free memory {res['free_memory']}")
+                    except DutError as e:
+                        log(f"DUT mid-run query failed: {e}")
+                else:
+                    r = cl.ssh(args.dut_node, "sudo birdc -s /run/tgen-bird.ctl show protocols | grep -c Established; "
+                                              "sudo birdc -s /run/tgen-bird.ctl show memory | tail -1", check=False)
+                    (out / "bird-mid.txt").write_text(r.stdout)
+                    log("BIRD mid-run: " + " | ".join(r.stdout.split("\n")[:2]).strip() + " sessions Established")
                 mid = 0
             time.sleep(2)
         for n, p in procs.items():
@@ -249,22 +301,33 @@ def main() -> int:
                 log(f"WARNING {n}: agent exit code {p.returncode}")
 
         # --- collect ---------------------------------------------------------
-        results = []
         for n in router_nodes:
             if cl.get(n, f"{REMOTE_DIR}/result.json", out / f"result-{n}.json"):
                 results.append(json.loads((out / f"result-{n}.json").read_text()))
             else:
                 log(f"WARNING {n}: no result")
             cl.get(n, f"{REMOTE_DIR}/agent.log", out / f"agent-{n}.log")
-        cpu = {}
-        for n in [*router_nodes, args.dut_node]:
+        for n in sorted(set([*router_nodes] + ([] if external else [args.dut_node]))):
             if cl.get(n, f"{REMOTE_DIR}/cpu.txt", out / f"cpu-{n}.txt"):
                 cpu[n] = cpu_summary((out / f"cpu-{n}.txt").read_text(), tm["establish_at"] / 1000,
                                      tm["end_at"] / 1000)
-        r = cl.ssh(args.dut_node, "sudo cat /var/log/tgen-bird.log", check=False)
-        (out / "bird.log").write_text(r.stdout)
+        if external:
+            try:
+                (out / "dut-bgp.log").write_text(mt.bgp_log())
+                (out / "dut-resources-end.json").write_text(json.dumps(mt.resources()))
+            except DutError as e:
+                log(f"could not fetch DUT log: {e}")
+        else:
+            r = cl.ssh(args.dut_node, "sudo cat /var/log/tgen-bird.log", check=False)
+            (out / "bird.log").write_text(r.stdout)
     finally:
-        log("cleanup: router addresses" + (", BIRD" if bird_started else ""))
+        log("cleanup: router addresses" + (", BIRD" if bird_started else "")
+            + (", DUT BGP neighbours" if dut_configured and not args.keep_dut_config else ""))
+        if dut_configured and not args.keep_dut_config:
+            try:
+                mt.remove()
+            except DutError as e:
+                log(f"WARNING: could not remove the tgen neighbours from the DUT: {e}")
         for n, ips in added.items():
             cl.ssh(n, "; ".join(f"sudo ip addr del {ip}/32 dev {cl.iface} 2>/dev/null" for ip in ips) + "; true",
                    check=False)
@@ -276,10 +339,10 @@ def main() -> int:
     report["cpu_node_avg"] = cpu
     (out / "report.json").write_text(json.dumps(report, indent=2))
 
-    gen_cpu = {n: v["p95"] for n, v in cpu.items() if n != args.dut_node and v["p95"] is not None}
+    gen_cpu = {n: v["p95"] for n, v in cpu.items() if n in router_nodes and v["p95"] is not None}
     c, la, lw = report["convergence"], report["latency_announce_ms"], report["latency_withdraw_ms"]
     lines = [
-        f"run {out.name}: {args.routers} routers x {args.prefixes} prefixes, role {args.role}, DUT BIRD on {args.dut_node}",
+        f"run {out.name}: {args.routers} routers x {args.prefixes} prefixes, role {args.role}, DUT {dut_label}",
         f"sessions      : {report['sessions']['established']}/{report['sessions']['configured']} Established, "
         f"setup p90 {report['sessions']['setup_ms']['p90'] or 0:.0f} ms, resets {report['sessions']['resets']}",
         f"convergence   : initial {c['initial_s']:.1f} s" if c["initial_s"] else

@@ -43,6 +43,46 @@ Options: `--role route_reflector|router`, `--rate N` (prefixes/s per router, pac
 - `result-<node>.json`, `agent-<node>.log`, `cpu-<node>.txt`;
 - `bird.conf`, `bird.log` (also sample input for the P5 log parser), `bird-mid.txt`.
 
+## MikroTik RouterOS 7 as DUT (`--dut mikrotik`)
+
+Tested target: CRS106‑1C‑5S, RouterOS 7.11, at 10.100.0.111/24 on the traffic segment.
+
+```bash
+export TGEN_DUT_PASSWORD='…'     # or leave unset: asked interactively; an SSH key also works
+tools/tgen_p2.py --dut mikrotik --routers 12 --prefixes 100 --converge-timeout 60
+```
+
+**What the tool does:**
+
+1. **Before the run:**
+   - reads `/system resource` (RouterOS v7 is required);
+   - refuses a run above `--dut-max-routes` (default 20 000 for the 128 MB CRS106).
+2. **Configures the DUT:**
+   - renders one passive `/routing bgp connection` per emulated router, with that router's IP and AS (`dut-config.rsc` in the results folder);
+   - uploads the script with scp and runs `/import`;
+   - checks the connection count.
+3. **During and after the run:**
+   - mid‑run: `dut-sessions-mid.txt`, `dut-resources-mid.json`;
+   - at the end: `dut-bgp.log` (input for the P5 parser), `dut-resources-end.json`.
+4. **Cleanup:** removes every connection whose comment contains `tgen`. `--keep-dut-config` leaves them in place.
+
+**Layout differences from the BIRD stand‑in:**
+- Routers run on all six nodes, because no node hosts the DUT.
+- Router addresses start at 10.100.0.20 and skip the DUT and node addresses.
+
+**Role mapping:**
+
+| `--role` | `local.role` | `nexthop-choice` | `remote.as` |
+|---|---|---|---|
+| route_server | ebgp | propagate | router's AS |
+| route_reflector | ibgp-rr | propagate | DUT AS |
+| router | ebgp | force-self | router's AS |
+
+**Caveats:**
+- RouterOS has no transparent route‑server mode. In the `route_server` role it most likely prepends its own AS, and the correctness check reports this.
+- The password is never written to disk or put on the command line. Only connections commented `tgen` are touched.
+- The simulation (`tests/bgp/sim/run_sim.sh --dut mikrotik`) uses `tests/bgp/sim/mock_routeros.py`. That mock turns the uploaded script into a BIRD configuration, so a run only passes if the script is complete.
+
 ## P2 gate (spec §14)
 
 | Check | Pass when |
