@@ -218,12 +218,19 @@ def main() -> int:
             cl.ssh(n, f"nohup python3 -c {shlex.quote(sampler)} > {REMOTE_DIR}/cpu.txt 2>/dev/null < /dev/null &")
 
         # --- run ----------------------------------------------------------------
+        limits_ok = cl.ssh(controller, f"sudo systemd-run --quiet --scope {' '.join(CMNODE01_LIMITS)} true",
+                           check=False).returncode == 0 if controller in router_nodes else True
+        if not limits_ok:
+            log(f"WARNING {controller}: cgroup limits not accepted by systemd; falling back to taskset -c 1-3 "
+                "(no CPU quota / memory cap)")
         procs = {}
         for n in router_nodes:
             run = f"{REMOTE_DIR}/tgen-agent --plan {REMOTE_DIR}/plan.json --out {REMOTE_DIR}/result.json"
-            if n == controller:  # spec §10.2: generator limited to 70 % CPU / 11.2 GB on CMNODE01
+            if n == controller and limits_ok:  # spec §10.2: generator limited to 70 % CPU / 11.2 GB
                 run = (f"sudo systemd-run --quiet --scope {' '.join(CMNODE01_LIMITS)} "
                        f"sudo -u {cl.user} {run}")
+            elif n == controller:
+                run = f"taskset -c 1-3 {run}"
             procs[n] = subprocess.Popen(["ssh", *SSH_OPTS, f"{cl.user}@{cl.mgmt[n]}",
                                          f"cd ~ && {run} 2> {REMOTE_DIR}/agent.log"])
         mid = tm["announce_at"] / 1000 + 5
