@@ -265,6 +265,8 @@ Generated automatically at the end of each run (HTML page, printable/exportable 
 | F11 | **Data‑plane convergence** — delivered traffic per prefix group vs. time around a withdrawal, blackhole duration marked (if enabled) | RFC 7747 metric |
 | F12 | **Generator health** — cluster CPU, send lag, rate | proves the measurement is valid |
 
+**Interactivity (all figures, live and in reports):** a value cursor follows the mouse or a slider and shows every series' value at that point; time‑based figures (F1, F2, F4, F6, F9, F10, F11, F12) have zoom (1×/2×/4× or time windows) and a pan slider to move the window left and right; heatmaps highlight the hovered column. Exports (PDF/PNG/SVG) use the current zoom window.
+
 **Comparison report:** select 2–5 runs (e.g. the same scenario against Cisco, MikroTik and BIRD). F2, F3, F5 and F10 are overlaid, with a side‑by‑side metrics table. This is meant for papers.
 
 ## 13. Technologies (unchanged unless noted)

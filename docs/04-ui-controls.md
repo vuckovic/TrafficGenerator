@@ -1,6 +1,6 @@
 # 04 — Web interface controls (for confirmation)
 
-Status: **PROPOSED v0.4 (2026‑10‑19)** — Q1–Q6 answered (spec v0.4). **Every non‑obvious control gets a short help text (ⓘ tooltip); role and mode choices also show a visible explanation label; every metric (live tiles, tables, report verdict rows, figure values) shows a short explanation on hover and on keyboard focus.** Please mark each control: ✅ accept · ✏️ change (say how) · ❌ drop. A short reply is enough, e.g. *"all ✅ except C9 ❌, R3b ✏️ max 2 M"*.
+Status: **PROPOSED v0.4 (2026‑10‑19)** — Q1–Q6 answered (spec v0.4). **Every non‑obvious control gets a short help text (ⓘ tooltip); role and mode choices also show a visible explanation label; every metric (live tiles, tables, report verdict rows, figure values) shows a short explanation on hover and on keyboard focus.** **Every chart is interactive:** a cursor follows the mouse (or a slider, for keyboard use) and shows the exact value of each series at that point; time‑based charts have zoom levels and a window slider to move the time range left and right. Please mark each control: ✅ accept · ✏️ change (say how) · ❌ drop. A short reply is enough, e.g. *"all ✅ except C9 ❌, R3b ✏️ max 2 M"*.
 
 **Layout** (tabs):
 1. **Benchmark** — set up the DUT, routers and scenario on the left; live view on the right.
