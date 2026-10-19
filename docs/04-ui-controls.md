@@ -1,6 +1,6 @@
 # 04 — Web interface controls (for confirmation)
 
-Status: **PROPOSED v0.4 (2026‑10‑19)** · **Visual design LOCKED v1 (2026‑10‑19): `docs/design/`** — Q1–Q6 answered (spec v0.4). **Every non‑obvious control gets a short help text (ⓘ tooltip); role and mode choices also show a visible explanation label; every metric (live tiles, tables, report verdict rows, figure values) shows a short explanation on hover and on keyboard focus.** **Every chart is interactive:** a cursor follows the mouse (or a slider, for keyboard use) and shows the exact value of each series at that point; time‑based charts have zoom levels and a window slider to move the time range left and right. Please mark each control: ✅ accept · ✏️ change (say how) · ❌ drop. A short reply is enough, e.g. *"all ✅ except C9 ❌, R3b ✏️ max 2 M"*.
+Status: **FROZEN v1.0 (2026‑10‑19)** · visual design LOCKED v1 (`docs/design/`) — Q1–Q6 answered (spec v0.4). **Every non‑obvious control gets a short help text (ⓘ tooltip); role and mode choices also show a visible explanation label; every metric (live tiles, tables, report verdict rows, figure values) shows a short explanation on hover and on keyboard focus.** **Every chart is interactive:** a cursor follows the mouse (or a slider, for keyboard use) and shows the exact value of each series at that point; time‑based charts have zoom levels and a window slider to move the time range left and right. Please mark each control: ✅ accept · ✏️ change (say how) · ❌ drop. A short reply is enough, e.g. *"all ✅ except C9 ❌, R3b ✏️ max 2 M"*.
 
 **Layout** (tabs):
 1. **Benchmark** — set up the DUT, routers and scenario on the left; live view on the right.
@@ -51,8 +51,8 @@ Status: **PROPOSED v0.4 (2026‑10‑19)** · **Visual design LOCKED v1 (2026‑
 | R4 | **ASN assignment (bulk)** | mode: sequential (first, step) · random (range) · paste list; range presets: private 16‑bit · private 32‑bit · documentation · custom | random, private 32‑bit | DUT ASN excluded |
 | R4a | Prefix count (bulk) | fixed or random min–max for all routers | fixed 10 000 | |
 | R4b | Generate all / Clear all | buttons | — | |
-| R5 | Prefix generator settings | pool(s) (CIDR list) · prefix length min–max · uniqueness: across all routers / per router / overlap allowed | 198.18.0.0/15, /24–/24, across all | live check that the pool is large enough; mgmt and traffic subnets excluded |
-| R5a | Pool preset | benchmarking 198.18.0.0/15 · RFC 1918 · public‑looking (global unicast, reserved excluded) · custom | benchmarking | public‑looking: warning, isolated DUT only, needs S3 allow‑list |
+| R5 | Prefix generator settings | pool(s) (CIDR list) · prefix length min–max · uniqueness: across all routers / per router / overlap allowed | **10.0.0.0/8 (excl. 10.100.0.0/16), /24–/28, unique across all** | live check that the pool is large enough (this default holds > 1 M distinct prefixes; 600 000 needed at default scale); mgmt and traffic subnets excluded |
+| R5a | Pool preset | **private large (default, 10/8 /24–/28)** · benchmarking 198.18.0.0/15 (only 512 × /24 — small tests) · RFC 1918 all · public‑looking (global unicast /24, reserved excluded — most realistic) · custom | private large | public‑looking: warning, isolated DUT only, needs S3 allow‑list |
 | R6 | AS_PATH | length min–max · origin prepend · transit ASN pool | 1–3 · 0 · 64700–64799 | router's ASN always first (eBGP) |
 | R7 | ORIGIN · NEXT_HOP · MED | dropdown · radio (self / custom) · checkbox + value | IGP · self · off | |
 | R8 | Communities | standard and large lists, "random k from pool" | none | RFC 1997 / RFC 8092 |

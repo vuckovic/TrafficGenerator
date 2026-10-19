@@ -1,6 +1,6 @@
 # 03 — TrafficGenerator specification
 
-Status: **v0.4 (2026‑10‑19)** — benchmarking a BGP device under test (DUT). Decisions D1–D8 and Q1–Q6 taken (§15–16); pending only the UI control confirmation and DUT sample logs. Web interface controls: `04-ui-controls.md`.
+Status: **FROZEN v1.0 (2026‑10‑19)** — approved with the UI controls (`04-ui-controls.md`) and the locked design (`docs/design/`). Changes from here are tracked as change notes at the end. Pending input: DUT sample logs (P5). Web interface controls: `04-ui-controls.md`.
 
 ## 1. Purpose
 
@@ -308,3 +308,9 @@ D1 own C++ BGP speaker on Asio, reusing the encoder · D2 one admin password · 
 | Large receive RIBs exhaust 8 GB nodes | receive modes, planner memory check (≤ 70 % RAM), RAM‑weighted placement |
 | DUT config effort for 60 neighbours | config snippet export per platform (§10) |
 | Generated routes leak beyond the lab | isolated ETH0 segment, benchmarking/private pools by default, "public‑looking" pool only with explicit opt‑in |
+
+## 18. Change notes after freeze
+
+| Date | Change | Reason |
+|---|---|---|
+| 2026‑10‑19 | Default prefix pool = **10.0.0.0/8 without 10.100.0.0/16, lengths /24–/28** (was 198.18.0.0/15, /24) | 198.18.0.0/15 holds only 512 /24s; the default scale needs 600 000 distinct prefixes. The new default holds > 1 M and stays private. "Public‑looking" /24s remain an opt‑in for realism with an isolated DUT. |
