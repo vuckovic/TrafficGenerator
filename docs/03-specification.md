@@ -1,6 +1,6 @@
 # 03 — TrafficGenerator specification
 
-Status: **DRAFT v0.1 for review (2026‑10‑17)** · Items marked **❓Dx** need your decision (§14). Web interface controls are listed separately in `04-ui-controls.md` for one‑by‑one confirmation.
+Status: **v0.2 (2026‑10‑19)** — decisions D1–D8 taken (§14). Web interface controls are listed separately in `04-ui-controls.md` for one‑by‑one confirmation.
 
 ## 1. Purpose and scope
 
@@ -13,14 +13,14 @@ A distributed traffic generator for IXP / BGP research, running on the 6‑node 
 
 The run is configured and monitored from a web interface on CMNODE01 and executed in parallel on all selected nodes.
 
-**Out of scope for v1:** stateful TCP connections in TCP/IP mode (decided: crafted), VLAN tagging (decided: untagged), traffic above 1 Gbit/s, IPv6 (❓D3), and receiving/analysing traffic from third parties.
+**Out of scope for v1:** stateful TCP connections in TCP/IP mode (decided: crafted), VLAN tagging (decided: untagged), traffic above 1 Gbit/s, IPv6 (D3: later phase; encoders are address‑family agnostic), and receiving/analysing traffic from third parties.
 
 ### 1.1 Acceptance criteria (from the brief, made measurable)
 
 | ID | Criterion | How it is measured |
 |---|---|---|
 | AC1 | All nodes communicate and generate traffic together | cluster suite T01–T12 PASS; in a run, every selected node reports tx > 0 |
-| AC2 | 1 Gbit/s of TCP/IP **or** BGP traffic | aggregate **≥ 940 Mbit/s L2** (≈ 980 Mbit/s on the wire) at 1518 B and IMIX, sustained 10 min, sink/route‑server loss < 0.1 % (❓D7 rate definition) |
+| AC2 | 1 Gbit/s of TCP/IP **or** BGP traffic | aggregate **≥ 940 Mbit/s L2** (≈ 980 Mbit/s on the wire) at 1518 B and IMIX, sustained 10 min, sink/route‑server loss < 0.1 %; L1 also reported (D7) |
 | AC3 | CPU ≤ 70 % | **node‑average CPU ≤ 70 % on every node**, 1 s samples, 95th percentile over the run (≤ 90 % accepted in the first milestone) |
 | AC4 | Worst case documented | at 64 B frames (1.488 Mpps total) the achieved rate and CPU are reported, but not a pass/fail gate |
 
@@ -126,7 +126,7 @@ The traffic is IP‑routed, so every frame is addressed to the **next hop's MAC*
 | Ports | source range, destination list/ranges |
 | Flows | N concurrent 5‑tuples per node; each packet picks a flow by the address‑selection mode; flows can be refreshed every T seconds |
 | Sizes | fixed (64–1518 B), uniform range, or IMIX 7:4:1 |
-| Shape | constant, on/off bursts, or linear ramp (❓D6) |
+| Shape | constant, on/off bursts, or linear ramp — selectable per run, in both modes (D6) |
 
 ## 7. BGP mode
 
@@ -134,7 +134,9 @@ The traffic is IP‑routed, so every frame is addressed to the **next hop's MAC*
 
 - **Route server / DUT:** IP and ASN.
 - **Emulated peers:** list of {name, ASN (2‑ or 4‑byte), peer IP, router ID, announced prefixes}. Peers can be generated in bulk ("50 peers, ASNs 64601…64650").
-- **Announced prefixes per peer:** an explicit CIDR list, or a generator (supernet, prefix length, count, e.g. 1 000 × /24 from 198.18.0.0/15). An MRT import from real RIS/RouteViews dumps is an option (❓D4).
+- **ASN per peer:** typed in, drawn at random (unused, from a preset or custom range, never the RS ASN), assigned sequentially in bulk, or pasted as a list.
+- **Prefixes per peer:** the user sets the **count** per peer, then either **generates** them (random from the pool, prefix‑length range, uniqueness across or within peers; reproducible from the run seed) or **pastes/uploads** their own list (validated, de‑duplicated). Generation runs on the controller, so 1 M‑prefix tables do not load the browser. Peer sets can be exported/imported as JSON/CSV.
+- **MRT import (P5, D4):** real RIS/RouteViews tables fill peers, ASNs, prefixes and AS_PATHs.
 - **Path attributes:** ORIGIN, AS_PATH (peer ASN first, length range, prepend count, transit ASNs from a pool), NEXT_HOP (peer IP or custom), optional MED, standard and large communities from a pool.
 - **Encoder:** one C++ BGP message encoder (RFC 4271, 4‑byte AS RFC 6793, large communities RFC 8092), shared by both variants, so the bytes on the wire are identical in both modes. Validated against tshark's BGP dissector.
 
@@ -157,7 +159,7 @@ Each emulated peer opens a real TCP session to the route server. The peer IPs ar
 
 The controller can **export a ready‑made BIRD route‑server configuration** with all emulated neighbours, so the route‑server side needs no hand‑editing.
 
-Rate note: stateful BGP is limited by what the route server accepts, not by our link. This mode is for control‑plane experiments; the 1 Gbit/s criterion is met with the stateless variant (❓D1, implementation choice).
+Rate note: stateful BGP is limited by what the route server accepts, not by our link. This mode is for control‑plane experiments; the 1 Gbit/s criterion is met with the stateless variant (D1: own C++ speaker on Asio, reusing the encoder).
 
 ### 7.4 Node assignment
 
@@ -243,18 +245,20 @@ docs/           00-04 + user guide
 | **P5** | BGP stateful + route‑server config export + BIRD tests | sessions established to BIRD, churn verified |
 | **P6** | hardening, docs, user guide, real route server validation (T09/T11) | final acceptance |
 
-## 14. Decisions needed (❓)
+## 14. Decisions (taken 2026‑10‑19)
 
-| ID | Question | Options (strongest argument) | My recommendation |
-|---|---|---|---|
-| **D1** | Stateful BGP implementation | **(a) own C++ speaker on Asio**: same encoder as stateless, exact control of timing and counters, no external process. **(b) GoBGP per node, driven via gRPC**: proven protocol stack, fast to integrate. **(c) BIRD as speakers**: most robust, but churn is hard to control precisely | **(a)** — the encoder is needed anyway, and precise churn control matters for research. Biggest risk: effort for the state machine edge cases |
-| **D2** | Web UI access | (a) no login, isolated lab network; (b) single admin password; (c) per‑user accounts | **(b)** — cheap, and protects the Start button if ETH1 ever reaches a shared network |
-| **D3** | IPv6 | (a) v1 IPv4 only, IPv6 in a later phase; (b) both from the start (MP‑BGP IPv6, IPv6 crafted) | **(a)**, but the encoders are designed address‑family‑agnostic |
-| **D4** | Real routing tables | (a) generated prefixes only; (b) also import MRT dumps (RIS/RouteViews) | **(b) in P5** — realistic tables are valuable for IXP research |
-| **D5** | Docker on CMNODE04 | stop/disable, or keep (budget its CPU) | stop, as on CMNODE01 |
-| **D6** | Traffic shapes | constant only; or constant + on/off + ramp | constant + on/off + ramp |
-| **D7** | Definition of "1 Gbit/s" | L2 frame bits (max ≈ 987 Mbit/s at 1518 B) or wire/L1 bits incl. preamble and gap (max 1000) | report **both**; gate on **L2 ≥ 940 Mbit/s** |
-| **D8** | Does CMNODE01 also generate traffic? | yes (6 senders, its control load is small) or controller only (5 senders, each needs 200 Mbit/s) | **yes** — the controller adds < 5 % CPU |
+| ID | Question | Decision |
+|---|---|---|
+| D1 | Stateful BGP implementation | **own C++ speaker on Asio, reusing the stateless encoder** |
+| D2 | Web UI access | **one admin password** (login page, session cookie) |
+| D3 | IPv6 | **later phase**; encoders designed for IPv4 and IPv6 |
+| D4 | Real routing tables | **MRT import in P5** |
+| D5 | Docker on CMNODE04 | **stop and disable** (as on CMNODE01) |
+| D6 | Traffic shapes | **constant, on/off bursts and ramp, user selects per run** (both modes) |
+| D7 | Definition of "1 Gbit/s" | **report L2 and L1; pass/fail on L2 frame bits (≥ 940 Mbit/s)** |
+| D8 | CMNODE01 generates traffic | **yes** — 6 senders |
+
+Additional requirement (2026‑10‑19): in BGP mode the user selects or generates AS numbers per peer and sets each peer's prefix count, then generates the prefixes with a button or pastes their own (§7.1, controls B3–B5b).
 
 ## 15. Risks
 
