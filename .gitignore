@@ -1,3 +1,6 @@
 deploy/cluster.env
 *.retry
 build/
+agent/build/
+__pycache__/
+*.pyc
