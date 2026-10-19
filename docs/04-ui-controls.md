@@ -1,6 +1,6 @@
 # 04 — Web interface controls (for confirmation)
 
-Status: **PROPOSED v0.3 (2026‑10‑19)** — restructured for BGP DUT benchmarking (spec v0.3). Please mark each control: ✅ accept · ✏️ change (say how) · ❌ drop. A short reply is enough, e.g. *"all ✅ except C9 ❌, R3b ✏️ max 2 M"*.
+Status: **PROPOSED v0.4 (2026‑10‑19)** — Q1–Q6 answered (spec v0.4). **Every non‑obvious control gets a short help text (ⓘ tooltip); role and mode choices also show a visible explanation label.** Please mark each control: ✅ accept · ✏️ change (say how) · ❌ drop. A short reply is enough, e.g. *"all ✅ except C9 ❌, R3b ✏️ max 2 M"*.
 
 **Layout** (tabs):
 1. **Benchmark** — set up the DUT, routers and scenario on the left; live view on the right.
@@ -27,12 +27,13 @@ Status: **PROPOSED v0.3 (2026‑10‑19)** — restructured for BGP DUT benchmar
 
 | ID | Control | Type | Default | Validation / notes |
 |---|---|---|---|---|
-| U1 | DUT role | radio: **route server** (eBGP, IXP) · **route reflector** (iBGP) · router (eBGP) | route server | Q1; sets session type and correctness checks |
+| U1 | **DUT role** | radio: **Route server** (default) · **Route reflector** · **Router (forwards traffic)** — with the explanation label below | Route server | Q1/Q5; sets session type, ASN handling, correctness checks and whether data‑plane tests are available |
+| U1a | Role explanation label (shown under U1, changes with the selection) | text | — | **Route server:** *"IXP route server. Every emulated router is a separate eBGP peer with its own AS number. The route server passes routes between peers without adding its own AS number and without changing the next hop. Control‑plane test only."* · **Route reflector:** *"iBGP route reflector. All emulated routers are clients in the DUT's AS; the AS numbers you set appear as origin AS in the AS_PATH. The reflector adds ORIGINATOR_ID and CLUSTER_LIST and keeps the next hop. Control‑plane test only."* · **Router (forwards traffic):** *"BGP router that sets itself as next hop. Routes are learned and re‑advertised, and data traffic between the emulated routers' prefixes is sent through the DUT, so forwarding, loss and data‑plane convergence can be measured."* |
 | U2 | DUT platform / version | dropdown: Cisco IOS‑XE · IOS‑XR · MikroTik RouterOS 6/7 · BIRD 2/3 · Quagga/FRR · other + version text | — | printed on the report; selects the log parser and config export |
 | U3 | DUT IP and ASN | IPv4 + ASN | from cluster config | in RR mode all routers use this ASN |
 | U4 | DUT config export | button: download a neighbour config for the selected platform | — | BIRD, FRR, RouterOS 7, IOS‑XE |
-| U5 | SNMP polling | checkbox + version (v2c / v3) + community or v3 user/auth/priv | off | read‑only; "Test" button |
-| U6 | SSH polling | checkbox + host, user, password/key, platform command set | off | read‑only; "Test" button |
+| U5 | SNMP polling (Q3: option) | checkbox + version (v2c / v3) + community or v3 user/auth/priv | off | read‑only; "Test" button |
+| U6 | SSH polling (Q3: option) | checkbox + host, user, password/key, platform command set | off | read‑only; "Test" button |
 | U7 | Polling interval | number (s) | 5 | 1–60 |
 
 ## R — Emulated routers (Benchmark tab)
@@ -83,7 +84,7 @@ Status: **PROPOSED v0.3 (2026‑10‑19)** — restructured for BGP DUT benchmar
 | T2 | Duration / ramp‑up | numbers (s) | 60 / 5 | 0 = until Stop |
 | T3 | Rate split | equal · weighted per node | equal | |
 | T4 | Next‑hop IP | IPv4 + "resolve" (shows the MAC) | DUT IP | must resolve before Start |
-| T5 | Destinations | radio: **subnets** (list) · **scenario prefixes** (towards routes announced by selected routers) | subnets | scenario prefixes = data‑plane convergence (F11) |
+| T5 | Destinations | radio: **subnets** (list) · **scenario prefixes** (towards routes announced by selected routers) | subnets | *scenario prefixes* only when U1 = Router (forwards traffic); label: "A route server or reflector keeps the original next hop, so traffic would bypass the DUT." Enables F11 |
 | T6 | Source / destination subnets | CIDR lists | 198.18.0.0/16 → 198.19.0.0/16 | no overlap with management subnet |
 | T7 | Address selection | sequential · random | random | |
 | T8 | Protocol mix | TCP % · UDP % · ICMP % | 60 / 35 / 5 | sum = 100 |

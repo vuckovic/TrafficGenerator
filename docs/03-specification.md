@@ -1,6 +1,6 @@
 # 03 — TrafficGenerator specification
 
-Status: **v0.3 (2026‑10‑19)** — restructured around **benchmarking a BGP device under test (DUT)**. Decisions D1–D8 (2026‑10‑19) still apply (§15). Open questions Q1–Q6 are in §16. Web interface controls: `04-ui-controls.md`.
+Status: **v0.4 (2026‑10‑19)** — benchmarking a BGP device under test (DUT). Decisions D1–D8 and Q1–Q6 taken (§15–16); pending only the UI control confirmation and DUT sample logs. Web interface controls: `04-ui-controls.md`.
 
 ## 1. Purpose
 
@@ -114,7 +114,17 @@ A run is a sequence of phases on a common timeline. The UI offers presets, and t
 - *Resilience*: 1–2–3–5–3–6.
 - *Full IXP day*: all phases, 30 min.
 
-Optional **data‑plane traffic** (§9) can run during any phase towards the announced prefixes. This is only meaningful when the DUT forwards packets (a router, not a pure route server; Q5).
+Optional **data‑plane traffic** (§9) can run during any phase towards the announced prefixes, **only with DUT role "Router (forwards traffic)"** (Q5).
+
+### 5.1 DUT roles (Q1, Q5)
+
+| Role | Sessions | What the DUT must do | Next hop | Data plane | Extra correctness checks |
+|---|---|---|---|---|---|
+| **Route server** (default) | eBGP, each router its own ASN | pass routes between peers, transparent | unchanged (origin router) | not through the DUT | DUT ASN **not** in AS_PATH; NEXT_HOP unchanged; MED/communities per policy |
+| **Route reflector** | iBGP, all routers in the DUT's AS (chosen ASNs become origin ASNs in AS_PATH) | reflect between clients | unchanged | not through the DUT | ORIGINATOR_ID and CLUSTER_LIST present; no reflection back to the originator |
+| **Router (forwards traffic)** | eBGP, each router its own ASN | learn and re‑advertise with **next‑hop‑self** | DUT | **through the DUT**: forwarding rate, loss, data‑plane convergence (F11) | DUT ASN prepended once; NEXT_HOP = DUT |
+
+A pure route server or reflector keeps the original next hop, so traffic between emulated routers would bypass it. That is why forwarding tests need the third role. The UI explains this next to the role selector (U1a).
 
 ## 6. Performance data points
 
@@ -167,7 +177,7 @@ Session up/down events, NOTIFICATIONs, hold‑timer expiries, max‑prefix event
 Line‑rate TCP/179 segments carrying whole, valid BGP messages, with consistent sequence numbers per pseudo‑session, so captures decode cleanly. For wire, capture, sFlow/IPFIX, IDS and ACL tests; not for DUT control‑plane benchmarking.
 
 ## 9. Data plane (TCP/IP mode and data‑plane convergence)
-As in v0.2: AF_PACKET TX ring, pre‑built templates, incremental checksums, pacing, up to 1 Gbit/s total across 6 nodes. New: **destinations can be "the prefixes announced in the scenario"**. Traffic from router A's prefixes towards router B's prefixes then crosses the DUT, and a sink node (or the receiving routers' nodes) counts arrivals per prefix. That yields the **data‑plane convergence time and blackhole duration** of RFC 7747 when routes are withdrawn or re‑learned. Shapes: constant, on/off, ramp (D6).
+As in v0.2: AF_PACKET TX ring, pre‑built templates, incremental checksums, pacing, up to 1 Gbit/s total across 6 nodes. New: **destinations can be "the prefixes announced in the scenario"** (DUT role "Router (forwards traffic)" only, §5.1). Traffic from router A's prefixes towards router B's prefixes then crosses the DUT, and a sink node (or the receiving routers' nodes) counts arrivals per prefix. That yields the **data‑plane convergence time and blackhole duration** of RFC 7747 when routes are withdrawn or re‑learned. Shapes: constant, on/off, ramp (D6).
 
 ## 10. Controller: scenario engine and collectors
 - Validates the configuration, builds the plan (routers per node, IPs, prefixes, expected routes) and arms the agents.
@@ -240,18 +250,18 @@ C++20 / GCC 14 / CMake; Asio (event loops); cpp‑httplib + nlohmann/json; spdlo
 | **P7** | hardening, user guide, validation on the real DUTs | final acceptance |
 
 ## 15. Decisions (2026‑10‑19)
-D1 own C++ BGP speaker on Asio, reusing the encoder · D2 one admin password · D3 IPv6 later, encoders AF‑agnostic · D4 MRT import (now P6) · D5 Docker stopped on CMNODE04 · D6 shapes constant/on‑off/ramp, selectable · D7 report L2 and L1, gate on L2 · D8 CMNODE01 also generates.
+D1 own C++ BGP speaker on Asio, reusing the encoder · D2 one admin password · D3 IPv6 later, encoders AF‑agnostic · D4 MRT import (P6) · D5 Docker stopped on CMNODE04 · D6 shapes constant/on‑off/ramp, selectable · D7 report L2 and L1, gate on L2 · D8 CMNODE01 also generates.
 
-## 16. Open questions
+## 16. Answers to Q1–Q6 (2026‑10‑19)
 
-| ID | Question | Why it matters | My suggestion |
-|---|---|---|---|
-| **Q1** | DUT role: **route server** (eBGP, every router its own ASN), **route reflector** (iBGP, one AS), or both selectable? You mentioned both. | session type, attribute checks, ASN handling | both, selectable per run; route server as the default |
-| **Q2** | Which exact platforms/versions will you test? Can you send **sample logs** (a session up, a down and a NOTIFICATION) from each? | parsers are built from real lines | Cisco IOS‑XE, RouterOS 7, BIRD 2, FRR — confirm |
-| **Q3** | Can we poll the DUT during runs (read‑only SNMP and/or SSH)? | F10 and resource data points | yes, read‑only account |
-| **Q4** | Target scale: routers per node and prefixes per router? | IP pool, memory, P2 gate | 10 routers per node (60), 10 000 prefixes each; up to 1 M total |
-| **Q5** | Does the DUT also **forward traffic** (router), or is it only a route server/reflector? | whether data‑plane convergence (F11, P6) applies | keep it as an option |
-| **Q6** | Is the new milestone order (BGP benchmarking first, 1 Gbit/s data plane in P6) OK? | priorities | yes |
+| ID | Answer |
+|---|---|
+| Q1 | Route server **and** route reflector, selectable per run; **route server is the default**; the UI shows an explanation label for each role (U1a) |
+| Q2 | Dule will send sample DUT logs; the parsers (P5) are built from them |
+| Q3 | DUT polling via **SSH or SNMP, as an option** (U5/U6) |
+| Q4 | **10 routers per node (60), 10 000 prefixes each** (600 000 total) — P2 gate and defaults |
+| Q5 | Option: DUT is either a pure route server/reflector **or** a traffic‑forwarding router (third role, §5.1) |
+| Q6 | Milestone order confirmed: BGP benchmarking first, 1 Gbit/s data plane in P6 |
 
 ## 17. Risks
 
