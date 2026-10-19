@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TrafficGenerator — Run report</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F4F1;color:#16191D;font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:14px}
+a{color:#0E6E66}a:hover{color:#0A524C}
+.card{background:#FFFFFF;border:1px solid #D9DCD6;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.h2{margin:0;font-size:15px;font-weight:600}
+.fig{font-size:11px;font-weight:700;color:#0E6E66;letter-spacing:.06em}
+.cap{margin:0;font-size:12px;color:#545A61;line-height:1.5}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.btn{height:34px;padding:0 14px;border-radius:6px;border:1px solid #C9CDC6;background:#FFFFFF;color:#16191D;font:inherit;font-weight:500;cursor:pointer}
+.th{font-size:11px;color:#545A61;font-weight:600;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:8px 12px;border-bottom:1px solid #D9DCD6}
+.td{padding:9px 12px;border-bottom:1px solid #ECEEEA;white-space:nowrap}
+.hint{position:relative;display:inline-block;cursor:help;border-bottom:1px dotted #8A9097;outline:none}
+.hint:focus-visible{box-shadow:0 0 0 2px #0E6E66;border-radius:2px}
+.tt{display:none;position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);width:420px;white-space:normal;background:#16191D;color:#F3F4F1;font-size:12px;font-weight:400;line-height:1.45;padding:8px 10px;border-radius:6px;z-index:5}
+.hint:hover .tt,.hint:focus .tt{display:block}
+.zb{height:32px;min-width:44px;padding:0 10px;border:1px solid #C9CDC6;background:#FFFFFF;color:#16191D;border-radius:6px;font:inherit;font-size:12px;font-weight:500;cursor:pointer}
+.zon{background:#0E6E66;color:#FFFFFF;border-color:#0E6E66}
+.ctl{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:12px;color:#545A61}
+.ctl label{display:flex;align-items:center;gap:8px}
+.ctl input[type=range]{width:220px;accent-color:#0E6E66}
+.readout{margin:0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;color:#16191D;background:#F3F4F1;padding:7px 10px;border-radius:6px;min-height:18px}
+.plot{width:100%;height:auto;cursor:crosshair;touch-action:none}
+</style>
+</helmet>
+<div style="min-height: 1700px; display: flex; flex-direction: column">
+
+<header style="background: #16191D; color: #F3F4F1; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px; padding: 0 28px; min-height: 64px">
+<span style="font-weight: 700; font-size: 16px">TrafficGenerator</span>
+<nav aria-label="Main" style="display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 auto">
+<a href="Main.dc.html" style="color: #C4C9CE; text-decoration: none; padding: 22px 12px">Benchmark</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 12px">Traffic</a>
+<a href="#" style="color: #FFFFFF; text-decoration: none; padding: 21px 12px 19px; border-bottom: 3px solid #5FD3C5; font-weight: 600">Reports</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 12px">DUT logs</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 12px">History</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 12px">Nodes &amp; settings</a>
+</nav>
+</header>
+<div style="background: #FFF7E6; color: #6B3E00; font-size: 12px; padding: 6px 28px; border-bottom: 1px solid #F0DDB5">Preview — layout mock‑up with illustrative sample values, not measured data. Charts are interactive: move the mouse over a chart or use its sliders.</div>
+
+<main style="width: 100%; max-width: 1440px; margin: 0 auto; box-sizing: border-box; padding: 28px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span class="mono" style="font-size: 12px; color: #545A61">run‑20261019‑104213 · 19 Oct 2026 10:42 · 12 min 30 s</span>
+<h1 style="margin: 0; font-size: 26px; font-weight: 700">BIRD 2.15 · throughput knee · 60 routers × 10 000 prefixes</h1>
+<span style="font-size: 13px; color: #545A61">DUT role: route server (eBGP) · 6 nodes · clock offset to DUT log −2.31 s (auto) · timing uncertainty ±1 ms</span>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><button class="btn" type="button">Compare…</button><button class="btn" type="button">Export CSV/JSON</button><button class="btn" type="button" style="background: #0E6E66; color: #FFFFFF; border-color: #0E6E66">Export PDF</button></div>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden">
+<div style="overflow-x: auto; padding-bottom: 12px">
+<table style="border-collapse: collapse; width: 100%; font-size: 13px">
+<thead><tr><th class="th">Metric <span style="text-transform: none; letter-spacing: 0; font-weight: 400">(hover for explanation)</span></th><th class="th">Result</th><th class="th">Threshold</th><th class="th">Verdict</th></tr></thead>
+<tbody>
+<tr><td class="td"><span class="hint" tabindex="0">Sessions established (60)<span class="tt" role="tooltip">How many emulated routers reached the BGP state "Established" with the DUT, how long until the last one did, and the 95th‑percentile time from TCP connect to Established.</span></span></td><td class="td mono">60 in 3.8 s (p95 setup 1.9 s)</td><td class="td mono">all</td><td class="td"><span style="color: #1E7B3A; font-weight: 600">● PASS</span></td></tr>
+<tr><td class="td"><span class="hint" tabindex="0">Initial convergence (590 245 routes)<span class="tt" role="tooltip">Time from the first announcement sent until every receiving router held every route it should get from the DUT. Lower is better.</span></span></td><td class="td mono">41.2 s</td><td class="td mono">≤ 60 s</td><td class="td"><span style="color: #1E7B3A; font-weight: 600">● PASS</span></td></tr>
+<tr><td class="td"><span class="hint" tabindex="0">Max sustainable update rate (knee)<span class="tt" role="tooltip">Highest offered rate of route updates at which the DUT still keeps up: the backlog stays bounded and p99 propagation latency stays under the threshold. Above it, the DUT falls behind.</span></span></td><td class="td mono">800 upd/s</td><td class="td mono">p99 ≤ 1 s</td><td class="td"><span style="color: #545A61; font-weight: 600">● INFO</span></td></tr>
+<tr><td class="td"><span class="hint" tabindex="0">Announce latency p50 / p99<span class="tt" role="tooltip">Time from a prefix being sent by its origin router until it arrives at the other routers through the DUT. p50 = median; p99 = 99 % of prefixes arrived faster than this.</span></span></td><td class="td mono">46 ms / 288 ms</td><td class="td mono">—</td><td class="td"><span style="color: #545A61; font-weight: 600">● INFO</span></td></tr>
+<tr><td class="td"><span class="hint" tabindex="0">Missing / extra / altered routes<span class="tt" role="tooltip">Routes that should have arrived but did not / arrived but were not expected / arrived with changed attributes (e.g. the route server added its AS number or changed the next hop).</span></span></td><td class="td mono">0 / 0 / 0</td><td class="td mono">0</td><td class="td"><span style="color: #1E7B3A; font-weight: 600">● PASS</span></td></tr>
+<tr><td class="td"><span class="hint" tabindex="0">Unexpected session resets<span class="tt" role="tooltip">BGP sessions that went down outside a planned flap phase, with the cause: a NOTIFICATION code from the DUT or an expired hold timer.</span></span></td><td class="td mono">1 (R09, hold timer)</td><td class="td mono">0</td><td class="td"><span style="color: #B42318; font-weight: 600">● FAIL</span></td></tr>
+<tr><td class="td"><span class="hint" tabindex="0">Generator valid (send lag p99, CPU)<span class="tt" role="tooltip">Confirms the cluster itself was not the bottleneck: our own send delay (p99) and the highest node‑average CPU. If this fails, the DUT figures are not trustworthy.</span></span></td><td class="td mono">4 ms · max 53 %</td><td class="td mono">&lt; 10 ms · ≤ 70 %</td><td class="td"><span style="color: #1E7B3A; font-weight: 600">● PASS</span></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px">
+
+<figure class="card" style="margin: 0">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px">
+<div style="display: flex; flex-direction: column; gap: 2px"><span class="fig">F2</span><h2 class="h2">Initial convergence</h2></div>
+<div role="group" aria-label="Zoom F2" style="display: flex; gap: 4px"><button type="button" class="{{f2.c1}}" onClick="{{f2.z1}}">1×</button><button type="button" class="{{f2.c2}}" onClick="{{f2.z2}}">2×</button><button type="button" class="{{f2.c4}}" onClick="{{f2.z4}}">4×</button></div>
+</div>
+<div style="position: relative">
+<svg class="plot" viewBox="0 0 600 230" role="img" aria-label="Convergence curve: percent of expected routes received over time; use the time cursor slider below to read values" onMouseMove="{{f2.move}}">
+<defs><clipPath id="clipF2"><rect x="48" y="0" width="532" height="230"></rect></clipPath></defs>
+<g stroke="#ECEEEA"><line x1="48" y1="20" x2="580" y2="20"></line><line x1="48" y1="65" x2="580" y2="65"></line><line x1="48" y1="110" x2="580" y2="110"></line><line x1="48" y1="155" x2="580" y2="155"></line></g>
+<line x1="48" y1="200" x2="580" y2="200" stroke="#8A9097"></line>
+<g font-family="IBM Plex Mono, monospace" font-size="10" fill="#545A61"><text x="42" y="204" text-anchor="end">0 %</text><text x="42" y="114" text-anchor="end">50 %</text><text x="42" y="24" text-anchor="end">100 %</text></g>
+<g clip-path="url(#clipF2)">
+<polyline fill="none" stroke="#0E6E66" stroke-width="2.5" points="{{f2.pa}}"></polyline>
+<polyline fill="none" stroke="#C2410C" stroke-width="2" stroke-dasharray="5 3" points="{{f2.pb}}"></polyline>
+<line x1="{{f2.mx}}" y1="20" x2="{{f2.mx}}" y2="200" stroke="#16191D" stroke-dasharray="2 3"></line>
+<text x="{{f2.mtx}}" y="190" font-family="IBM Plex Mono, monospace" font-size="11" fill="#16191D">41.2 s</text>
+</g>
+<line x1="{{f2.cx}}" y1="14" x2="{{f2.cx}}" y2="200" stroke="#5B4FC4" stroke-width="1.5"></line>
+<circle cx="{{f2.cx}}" cy="{{f2.ya}}" r="4.5" fill="#0E6E66" stroke="#FFFFFF" stroke-width="1.5"></circle>
+<circle cx="{{f2.cx}}" cy="{{f2.yb}}" r="4.5" fill="#C2410C" stroke="#FFFFFF" stroke-width="1.5"></circle>
+</svg>
+<div style="position: absolute; left: {{f2.tl}}; right: {{f2.tr}}; top: 51%; background: rgba(22, 25, 29, 0.92); color: #FFFFFF; font-family: 'IBM Plex Mono', monospace; font-size: 11px; line-height: 1.5; padding: 6px 9px; border-radius: 5px; white-space: nowrap; pointer-events: none"><div>{{f2.l1}}</div><div>{{f2.l2}}</div><div>{{f2.l3}}</div></div><span style="position: absolute; left: {{f2.t0.x}}; top: 91%; transform: translateX(0); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{f2.t0.l}}</span><span style="position: absolute; left: {{f2.t1.x}}; top: 91%; transform: translateX(-50%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{f2.t1.l}}</span><span style="position: absolute; left: {{f2.t2.x}}; top: 91%; transform: translateX(-50%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{f2.t2.l}}</span><span style="position: absolute; left: {{f2.t3.x}}; top: 91%; transform: translateX(-50%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{f2.t3.l}}</span><span style="position: absolute; left: {{f2.t4.x}}; top: 91%; transform: translateX(-100%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{f2.t4.l}}</span>
+</div>
+<div class="ctl"><label>Time cursor <input type="range" min="{{f2.d0}}" max="{{f2.d1}}" step="0.1" value="{{f2.cur}}" onChange="{{f2.slide}}" aria-label="F2 time cursor"></label><label>Window <input type="range" min="0" max="{{f2.panMax}}" step="0.1" value="{{f2.pan}}" onChange="{{f2.panTo}}" disabled="{{f2.panDis}}" aria-label="F2 slide time window"></label></div>
+<p class="readout">{{f2.read}}</p>
+<p class="cap">Solid: all receivers. Dashed: slowest receiver (R44, 44.0 s). Zoom in, then slide the window left/right.</p>
+</figure>
+
+<figure class="card" style="margin: 0">
+<div style="display: flex; flex-direction: column; gap: 2px"><span class="fig">F3</span><h2 class="h2">Propagation latency (CDF)</h2></div>
+<div style="position: relative">
+<svg class="plot" viewBox="0 0 600 230" role="img" aria-label="Cumulative distribution of propagation latency for announcements and withdrawals; use the latency cursor slider below to read values" onMouseMove="{{f3.move}}">
+<g stroke="#ECEEEA"><line x1="48" y1="20" x2="580" y2="20"></line><line x1="48" y1="65" x2="580" y2="65"></line><line x1="48" y1="110" x2="580" y2="110"></line><line x1="48" y1="155" x2="580" y2="155"></line></g>
+<line x1="48" y1="200" x2="580" y2="200" stroke="#8A9097"></line>
+<g font-family="IBM Plex Mono, monospace" font-size="10" fill="#545A61"><text x="42" y="204" text-anchor="end">0</text><text x="42" y="113" text-anchor="end">0.5</text><text x="42" y="24" text-anchor="end">1</text><text x="48" y="218">1 ms</text><text x="225" y="218" text-anchor="middle">10 ms</text><text x="403" y="218" text-anchor="middle">100 ms</text><text x="580" y="218" text-anchor="end">1 s</text></g>
+<polyline fill="none" stroke="#0E6E66" stroke-width="2.5" points="{{f3.pa}}"></polyline>
+<polyline fill="none" stroke="#5B4FC4" stroke-width="2.5" points="{{f3.pw}}"></polyline>
+<line x1="48" y1="21.8" x2="580" y2="21.8" stroke="#B42318" stroke-dasharray="3 3"></line>
+<text x="54" y="34" font-family="IBM Plex Mono, monospace" font-size="10" fill="#B42318">p99</text>
+<line x1="{{f3.cx}}" y1="14" x2="{{f3.cx}}" y2="200" stroke="#C2410C" stroke-width="1.5"></line>
+<circle cx="{{f3.cx}}" cy="{{f3.ya}}" r="4.5" fill="#0E6E66" stroke="#FFFFFF" stroke-width="1.5"></circle>
+<circle cx="{{f3.cx}}" cy="{{f3.yw}}" r="4.5" fill="#5B4FC4" stroke="#FFFFFF" stroke-width="1.5"></circle>
+</svg>
+<div style="position: absolute; left: {{f3.tl}}; right: {{f3.tr}}; top: 51%; background: rgba(22, 25, 29, 0.92); color: #FFFFFF; font-family: 'IBM Plex Mono', monospace; font-size: 11px; line-height: 1.5; padding: 6px 9px; border-radius: 5px; white-space: nowrap; pointer-events: none"><div>{{f3.l1}}</div><div>{{f3.l2}}</div><div>{{f3.l3}}</div></div>
+</div>
+<div class="ctl"><label>Latency cursor <input type="range" min="0" max="3" step="0.01" value="{{f3.lg}}" onChange="{{f3.slide}}" aria-label="F3 latency cursor"></label></div>
+<p class="readout">{{f3.read}}</p>
+<p class="cap">Teal: announce. Violet: withdraw. Log latency axis; height = share of prefixes that arrived faster.</p>
+</figure>
+
+<figure class="card" style="margin: 0">
+<div style="display: flex; flex-direction: column; gap: 2px"><span class="fig">F5</span><h2 class="h2">Throughput knee</h2></div>
+<div style="position: relative">
+<svg class="plot" viewBox="0 0 600 230" role="img" aria-label="Delivered update rate and p99 latency against offered update rate; use the offered-rate cursor slider below to read values" onMouseMove="{{f5.move}}">
+<g stroke="#ECEEEA"><line x1="48" y1="20" x2="560" y2="20"></line><line x1="48" y1="80" x2="560" y2="80"></line><line x1="48" y1="140" x2="560" y2="140"></line></g>
+<line x1="48" y1="200" x2="560" y2="200" stroke="#8A9097"></line>
+<line x1="48" y1="200" x2="560" y2="20" stroke="#B9BEC3" stroke-dasharray="4 3"></line>
+<polyline fill="none" stroke="#0E6E66" stroke-width="2.5" points="{{f5.pd}}"></polyline>
+<polyline fill="none" stroke="#C2410C" stroke-width="2.5" points="{{f5.pp}}"></polyline>
+<line x1="457.6" y1="20" x2="457.6" y2="200" stroke="#16191D" stroke-dasharray="2 3"></line>
+<text x="463" y="196" font-family="IBM Plex Mono, monospace" font-size="11" fill="#16191D">knee 800/s</text>
+<g font-family="IBM Plex Mono, monospace" font-size="10" fill="#545A61"><text x="48" y="218">0</text><text x="304" y="218" text-anchor="middle">500</text><text x="560" y="218" text-anchor="end">1 000 offered upd/s</text><text x="42" y="24" text-anchor="end">1k</text><text x="566" y="24">1 s</text></g>
+<line x1="{{f5.cx}}" y1="14" x2="{{f5.cx}}" y2="200" stroke="#5B4FC4" stroke-width="1.5"></line>
+<circle cx="{{f5.cx}}" cy="{{f5.yd}}" r="4.5" fill="#0E6E66" stroke="#FFFFFF" stroke-width="1.5"></circle>
+<circle cx="{{f5.cx}}" cy="{{f5.yp}}" r="4.5" fill="#C2410C" stroke="#FFFFFF" stroke-width="1.5"></circle>
+</svg>
+<div style="position: absolute; left: {{f5.tl}}; right: {{f5.tr}}; top: 51%; background: rgba(22, 25, 29, 0.92); color: #FFFFFF; font-family: 'IBM Plex Mono', monospace; font-size: 11px; line-height: 1.5; padding: 6px 9px; border-radius: 5px; white-space: nowrap; pointer-events: none"><div>{{f5.l1}}</div><div>{{f5.l2}}</div><div>{{f5.l3}}</div></div>
+</div>
+<div class="ctl"><label>Offered‑rate cursor <input type="range" min="0" max="1000" step="10" value="{{f5.cur}}" onChange="{{f5.slide}}" aria-label="F5 offered rate cursor"></label></div>
+<p class="readout">{{f5.read}}</p>
+<p class="cap">Teal: delivered updates/s (left scale). Orange: p99 latency (right scale, to 1 s). Dashed: ideal 1:1.</p>
+</figure>
+
+<figure class="card" style="margin: 0">
+<div style="display: flex; flex-direction: column; gap: 2px"><span class="fig">F7</span><h2 class="h2">Per‑router convergence heatmap</h2></div>
+<div role="img" aria-label="Heatmap: routers by minute, darker means more expected routes received, orange means session down; use the minute slider below to read values" style="display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 3px; font-size: 11px; align-items: center">
+<sc-for list="{{f7.rows}}" as="row" hint-placeholder-count="5">
+<span class="mono">{{row.name}}</span>
+<div style="display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3px">
+<sc-for list="{{row.cells}}" as="cell" hint-placeholder-count="12">
+<span style="{{cell.st}}" onMouseEnter="{{cell.pick}}"></span>
+</sc-for>
+</div>
+</sc-for>
+</div>
+<div class="ctl"><label>Minute <input type="range" min="0" max="11" step="1" value="{{f7.col}}" onChange="{{f7.slide}}" aria-label="F7 minute cursor"></label></div>
+<p class="readout">{{f7.read}}</p>
+<p class="cap">Darker = more expected routes received. Orange = session down. Hover a cell or use the slider. 5 of 60 routers shown.</p>
+</figure>
+
+</div>
+
+<figure class="card" style="margin: 0">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px">
+<div style="display: flex; flex-direction: column; gap: 2px"><span class="fig">F9</span><h2 class="h2">Event timeline — our observations and DUT log</h2></div>
+<div role="group" aria-label="Zoom F9" style="display: flex; gap: 4px"><button type="button" class="{{f9.c1}}" onClick="{{f9.z1}}">1×</button><button type="button" class="{{f9.c2}}" onClick="{{f9.z2}}">2×</button><button type="button" class="{{f9.c4}}" onClick="{{f9.z4}}">4×</button></div>
+</div>
+<div style="position: relative">
+<svg class="plot" viewBox="0 0 1340 210" role="img" aria-label="Timeline of phases, our session events and DUT log events; use the time cursor and window sliders below to read and move along the timeline" onMouseMove="{{f9.move}}">
+<defs><clipPath id="clipF9"><rect x="120" y="0" width="1200" height="200"></rect></clipPath></defs>
+<g font-family="IBM Plex Sans, sans-serif" font-size="12" fill="#545A61"><text x="0" y="31">Phases</text><text x="0" y="81">Our sessions</text><text x="0" y="131">DUT log (BIRD)</text></g>
+<line x1="120" y1="76" x2="1320" y2="76" stroke="#D9DCD6"></line>
+<line x1="120" y1="126" x2="1320" y2="126" stroke="#D9DCD6"></line>
+<line x1="120" y1="172" x2="1320" y2="172" stroke="#8A9097"></line>
+<g clip-path="url(#clipF9)" font-family="IBM Plex Sans, sans-serif" font-size="12">
+<rect x="{{f9.p0.x}}" y="14" width="{{f9.p0.w}}" height="26" fill="#CDE7E3"></rect><text x="{{f9.p0.tx}}" y="31" fill="#16191D" opacity="{{f9.p0.o}}">Est.</text>
+<rect x="{{f9.p1.x}}" y="14" width="{{f9.p1.w}}" height="26" fill="#8CC9C0"></rect><text x="{{f9.p1.tx}}" y="31" fill="#16191D" opacity="{{f9.p1.o}}">Initial load</text>
+<rect x="{{f9.p2.x}}" y="14" width="{{f9.p2.w}}" height="26" fill="#CDE7E3"></rect><text x="{{f9.p2.tx}}" y="31" fill="#16191D" opacity="{{f9.p2.o}}">Steady</text>
+<rect x="{{f9.p3.x}}" y="14" width="{{f9.p3.w}}" height="26" fill="#3E9C90"></rect><text x="{{f9.p3.tx}}" y="31" fill="#FFFFFF" opacity="{{f9.p3.o}}">Churn, stepped 100 → 1 700 upd/s</text>
+<rect x="{{f9.p4.x}}" y="14" width="{{f9.p4.w}}" height="26" fill="#CDE7E3"></rect><text x="{{f9.p4.tx}}" y="31" fill="#16191D" opacity="{{f9.p4.o}}">Teardown</text>
+<circle cx="{{f9.e0}}" cy="76" r="6" fill="#1E7B3A"></circle>
+<circle cx="{{f9.e1}}" cy="76" r="6" fill="#B42318"></circle>
+<circle cx="{{f9.e2}}" cy="76" r="6" fill="#1E7B3A"></circle>
+<circle cx="{{f9.d0}}" cy="126" r="6" fill="#1E7B3A"></circle>
+<circle cx="{{f9.d1}}" cy="126" r="6" fill="#B42318"></circle>
+<circle cx="{{f9.d2}}" cy="126" r="6" fill="#1E7B3A"></circle>
+<rect x="{{f9.w0}}" y="118" width="12" height="16" fill="#A15C07"></rect>
+<g font-family="IBM Plex Mono, monospace" font-size="11" fill="#16191D"><text x="{{f9.e1l}}" y="100">R09 reset</text><text x="{{f9.d1l}}" y="152">R09: Hold timer expired</text><text x="{{f9.w0l}}" y="152">route limit warnings ×3</text></g>
+</g>
+<line x1="{{f9.cx}}" y1="8" x2="{{f9.cx}}" y2="172" stroke="#5B4FC4" stroke-width="1.5"></line>
+</svg>
+<span style="position: absolute; left: {{f9.t0.x}}; top: 85%; transform: translateX(0); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{f9.t0.l}}</span><span style="position: absolute; left: {{f9.t1.x}}; top: 85%; transform: translateX(-50%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{f9.t1.l}}</span><span style="position: absolute; left: {{f9.t2.x}}; top: 85%; transform: translateX(-50%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{f9.t2.l}}</span><span style="position: absolute; left: {{f9.t3.x}}; top: 85%; transform: translateX(-50%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{f9.t3.l}}</span><span style="position: absolute; left: {{f9.t4.x}}; top: 85%; transform: translateX(-100%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{f9.t4.l}}</span><span style="position: absolute; left: {{f9.cxp}}; top: 92%; transform: translateX(-50%); font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; color: #FFFFFF; background: #5B4FC4; padding: 1px 6px; border-radius: 4px; pointer-events: none">{{f9.cl}}</span>
+</div>
+<div class="ctl"><label>Time cursor <input type="range" min="{{f9.dd0}}" max="{{f9.dd1}}" step="0.01" value="{{f9.cur}}" onChange="{{f9.slide}}" aria-label="F9 time cursor"></label><label>Window <input type="range" min="0" max="{{f9.panMax}}" step="0.05" value="{{f9.pan}}" onChange="{{f9.panTo}}" disabled="{{f9.panDis}}" aria-label="F9 slide time window"></label></div>
+<p class="readout">{{f9.read}}</p>
+<p class="cap">Green: sessions up (60). Red: session down. Amber: DUT warnings. DUT timestamps shifted by −2.31 s to match our clock. Zoom in, then slide the window left/right.</p>
+</figure>
+
+<p style="margin: 0; font-size: 12px; color: #545A61">Also in the full report: F1 session establishment · F4 latency vs load over time · F6 backlog · F8 correctness · F10 DUT resources · F11 data‑plane convergence (router role) · F12 generator health.</p>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1700}}'>
+var F2A = [[0,0],[2.48,2.2],[5.3,11.1],[8.68,27.8],[12.63,50],[17.14,70],[21.65,84.4],[27.29,93.3],[32.93,97.8],[41.17,100],[60,100]];
+var F2S = [[0,0],[3.05,1.1],[6.43,6.7],[10.38,21.1],[14.89,42.2],[19.4,61.1],[24.47,77.8],[30.11,88.9],[36.32,95.6],[43.98,100],[60,100]];
+var F3A = [[1,0],[7.2,2.2],[20.3,16.7],[38.9,50],[65.4,72.2],[125.2,88.9],[239.7,96.7],[288,99],[353.9,99.4],[1000,100]];
+var F3W = [[1,0],[6.3,3.3],[16.7,19.4],[30.8,51.1],[51.8,74.4],[96.6,90],[184.9,97.2],[241,99],[310.8,99.5],[1000,100]];
+var F5D = [[0,0],[100,100],[200,200],[300,300],[400,400],[500,498],[600,596],[700,690],[800,772],[900,790],[1000,795]];
+var F5P = [[0,22],[200,28],[400,39],[600,67],[700,110],[800,190],[900,640],[1000,945]];
+var PH = [["Est.",0,0.4],["Initial load",0.4,2.1],["Steady",2.1,3.5],["Churn, stepped 100 → 1 700 upd/s",3.5,11.5],["Teardown",11.5,12.5]];
+var HM = [["R01",[25,50,75,100,100,100,100,100,100,100,100,100]],["R09",[0,25,50,75,100,100,-1,25,75,100,100,100]],["R23",[25,50,75,100,100,100,100,100,100,100,100,100]],["R44",[0,0,25,50,75,100,100,100,100,100,100,100]],["R57",[25,50,75,100,100,100,100,100,100,100,100,100]]];
+var DEF = { f2: { zoom: 1, pan: 0, cur: 20 }, f3: { cur: 60 }, f5: { cur: 650 }, f7: { col: 6 }, f9: { zoom: 1, pan: 0, cur: 5.2 } };
+
+function lerp(p, x) {
+  if (x <= p[0][0]) return p[0][1];
+  for (var i = 1; i < p.length; i++) {
+    if (x <= p[i][0]) { var a = p[i - 1], b = p[i]; return a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0]); }
+  }
+  return p[p.length - 1][1];
+}
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function mmss(min) { var s = Math.round(min * 60); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); }
+function fms(ms) { return ms < 10 ? ms.toFixed(1) + " ms" : Math.round(ms) + " ms"; }
+function cellColor(v) { return v < 0 ? "#F3C9A8" : v >= 100 ? "#0E6E66" : v >= 75 ? "#3E9C90" : v >= 50 ? "#8CC9C0" : v >= 25 ? "#CDE7E3" : "#ECEEEA"; }
+
+class Component extends DCLogic {
+  get(k) { return Object.assign({}, DEF[k], (this.state || {})[k]); }
+  put(k, patch) { var o = {}; o[k] = Object.assign(this.get(k), patch); this.setState(o); }
+  mover(k, L, R, W, toData) {
+    var self = this;
+    return function (e) {
+      var r = e.currentTarget.getBoundingClientRect();
+      if (!r.width) return;
+      var vx = (e.clientX - r.left) / r.width * W;
+      if (vx < L || vx > R) return;
+      self.put(k, { cur: toData(vx) });
+    };
+  }
+  ticks(d0, d1, L, R, fmt, W) {
+    var o = {};
+    for (var i = 0; i < 5; i++) { o["t" + i] = { x: ((L + (R - L) * i / 4) / W * 100).toFixed(2) + "%", l: fmt(d0 + (d1 - d0) * i / 4) }; }
+    return o;
+  }
+  box(cx, R, W) {
+    var right = cx > R - 175;
+    return { tl: right ? "auto" : ((cx + 10) / W * 100).toFixed(2) + "%", tr: right ? ((W - cx + 10) / W * 100).toFixed(2) + "%" : "auto" };
+  }
+  zoomer(k, full, z) {
+    var self = this;
+    return function () {
+      var s = self.get(k), span = full / z;
+      self.put(k, { zoom: z, pan: clamp(s.cur - span / 2, 0, full - span) });
+    };
+  }
+
+  renderVals() {
+    var self = this;
+
+    // F2 — convergence over time (zoom + pan)
+    var s2 = this.get("f2"), span2 = 60 / s2.zoom, a2 = clamp(s2.pan, 0, 60 - span2), b2 = a2 + span2;
+    var px2 = function (x) { return 48 + (x - a2) / (b2 - a2) * 532; }, py2 = function (y) { return 200 - y / 100 * 180; };
+    var c2 = clamp(s2.cur, a2, b2), va = lerp(F2A, c2), vb = lerp(F2S, c2), cx2 = px2(c2), bx2 = this.box(cx2, 580, 600);
+    var line2 = function (p) { return p.map(function (q) { return px2(q[0]).toFixed(1) + "," + py2(q[1]).toFixed(1); }).join(" "); };
+    var f2 = Object.assign({
+      pa: line2(F2A), pb: line2(F2S), mx: px2(41.17), mtx: px2(41.17) + 6,
+      cx: cx2, ya: py2(va), yb: py2(vb), tl: bx2.tl, tr: bx2.tr,
+      l1: "t = " + c2.toFixed(1) + " s", l2: "all      " + va.toFixed(1) + " %", l3: "slowest  " + vb.toFixed(1) + " %",
+      read: "t = " + c2.toFixed(1) + " s · all receivers " + va.toFixed(1) + " % · slowest receiver (R44) " + vb.toFixed(1) + " % of expected routes",
+      d0: a2, d1: b2, cur: c2, pan: a2, panMax: 60 - span2, panDis: s2.zoom === 1,
+      c1: s2.zoom === 1 ? "zb zon" : "zb", c2: s2.zoom === 2 ? "zb zon" : "zb", c4: s2.zoom === 4 ? "zb zon" : "zb",
+      z1: this.zoomer("f2", 60, 1), z2: this.zoomer("f2", 60, 2), z4: this.zoomer("f2", 60, 4),
+      move: this.mover("f2", 48, 580, 600, function (vx) { return a2 + (vx - 48) / 532 * (b2 - a2); }),
+      slide: function (e) { self.put("f2", { cur: parseFloat(e.target.value) }); },
+      panTo: function (e) { var p = parseFloat(e.target.value); self.put("f2", { pan: p, cur: clamp(self.get("f2").cur, p, p + span2) }); }
+    }, this.ticks(a2, b2, 48, 580, function (v) { return v.toFixed(v < 10 && span2 < 30 ? 1 : 0) + " s"; }, 600));
+
+    // F3 — latency CDF (log axis)
+    var s3 = this.get("f3"), px3 = function (ms) { return 48 + Math.log10(ms) / 3 * 532; }, py3 = function (y) { return 200 - y / 100 * 180; };
+    var c3 = clamp(s3.cur, 1, 1000), a3 = lerp(F3A, c3), w3 = lerp(F3W, c3), cx3 = px3(c3), bx3 = this.box(cx3, 580, 600);
+    var line3 = function (p) { return p.map(function (q) { return px3(q[0]).toFixed(1) + "," + py3(q[1]).toFixed(1); }).join(" "); };
+    var f3 = {
+      pa: line3(F3A), pw: line3(F3W), cx: cx3, ya: py3(a3), yw: py3(w3), tl: bx3.tl, tr: bx3.tr,
+      l1: "latency " + fms(c3), l2: "announce " + a3.toFixed(1) + " %", l3: "withdraw " + w3.toFixed(1) + " %",
+      read: "latency " + fms(c3) + " · " + a3.toFixed(1) + " % of announcements and " + w3.toFixed(1) + " % of withdrawals arrived faster",
+      lg: Math.log10(c3),
+      move: this.mover("f3", 48, 580, 600, function (vx) { return Math.pow(10, (vx - 48) / 532 * 3); }),
+      slide: function (e) { self.put("f3", { cur: Math.pow(10, parseFloat(e.target.value)) }); }
+    };
+
+    // F5 — throughput knee
+    var s5 = this.get("f5"), px5 = function (x) { return 48 + x / 1000 * 512; }, py5 = function (y) { return 200 - y / 1000 * 180; };
+    var c5 = clamp(s5.cur, 0, 1000), d5 = lerp(F5D, c5), p5 = lerp(F5P, c5), cx5 = px5(c5), bx5 = this.box(cx5, 560, 600);
+    var line5 = function (p) { return p.map(function (q) { return px5(q[0]).toFixed(1) + "," + py5(q[1]).toFixed(1); }).join(" "); };
+    var f5 = {
+      pd: line5(F5D), pp: line5(F5P), cx: cx5, yd: py5(d5), yp: py5(p5), tl: bx5.tl, tr: bx5.tr,
+      l1: "offered  " + Math.round(c5) + "/s", l2: "deliv.   " + Math.round(d5) + "/s", l3: "p99      " + fms(p5),
+      read: "offered " + Math.round(c5) + " upd/s · delivered " + Math.round(d5) + " upd/s (" + (c5 ? Math.round(d5 / c5 * 100) : 100) + " %) · p99 latency " + fms(p5) + (c5 > 800 ? " · above the knee" : ""),
+      cur: c5,
+      move: this.mover("f5", 48, 560, 600, function (vx) { return (vx - 48) / 512 * 1000; }),
+      slide: function (e) { self.put("f5", { cur: parseFloat(e.target.value) }); }
+    };
+
+    // F7 — heatmap
+    var s7 = this.get("f7"), col = clamp(s7.col, 0, 11);
+    var rows = HM.map(function (r) {
+      return { name: r[0], cells: r[1].map(function (v, i) {
+        return { st: "height: 16px; background: " + cellColor(v) + "; outline: " + (i === col ? "2px solid #16191D" : "none") + "; outline-offset: -1px",
+                 pick: function () { self.put("f7", { col: i }); } };
+      }) };
+    });
+    var f7 = {
+      rows: rows, col: col,
+      read: "minute " + mmss(col) + "–" + mmss(col + 1) + ": " + HM.map(function (r) { var v = r[1][col]; return r[0] + " " + (v < 0 ? "session down" : v + " %"); }).join(" · "),
+      slide: function (e) { self.put("f7", { col: parseInt(e.target.value, 10) }); }
+    };
+
+    // F9 — event timeline (zoom + pan), time in minutes 0..12.5
+    var s9 = this.get("f9"), full9 = 12.5, span9 = full9 / s9.zoom, a9 = clamp(s9.pan, 0, full9 - span9), b9 = a9 + span9;
+    var px9 = function (t) { return 120 + (t - a9) / (b9 - a9) * 1200; };
+    var ph = function (i) {
+      var p = PH[i], x0 = clamp(px9(p[1]), 120, 1320), x1 = clamp(px9(p[2]), 120, 1320), w = Math.max(0, x1 - x0);
+      return { x: x0, w: w, tx: x0 + 6, o: w > p[0].length * 6.6 + 12 ? 1 : 0 };
+    };
+    var c9 = clamp(s9.cur, a9, b9), cx9 = px9(c9);
+    var phase = PH.filter(function (p) { return c9 >= p[1] && c9 < p[2]; })[0] || PH[4];
+    var offered = phase === PH[3] ? (100 + 100 * Math.floor((c9 - 3.5) * 2)) + " upd/s" : phase === PH[2] ? "keepalives only" : phase === PH[4] ? "withdraw all" : "max rate";
+    var evs = [[0.2, "60 sessions up (ours)"], [0.21, "60 sessions up (DUT log)"], [5.19, "R09: Hold timer expired (DUT log)"], [5.2, "R09 reset (ours)"], [5.6, "R09 up again"], [9.1, "route limit warnings ×3 (DUT log)"]];
+    var near = evs.filter(function (e) { return Math.abs(e[0] - c9) <= Math.max(0.15, span9 / 60); }).map(function (e) { return e[1]; });
+    var f9 = Object.assign({
+      p0: ph(0), p1: ph(1), p2: ph(2), p3: ph(3), p4: ph(4),
+      e0: px9(0.2), e1: px9(5.2), e2: px9(5.6), d0: px9(0.21), d1: px9(5.19), d2: px9(5.61), w0: px9(9.1),
+      e1l: px9(5.2) + 10, d1l: px9(5.19) + 10, w0l: px9(9.1) + 18,
+      cx: cx9, cxp: (clamp(cx9, 150, 1300) / 1340 * 100).toFixed(2) + "%", cl: mmss(c9),
+      read: "t = " + mmss(c9) + " · phase: " + phase[0].replace(" 100 → 1 700 upd/s", "") + " · offered " + offered + (near.length ? " · events: " + near.join("; ") : ""),
+      dd0: a9, dd1: b9, cur: c9, pan: a9, panMax: full9 - span9, panDis: s9.zoom === 1,
+      c1: s9.zoom === 1 ? "zb zon" : "zb", c2: s9.zoom === 2 ? "zb zon" : "zb", c4: s9.zoom === 4 ? "zb zon" : "zb",
+      z1: this.zoomer("f9", full9, 1), z2: this.zoomer("f9", full9, 2), z4: this.zoomer("f9", full9, 4),
+      move: this.mover("f9", 120, 1320, 1340, function (vx) { return a9 + (vx - 120) / 1200 * (b9 - a9); }),
+      slide: function (e) { self.put("f9", { cur: parseFloat(e.target.value) }); },
+      panTo: function (e) { var p = parseFloat(e.target.value); self.put("f9", { pan: p, cur: clamp(self.get("f9").cur, p, p + span9) }); }
+    }, this.ticks(a9, b9, 120, 1320, mmss, 1340));
+
+    return { f2: f2, f3: f3, f5: f5, f7: f7, f9: f9 };
+  }
+}
+</script>
+</body>
+</html>

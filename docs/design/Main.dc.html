@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TrafficGenerator — Benchmark</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F4F1;color:#16191D;font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:14px}
+a{color:#0E6E66}a:hover{color:#0A524C}
+.card{background:#FFFFFF;border:1px solid #D9DCD6;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.h2{margin:0;font-size:15px;font-weight:600;letter-spacing:.01em}
+.lbl{font-size:12px;color:#545A61;font-weight:500}
+.inp{height:36px;box-sizing:border-box;border:1px solid #C9CDC6;border-radius:6px;padding:0 10px;font:inherit;background:#FFFFFF;color:#16191D}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.btn{height:36px;padding:0 14px;border-radius:6px;border:1px solid #C9CDC6;background:#FFFFFF;color:#16191D;font:inherit;font-weight:500;cursor:pointer}
+.btn-sm{height:30px;padding:0 10px;font-size:12px}
+.th{font-size:11px;color:#545A61;font-weight:600;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:8px 10px;border-bottom:1px solid #D9DCD6}
+.td{padding:8px 10px;border-bottom:1px solid #ECEEEA;white-space:nowrap}
+.kpi{background:#FFFFFF;border:1px solid #D9DCD6;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;flex:1 1 150px}
+.kv{font-size:24px;font-weight:600;font-family:'IBM Plex Mono',ui-monospace,monospace}
+.hint{position:relative;display:inline-block;cursor:help;border-bottom:1px dotted #8A9097;outline:none;width:fit-content}
+.hint:focus-visible{box-shadow:0 0 0 2px #0E6E66;border-radius:2px}
+.tt{display:none;position:absolute;left:0;top:calc(100% + 6px);width:260px;white-space:normal;background:#16191D;color:#F3F4F1;font-size:12px;font-weight:400;line-height:1.45;padding:8px 10px;border-radius:6px;z-index:5}
+.hint:hover .tt,.hint:focus .tt{display:block}
+.zb{height:32px;min-width:44px;padding:0 10px;border:1px solid #C9CDC6;background:#FFFFFF;color:#16191D;border-radius:6px;font:inherit;font-size:12px;font-weight:500;cursor:pointer}
+.zon{background:#0E6E66;color:#FFFFFF;border-color:#0E6E66}
+.tip{display:inline-flex;width:16px;height:16px;border-radius:50%;border:1px solid #8A9097;color:#545A61;font-size:10px;align-items:center;justify-content:center;margin-left:4px}
+</style>
+</helmet>
+<div style="min-height: 1240px; display: flex; flex-direction: column">
+
+<header style="background: #16191D; color: #F3F4F1; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px; padding: 0 28px; min-height: 64px">
+<div style="display: flex; align-items: center; gap: 10px">
+<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="1" y="1" width="24" height="24" rx="6" fill="none" stroke="#5FD3C5" stroke-width="2"></rect><path d="M6 17 L10 9 L14 15 L17 11 L20 17" fill="none" stroke="#5FD3C5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span style="font-weight: 700; font-size: 16px">TrafficGenerator</span>
+<span class="mono" style="font-size: 11px; color: #A9AFB5">CMNODE01 · 192.168.100.11</span>
+</div>
+<nav aria-label="Main" style="display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 auto">
+<a href="#" style="color: #FFFFFF; text-decoration: none; padding: 21px 12px 19px; border-bottom: 3px solid #5FD3C5; font-weight: 600">Benchmark</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 12px">Traffic</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 12px">Reports</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 12px">DUT logs</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 12px">History</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 12px">Nodes &amp; settings</a>
+</nav>
+<div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+<span style="display: inline-flex; align-items: center; gap: 8px; background: #23403C; color: #BFF2EA; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 600"><span style="width: 8px; height: 8px; border-radius: 50%; background: #5FD3C5"></span>RUNNING · Churn (4/6) · <span class="mono">07:42</span></span>
+<button class="btn" type="button" disabled="disabled" style="background: #2A2F35; color: #8A9097; border-color: #3A4047">Start</button>
+<button class="btn" type="button" style="background: #B42318; color: #FFFFFF; border-color: #B42318; font-weight: 600">Stop</button>
+<button class="btn btn-sm" type="button" style="background: transparent; color: #C4C9CE; border-color: #3A4047">admin · Log out</button>
+</div>
+</header>
+
+<div style="background: #FFF7E6; color: #6B3E00; font-size: 12px; padding: 6px 28px; border-bottom: 1px solid #F0DDB5">Preview — layout mock‑up with illustrative sample values, not measured data.</div>
+
+<main style="flex: 1 1 auto; width: 100%; max-width: 1440px; margin: 0 auto; box-sizing: border-box; padding: 24px 28px 40px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+<section aria-label="Configuration" style="flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+<div style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 220px"><label class="lbl" for="runname">Run name</label><input id="runname" class="inp" value="BIRD 2.15 · throughput knee · 60×10k"></div>
+<div style="display: flex; flex-direction: column; gap: 6px; flex: 0 1 200px"><label class="lbl" for="profile">Profile</label><select id="profile" class="inp"><option>IXP default 60×10k</option></select></div>
+<div style="display: flex; flex-direction: column; gap: 6px; flex: 0 1 140px"><label class="lbl" for="seed">Seed</label><input id="seed" class="inp mono" value="482193"></div>
+</div>
+
+<div class="card">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap"><h2 class="h2">Device under test</h2><button class="btn btn-sm" type="button">Export DUT config ▾</button></div>
+<fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+<legend class="lbl" style="padding: 0; margin-bottom: 8px">DUT role</legend>
+<div style="display: flex; flex-wrap: wrap; border: 1px solid #C9CDC6; border-radius: 8px; overflow: hidden; width: fit-content; max-width: 100%">
+<label style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #0E6E66; color: #FFFFFF; font-weight: 600"><input type="radio" name="role" checked="checked" style="accent-color: #FFFFFF; margin: 0">Route server</label>
+<label style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-left: 1px solid #C9CDC6"><input type="radio" name="role" style="margin: 0">Route reflector</label>
+<label style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-left: 1px solid #C9CDC6"><input type="radio" name="role" style="margin: 0">Router (forwards traffic)</label>
+</div>
+<p style="margin: 4px 0 0; padding: 10px 12px; background: #EEF6F5; border-radius: 6px; color: #23403C; font-size: 13px; line-height: 1.5">IXP route server. Every emulated router is a separate eBGP peer with its own AS number. The route server passes routes between peers without adding its own AS number and without changing the next hop. Control‑plane test only.</p>
+</fieldset>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="plat">Platform / version</label><select id="plat" class="inp"><option>BIRD 2.15</option></select></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="dutip">DUT IP</label><input id="dutip" class="inp mono" value="10.100.0.1"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="dutas">DUT ASN</label><input id="dutas" class="inp mono" value="64500"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">DUT polling</span><div style="display: flex; gap: 14px; align-items: center; height: 36px"><label style="display: flex; gap: 6px; align-items: center"><input type="checkbox" checked="checked">SSH</label><label style="display: flex; gap: 6px; align-items: center"><input type="checkbox">SNMP</label></div></div>
+</div>
+</div>
+
+<div class="card">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap"><h2 class="h2">Emulated routers</h2><div style="display: flex; gap: 8px; flex-wrap: wrap"><button class="btn btn-sm" type="button">Bulk add…</button><button class="btn btn-sm" type="button">Generate all</button><button class="btn btn-sm" type="button">Import / Export</button></div></div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="rpn">Routers per node</label><input id="rpn" class="inp mono" value="10"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="asnmode">ASN assignment</label><select id="asnmode" class="inp"><option>Random · private 32‑bit</option></select></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="pool">Prefix pool</label><input id="pool" class="inp mono" value="198.18.0.0/15 · /24"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Placement</span><span style="height: 36px; display: flex; align-items: center; font-size: 13px">CMNODE01 at 0.7 weight</span></div>
+</div>
+<div style="overflow-x: auto; border: 1px solid #ECEEEA; border-radius: 8px">
+<table style="border-collapse: collapse; width: 100%; font-size: 13px">
+<thead><tr><th class="th">Router</th><th class="th">Node</th><th class="th">ASN</th><th class="th">Prefixes</th><th class="th">Status</th><th class="th">Receive</th><th class="th">Session</th></tr></thead>
+<tbody>
+<tr><td class="td mono">R01</td><td class="td">CMNODE01</td><td class="td"><span class="mono">4200000117</span> <button class="btn btn-sm" type="button" aria-label="Random ASN for R01" style="height: 26px; padding: 0 8px">⟳</button></td><td class="td mono">10 000</td><td class="td"><span style="color: #1E7B3A; font-weight: 500">10 000 generated</span> <button class="btn btn-sm" type="button" style="height: 26px">Generate</button> <button class="btn btn-sm" type="button" style="height: 26px">Paste…</button></td><td class="td">full</td><td class="td"><span style="color: #1E7B3A; font-weight: 600">Established</span></td></tr>
+<tr><td class="td mono">R02</td><td class="td">CMNODE01</td><td class="td"><span class="mono">4200003561</span> <button class="btn btn-sm" type="button" aria-label="Random ASN for R02" style="height: 26px; padding: 0 8px">⟳</button></td><td class="td mono">10 000</td><td class="td"><span style="color: #1E7B3A; font-weight: 500">10 000 generated</span> <button class="btn btn-sm" type="button" style="height: 26px">Generate</button> <button class="btn btn-sm" type="button" style="height: 26px">Paste…</button></td><td class="td">timestamps</td><td class="td"><span style="color: #1E7B3A; font-weight: 600">Established</span></td></tr>
+<tr><td class="td mono">R08</td><td class="td">CMNODE02</td><td class="td"><span class="mono">64512</span> <button class="btn btn-sm" type="button" aria-label="Random ASN for R08" style="height: 26px; padding: 0 8px">⟳</button></td><td class="td mono">245</td><td class="td"><span style="color: #0E6E66; font-weight: 500">245 pasted</span> <button class="btn btn-sm" type="button" style="height: 26px">Generate</button> <button class="btn btn-sm" type="button" style="height: 26px">Paste…</button></td><td class="td">full</td><td class="td"><span style="color: #1E7B3A; font-weight: 600">Established</span></td></tr>
+<tr><td class="td mono">R09</td><td class="td">CMNODE02</td><td class="td"><span class="mono">4200019020</span> <button class="btn btn-sm" type="button" aria-label="Random ASN for R09" style="height: 26px; padding: 0 8px">⟳</button></td><td class="td mono">10 000</td><td class="td"><span style="color: #1E7B3A; font-weight: 500">10 000 generated</span> <button class="btn btn-sm" type="button" style="height: 26px">Generate</button> <button class="btn btn-sm" type="button" style="height: 26px">Paste…</button></td><td class="td">timestamps</td><td class="td"><span style="color: #A15C07; font-weight: 600">OpenConfirm</span></td></tr>
+</tbody>
+</table>
+</div>
+<div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 13px; color: #545A61"><span>Showing 4 of 60 routers · <a href="#">show all</a></span><span class="mono">60 routers · 590 245 prefixes · est. RAM 0.3 GB/node</span></div>
+</div>
+
+<div class="card">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap"><h2 class="h2">Scenario</h2><div style="display: flex; gap: 8px; align-items: center"><label class="lbl" for="preset">Preset</label><select id="preset" class="inp" style="height: 32px"><option>Throughput knee</option></select></div></div>
+<ol aria-label="Phases" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px">
+<li style="border: 1px solid #C7E3DF; background: #EEF6F5; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; color: #3B6E68; font-weight: 600">1 · DONE</span><span style="font-weight: 600">Establish</span><span class="mono" style="font-size: 12px; color: #545A61">all at once</span></li>
+<li style="border: 1px solid #C7E3DF; background: #EEF6F5; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; color: #3B6E68; font-weight: 600">2 · DONE</span><span style="font-weight: 600">Initial load</span><span class="mono" style="font-size: 12px; color: #545A61">max rate</span></li>
+<li style="border: 1px solid #C7E3DF; background: #EEF6F5; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; color: #3B6E68; font-weight: 600">3 · DONE</span><span style="font-weight: 600">Steady</span><span class="mono" style="font-size: 12px; color: #545A61">60 s</span></li>
+<li style="border: 2px solid #0E6E66; background: #FFFFFF; border-radius: 8px; padding: 9px 11px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; color: #0E6E66; font-weight: 700">4 · RUNNING</span><span style="font-weight: 600">Churn, stepped</span><span class="mono" style="font-size: 12px; color: #545A61">100→2000 /s</span></li>
+<li style="border: 1px solid #D9DCD6; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; color: #545A61; font-weight: 600">5 · NEXT</span><span style="font-weight: 600">Teardown</span><span class="mono" style="font-size: 12px; color: #545A61">withdraw all</span></li>
+</ol>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="cs">Start rate (upd/s)</label><input id="cs" class="inp mono" value="100"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="cst">Step / every</label><input id="cst" class="inp mono" value="+100 / 30 s"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="cm">Mix ann/wd/attr %</label><input id="cm" class="inp mono" value="40 / 40 / 20"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="shape">Shape</label><select id="shape" class="inp"><option>Constant</option></select></div>
+</div>
+</div>
+
+</section>
+
+<section aria-label="Live view" style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+
+<div style="display: flex; flex-wrap: wrap; gap: 12px">
+<div class="kpi"><span class="lbl hint" tabindex="0">Sessions<span class="tt" role="tooltip">Emulated routers whose BGP session with the DUT is in state "Established", out of all configured routers.</span></span><span class="kv">60<span style="font-size: 15px; color: #545A61">/60</span></span><span style="font-size: 12px; color: #1E7B3A">all Established</span></div>
+<div class="kpi"><span class="lbl hint" tabindex="0">Initial convergence<span class="tt" role="tooltip">Time from the first announcement until every receiving router held every route it should get from the DUT.</span></span><span class="kv">41.2 s</span><span style="font-size: 12px; color: #545A61">100 % routes received</span></div>
+<div class="kpi"><span class="lbl hint" tabindex="0">Latency p99 (now)<span class="tt" role="tooltip">Propagation latency in the last second: 99 % of prefixes travelled from their origin router through the DUT to the other routers faster than this. p50 = median.</span></span><span class="kv" style="color: #A15C07">312 ms</span><span style="font-size: 12px; color: #545A61">p50 48 ms</span></div>
+<div class="kpi"><span class="lbl hint" tabindex="0">DUT output<span class="tt" role="tooltip">Route updates per second the DUT sends to our routers, compared with the rate we offer. Output above the offered rate is normal: each update is re-sent to many peers.</span></span><span class="kv">1 840</span><span style="font-size: 12px; color: #545A61">updates/s · offered 1 000</span></div>
+</div>
+
+<div class="card" style="gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px"><h2 class="h2">Propagation latency vs offered load</h2><div role="group" aria-label="Time window" style="display: flex; gap: 4px"><button type="button" class="{{ch.c5}}" onClick="{{ch.z5}}">5 min</button><button type="button" class="{{ch.c2}}" onClick="{{ch.z2}}">2 min</button><button type="button" class="{{ch.c1}}" onClick="{{ch.z1}}">1 min</button></div></div>
+<div style="position: relative">
+<svg viewBox="0 0 560 220" role="img" aria-label="Line chart of p50 and p99 propagation latency with the offered update rate; use the time cursor and window sliders below to read values" style="width: 100%; height: auto; cursor: crosshair" onMouseMove="{{ch.move}}">
+<defs><clipPath id="clipLat"><rect x="44" y="0" width="476" height="200"></rect></clipPath></defs>
+<g stroke="#ECEEEA" stroke-width="1"><line x1="44" y1="20" x2="520" y2="20"></line><line x1="44" y1="62.5" x2="520" y2="62.5"></line><line x1="44" y1="105" x2="520" y2="105"></line><line x1="44" y1="147.5" x2="520" y2="147.5"></line></g>
+<line x1="44" y1="190" x2="520" y2="190" stroke="#8A9097"></line>
+<g font-family="IBM Plex Mono, monospace" font-size="10" fill="#545A61"><text x="38" y="194" text-anchor="end">0</text><text x="38" y="109" text-anchor="end">200</text><text x="38" y="24" text-anchor="end">400 ms</text><text x="526" y="194">0</text><text x="526" y="104">1k/s</text></g>
+<g clip-path="url(#clipLat)">
+<polyline fill="none" stroke="#B9BEC3" stroke-width="2" stroke-dasharray="4 3" points="{{ch.po}}"></polyline>
+<polyline fill="none" stroke="#0E6E66" stroke-width="2.5" points="{{ch.p50}}"></polyline>
+<polyline fill="none" stroke="#C2410C" stroke-width="2.5" points="{{ch.p99}}"></polyline>
+</g>
+<line x1="{{ch.cx}}" y1="14" x2="{{ch.cx}}" y2="190" stroke="#5B4FC4" stroke-width="1.5"></line>
+<circle cx="{{ch.cx}}" cy="{{ch.y50}}" r="4.5" fill="#0E6E66" stroke="#FFFFFF" stroke-width="1.5"></circle>
+<circle cx="{{ch.cx}}" cy="{{ch.y99}}" r="4.5" fill="#C2410C" stroke="#FFFFFF" stroke-width="1.5"></circle>
+</svg>
+<div style="position: absolute; left: {{ch.tl}}; right: {{ch.tr}}; top: 51%; background: rgba(22, 25, 29, 0.92); color: #FFFFFF; font-family: 'IBM Plex Mono', monospace; font-size: 11px; line-height: 1.5; padding: 6px 9px; border-radius: 5px; white-space: nowrap; pointer-events: none"><div>{{ch.l1}}</div><div>{{ch.l2}}</div><div>{{ch.l3}}</div></div><span style="position: absolute; left: {{ch.t0.x}}; top: 94.5%; transform: translateX(0); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{ch.t0.l}}</span><span style="position: absolute; left: {{ch.t1.x}}; top: 94.5%; transform: translateX(-50%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{ch.t1.l}}</span><span style="position: absolute; left: {{ch.t2.x}}; top: 94.5%; transform: translateX(-50%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{ch.t2.l}}</span><span style="position: absolute; left: {{ch.t3.x}}; top: 94.5%; transform: translateX(-50%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{ch.t3.l}}</span><span style="position: absolute; left: {{ch.t4.x}}; top: 94.5%; transform: translateX(-100%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{ch.t4.l}}</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 12px; color: #545A61"><label style="display: flex; align-items: center; gap: 8px">Time cursor <input type="range" min="{{ch.d0}}" max="{{ch.d1}}" step="1" value="{{ch.cur}}" onChange="{{ch.slide}}" style="width: 200px; accent-color: #0E6E66"></label><label style="display: flex; align-items: center; gap: 8px">Window <input type="range" min="-300" max="{{ch.panMax}}" step="1" value="{{ch.pan}}" onChange="{{ch.panTo}}" disabled="{{ch.panDis}}" style="width: 200px; accent-color: #0E6E66"></label></div>
+<p class="mono" style="margin: 0; font-size: 12px; background: #F3F4F1; padding: 7px 10px; border-radius: 6px">{{ch.read}}</p>
+<div style="display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; color: #545A61"><span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 16px; height: 3px; background: #0E6E66"></span>p50</span><span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 16px; height: 3px; background: #C2410C"></span>p99</span><span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 16px; border-top: 2px dashed #8A9097"></span>offered updates/s (right axis)</span></div>
+</div>
+
+<div class="card" style="gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px"><h2 class="h2">Generator health</h2><span style="font-size: 12px; color: #545A61">node‑average CPU · marks at 70 % and 90 %</span></div>
+<div style="display: grid; grid-template-columns: 92px minmax(0, 1fr) 56px 64px; gap: 8px 12px; align-items: center; font-size: 13px">
+<span class="mono">CMNODE01</span><span style="position: relative; height: 10px; background: #ECEEEA; border-radius: 5px"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 38%; background: #0E6E66; border-radius: 5px"></span><span style="position: absolute; left: 70%; top: -3px; bottom: -3px; width: 2px; background: #A15C07"></span><span style="position: absolute; left: 90%; top: -3px; bottom: -3px; width: 2px; background: #B42318"></span></span><span class="mono">38 %</span><span style="font-size: 12px; color: #545A61">58 °C</span>
+<span class="mono">CMNODE02</span><span style="position: relative; height: 10px; background: #ECEEEA; border-radius: 5px"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 52%; background: #0E6E66; border-radius: 5px"></span><span style="position: absolute; left: 70%; top: -3px; bottom: -3px; width: 2px; background: #A15C07"></span><span style="position: absolute; left: 90%; top: -3px; bottom: -3px; width: 2px; background: #B42318"></span></span><span class="mono">52 %</span><span style="font-size: 12px; color: #545A61">61 °C</span>
+<span class="mono">CMNODE03</span><span style="position: relative; height: 10px; background: #ECEEEA; border-radius: 5px"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 51%; background: #0E6E66; border-radius: 5px"></span><span style="position: absolute; left: 70%; top: -3px; bottom: -3px; width: 2px; background: #A15C07"></span><span style="position: absolute; left: 90%; top: -3px; bottom: -3px; width: 2px; background: #B42318"></span></span><span class="mono">51 %</span><span style="font-size: 12px; color: #545A61">60 °C</span>
+<span class="mono">CMNODE04</span><span style="position: relative; height: 10px; background: #ECEEEA; border-radius: 5px"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 53%; background: #0E6E66; border-radius: 5px"></span><span style="position: absolute; left: 70%; top: -3px; bottom: -3px; width: 2px; background: #A15C07"></span><span style="position: absolute; left: 90%; top: -3px; bottom: -3px; width: 2px; background: #B42318"></span></span><span class="mono">53 %</span><span style="font-size: 12px; color: #545A61">62 °C</span>
+<span class="mono">CMNODE05</span><span style="position: relative; height: 10px; background: #ECEEEA; border-radius: 5px"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 49%; background: #0E6E66; border-radius: 5px"></span><span style="position: absolute; left: 70%; top: -3px; bottom: -3px; width: 2px; background: #A15C07"></span><span style="position: absolute; left: 90%; top: -3px; bottom: -3px; width: 2px; background: #B42318"></span></span><span class="mono">49 %</span><span style="font-size: 12px; color: #545A61">59 °C</span>
+<span class="mono">CMNODE06</span><span style="position: relative; height: 10px; background: #ECEEEA; border-radius: 5px"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 50%; background: #0E6E66; border-radius: 5px"></span><span style="position: absolute; left: 70%; top: -3px; bottom: -3px; width: 2px; background: #A15C07"></span><span style="position: absolute; left: 90%; top: -3px; bottom: -3px; width: 2px; background: #B42318"></span></span><span class="mono">50 %</span><span style="font-size: 12px; color: #545A61">60 °C</span>
+</div>
+</div>
+
+<div class="card" style="gap: 8px; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between">
+<div style="display: flex; flex-direction: column; gap: 2px"><h2 class="h2">Control‑plane health</h2><span style="font-size: 12px; color: #545A61">CMNODE01 reserve: 30 % CPU · 4.8 GB RAM · 20 Mbit/s per link</span></div>
+<div style="display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px"><span>API <b class="mono">38 ms</b></span><span>Live delay <b class="mono">0.4 s</b></span><span style="color: #1E7B3A; font-weight: 600">● OK</span></div>
+</div>
+
+<div class="card" style="gap: 8px">
+<h2 class="h2">Events</h2>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; font-size: 13px">
+<li style="display: flex; gap: 12px; padding: 7px 0; border-bottom: 1px solid #ECEEEA"><span class="mono" style="color: #545A61">07:41.8</span><span style="color: #A15C07; font-weight: 600">WARN</span><span>p99 latency above 250 ms at offered 1 000 upd/s</span></li>
+<li style="display: flex; gap: 12px; padding: 7px 0; border-bottom: 1px solid #ECEEEA"><span class="mono" style="color: #545A61">07:30.0</span><span style="color: #545A61; font-weight: 600">PHASE</span><span>Churn step → 1 000 upd/s</span></li>
+<li style="display: flex; gap: 12px; padding: 7px 0; border-bottom: 1px solid #ECEEEA"><span class="mono" style="color: #545A61">05:12.4</span><span style="color: #A15C07; font-weight: 600">WARN</span><span>R09 session reset by DUT — NOTIFICATION 4/0 (hold timer expired)</span></li>
+<li style="display: flex; gap: 12px; padding: 7px 0"><span class="mono" style="color: #545A61">02:41.2</span><span style="color: #1E7B3A; font-weight: 600">INFO</span><span>Initial load converged: 590 245 routes at all receivers in 41.2 s</span></li>
+</ul>
+</div>
+
+</section>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+var M50 = [[-300,42.4],[-270,44.7],[-240,44.7],[-209,47.1],[-179,47.1],[-149,49.4],[-118,51.8],[-88,51.8],[-58,54.1],[-28,56.5],[0,56.5]];
+var M99 = [[-300,70.6],[-270,72.9],[-240,75.3],[-209,77.6],[-179,82.4],[-149,89.4],[-118,117.6],[-88,160],[-58,216.5],[-28,301.2],[0,367.1]];
+function lerp(p, x) {
+  if (x <= p[0][0]) return p[0][1];
+  for (var i = 1; i < p.length; i++) {
+    if (x <= p[i][0]) { var a = p[i - 1], b = p[i]; return a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0]); }
+  }
+  return p[p.length - 1][1];
+}
+function offered(t) { return Math.min(1000, 100 * (Math.floor((t + 300) / 30) + 1)); }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function ago(t) { var s = Math.round(-t); return s === 0 ? "now" : "−" + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var s = Object.assign({ span: 300, pan: -300, cur: -60 }, (this.state || {}).ch);
+    var put = function (patch) { self.setState({ ch: Object.assign({}, s, patch) }); };
+    var a = clamp(s.pan, -300, -s.span), b = a + s.span, L = 44, R = 520;
+    var px = function (t) { return L + (t - a) / (b - a) * (R - L); };
+    var pyL = function (ms) { return 190 - ms / 400 * 170; }, pyO = function (r) { return 190 - r / 1000 * 85; };
+    var line = function (p, fy) { return p.map(function (q) { return px(q[0]).toFixed(1) + "," + fy(q[1]).toFixed(1); }).join(" "); };
+    var off = [];
+    for (var t = -300; t < 0; t += 30) { off.push([t, offered(t)]); off.push([Math.min(0, t + 30), offered(t)]); }
+    var c = clamp(s.cur, a, b), v50 = lerp(M50, c), v99 = lerp(M99, c), cx = px(c), right = cx > R - 165;
+    var ticks = {};
+    for (var i = 0; i < 5; i++) { ticks["t" + i] = { x: ((L + (R - L) * i / 4) / 560 * 100).toFixed(2) + "%", l: ago(a + (b - a) * i / 4) }; }
+    var zoom = function (span) { return function () { put({ span: span, pan: clamp(c - span / 2, -300, -span) }); }; };
+    return { ch: Object.assign({
+      po: line(off, pyO), p50: line(M50, pyL), p99: line(M99, pyL),
+      cx: cx, y50: pyL(v50), y99: pyL(v99), tl: right ? "auto" : ((cx + 10) / 560 * 100).toFixed(2) + "%", tr: right ? ((560 - cx + 10) / 560 * 100).toFixed(2) + "%" : "auto",
+      l1: "t " + ago(c), l2: "p50 " + Math.round(v50) + " · p99 " + Math.round(v99) + " ms", l3: "offered " + offered(c) + "/s",
+      read: "t = " + ago(c) + " · p50 " + Math.round(v50) + " ms · p99 " + Math.round(v99) + " ms · offered " + offered(c) + " upd/s",
+      d0: a, d1: b, cur: c, pan: a, panMax: -s.span, panDis: s.span === 300,
+      c5: s.span === 300 ? "zb zon" : "zb", c2: s.span === 120 ? "zb zon" : "zb", c1: s.span === 60 ? "zb zon" : "zb",
+      z5: zoom(300), z2: zoom(120), z1: zoom(60),
+      move: function (e) { var r = e.currentTarget.getBoundingClientRect(); if (!r.width) return; var vx = (e.clientX - r.left) / r.width * 560; if (vx < L || vx > R) return; put({ cur: a + (vx - L) / (R - L) * (b - a) }); },
+      slide: function (e) { put({ cur: parseFloat(e.target.value) }); },
+      panTo: function (e) { var p = parseFloat(e.target.value); put({ pan: p, cur: clamp(c, p, p + s.span) }); }
+    }, ticks) };
+  }
+}
+</script>
+</body>
+</html>
