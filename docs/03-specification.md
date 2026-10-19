@@ -30,6 +30,7 @@ The method follows the IETF benchmarking terminology and methodology for BGP con
 | AC3 | Generator CPU: **node average ≤ 70 %** (95th percentile over the run) on every node; ≤ 90 % accepted in the first milestone | agent stats |
 | AC4 | Control plane: the scenario's target scale (Q4; default **60 emulated routers, 600 000 announced prefixes**) is established and measured without the *generator* becoming the bottleneck. Generator‑side send lag stays < 10 ms p99, so every latency figure reflects the DUT, not us | agent self‑check |
 | AC5 | Measurement accuracy: timestamps from the clock‑synchronised cluster (chrony, offset < 1 ms, T06). Latencies are reported in ms with ±1 ms stated uncertainty | report header |
+| AC6 | **Control plane stays usable under full load:** during a full‑load run, the web UI/API answers in < 500 ms (p95) and live updates are never delayed by more than 2 s; CMNODE01's generator stays within 70 % CPU and 11.2 GB RAM | controller self‑measurement (§10.2), acceptance test |
 
 ## 2. Test topology
 
@@ -186,6 +187,37 @@ As in v0.2: AF_PACKET TX ring, pre‑built templates, incremental checksums, pac
 - After the run: fetches agent detail, joins latencies, runs the analysis, stores everything in SQLite and generates the report.
 - **Exports a matching DUT configuration snippet** for BIRD, FRR, MikroTik RouterOS v7 and Cisco IOS‑XE, with all emulated neighbours, so the DUT side is quick to set up.
 
+### 10.1 Safety rules (all run types)
+1. Data‑plane rate capped at the configured limit (default 1000 Mbit/s, never above line rate); BGP rates capped by S3 limits.
+2. Data traffic only to a resolved unicast next‑hop MAC on the traffic interface; never broadcast/multicast, never on the management subnet.
+3. Generated subnets and prefixes must not overlap the management (192.168.100.0/24) or traffic (10.100.0.0/24) subnets; optional allow‑list (S3).
+4. **Stop** reaches all agents within 1 s; an agent that loses the controller for > 5 s stops by itself (watchdog).
+5. Every run has a maximum duration (default 1 h).
+
+### 10.2 Control‑plane protection — CMNODE01 reservation (2026‑10‑19)
+
+The web interface and controller must stay responsive while a simulation runs at full load. This is **enforced by the operating system (cgroups v2 via systemd)** and by the planner, not only by our code behaving well.
+
+**CPU (CMNODE01, 4 cores): 30 % reserved for the interface and control.**
+- `tgen-agent` on CMNODE01: `AllowedCPUs=1-3` (core 0 is never used by the generator) and `CPUQuota=280%`, a hard ceiling of 70 % of the node. Its worker threads are pinned to cores 1–3.
+- `tgen-controller` (web UI, API, scenario engine, analysis): `CPUWeight=1000` (the agent gets 100), so it wins any contention. Long analysis jobs run at a lower `Nice` inside the controller, so the UI itself stays fast.
+- `sshd` stays in the default system slice, so SSH access always works.
+
+**Memory (CMNODE01, 16 GB): 30 % reserved = 4.8 GB.**
+- `tgen-agent`: `MemoryHigh=10.5G`, `MemoryMax=11.2G` (70 %). The planner never plans more than that for CMNODE01's routers (§4.3).
+- `tgen-controller`: `MemoryMin=4.8G` (protected from reclaim), `OOMScoreAdjust=-500`. The agent gets `OOMScoreAdjust=+500`: under memory pressure the generator is killed first, its watchdog stops traffic, and the UI survives to report it.
+
+**Load share:** the planner gives CMNODE01 a **weight of 0.7** for routers and data‑plane rate; the totals are preserved by the other nodes. Default: CMNODE01 runs 7 routers, CMNODE02–04 run 11, CMNODE05–06 run 10; the total stays 60. The rate split is weighted the same way. Weight and reservation are editable (S7).
+
+**Bandwidth: a few Mbit/s are always kept free for control traffic.**
+- Control traffic (browser ↔ controller, controller ↔ agents, SSH, DUT polling) uses each node's own switch port and the ETH1 port, **never** the DUT's port. So the reservation applies to those links. Every node's data‑plane traffic is limited to **link speed − 20 Mbit/s** in each direction (default reserve 20 Mbit/s, S7). Data plus BGP sending can therefore never fill a node's port.
+- The DUT's port is not reduced, so AC2 (≥ 940 Mbit/s L2 at IMIX) stays reachable. *(A global cap of 980 Mbit/s L1 would give only about 928 Mbit/s L2 at IMIX.)*
+- **CMNODE01 is never the sink** and never the destination of data‑plane traffic in router role. Its receive link carries only BGP sessions and control traffic.
+- Control traffic is marked **DSCP CS6**, so a DUT or switch that honours QoS prioritises it. The onboard switch is unmanaged, so the hard guarantee is the rate headroom, not marking.
+- Agent statistics to the controller are compact, about 2 kB/s per node.
+
+**Liveness checks:** the controller measures its own API response time and the WebSocket delivery delay continuously; both are shown in M6 and stored with the run. If CMNODE01's control headroom is violated (controller CPU starved for > 2 s, or free memory below the reservation), the scenario is **paused** and the user is warned.
+
 ## 11. DUT log upload and evaluation
 
 **Upload:** one or more files, plain text or .gz. The platform is auto‑detected (or chosen by hand): Cisco IOS/IOS‑XE/IOS‑XR, MikroTik RouterOS 6/7, BIRD 2/3, Quagga/FRR bgpd.
@@ -242,15 +274,15 @@ C++20 / GCC 14 / CMake; Asio (event loops); cpp‑httplib + nlohmann/json; spdlo
 
 | Phase | Deliverable | Gate |
 |---|---|---|
-| **P2** | agent: BGP encoder/decoder + FSM + pacing; 60 routers against BIRD on CMNODE06; send/receive timestamps; CLI | 60 sessions Established, 600 k prefixes converged; generator send lag p99 < 10 ms; CPU ≤ 70 % |
-| **P3** | controller + web UI: routers, prefixes (generate/paste), scenario phases, live view, admin login | full scenario runs from the browser |
+| **P2** | agent: BGP encoder/decoder + FSM + pacing; systemd units with the CMNODE01 cgroup limits (§10.2); 60 routers against BIRD on CMNODE06; send/receive timestamps; CLI | 60 sessions Established, 600 k prefixes converged; generator send lag p99 < 10 ms; CPU ≤ 70 % |
+| **P3** | controller + web UI: routers, prefixes (generate/paste), scenario phases, live view, admin login | full scenario runs from the browser; **AC6** (UI responsive at full load, CMNODE01 limits enforced) |
 | **P4** | analysis + **reports F1–F9, F12**, comparison report; DUT config export | report generated for BIRD and one other DUT |
 | **P5** | DUT log upload + parsers (Cisco, MikroTik, BIRD, Quagga/FRR); SNMP/SSH collectors; F10 | sample logs from Q2 parsed correctly |
 | **P6** | data plane: TCP/IP crafted traffic at 1 Gbit/s, data‑plane convergence (F11), BGP stateless; MRT import | AC2, AC3 |
 | **P7** | hardening, user guide, validation on the real DUTs | final acceptance |
 
 ## 15. Decisions (2026‑10‑19)
-D1 own C++ BGP speaker on Asio, reusing the encoder · D2 one admin password · D3 IPv6 later, encoders AF‑agnostic · D4 MRT import (P6) · D5 Docker stopped on CMNODE04 · D6 shapes constant/on‑off/ramp, selectable · D7 report L2 and L1, gate on L2 · D8 CMNODE01 also generates.
+D1 own C++ BGP speaker on Asio, reusing the encoder · D2 one admin password · D3 IPv6 later, encoders AF‑agnostic · D4 MRT import (P6) · D5 Docker stopped on CMNODE04 · D6 shapes constant/on‑off/ramp, selectable · D7 report L2 and L1, gate on L2 · D8 CMNODE01 also generates, **at 70 % weight, with 30 % CPU/RAM and a bandwidth headroom reserved for the interface (§10.2)**.
 
 ## 16. Answers to Q1–Q6 (2026‑10‑19)
 
@@ -267,6 +299,7 @@ D1 own C++ BGP speaker on Asio, reusing the encoder · D2 one admin password · 
 
 | Risk | Mitigation |
 |---|---|
+| Simulation load makes the web interface unreachable | cgroup CPU/memory limits on CMNODE01, per‑link bandwidth headroom, CMNODE01 never sink, liveness checks pause the scenario (§10.2, AC6) |
 | Generator becomes the bottleneck at high churn, falsifying DUT latencies | AC4 self‑check (send lag), per‑node CPU in every report (F12); more nodes/threads |
 | Clock error between nodes distorts latency | chrony < 1 ms (T06), uncertainty stated; same‑node origin/receiver pairs as a cross‑check |
 | DUT log formats differ between versions | auto‑detect + manual choice, unclassified lines kept, parsers built from Q2 samples |

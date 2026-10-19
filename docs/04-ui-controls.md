@@ -40,7 +40,7 @@ Status: **PROPOSED v0.4 (2026‑10‑19)** — Q1–Q6 answered (spec v0.4). **E
 
 | ID | Control | Type | Default | Validation / notes |
 |---|---|---|---|---|
-| R1 | **Routers per node** | number, or switch to "total, auto‑distribute" | 10 per node (60) | 1–30 per node (180 total, limited by the S4 pool on a /24; Q4); the planner shows the IPs and memory needed |
+| R1 | **Routers per node** | number, or switch to "total, auto‑distribute" | 10 per node (60); CMNODE01 at 0.7 weight → 7, CMNODE02–04 → 11, CMNODE05–06 → 10 (S7) | 1–30 per node (180 total, limited by the S4 pool on a /24; Q4); the planner shows the IPs and memory needed |
 | R2 | Placement | radio: equal per node · RAM‑weighted | equal | RAM‑weighted puts *full* receivers on CMNODE01–04 |
 | R3 | **Routers table** | one row per router: name · **ASN** · **prefix count** · prefixes status ("1 000 generated" / "245 pasted") · **[Generate]** · **[Paste…]** · receive mode · node · peer IP (auto) · delete | filled from R1/R4 | ASN 1–4294967295, unique (eBGP), ≠ DUT ASN |
 | R3a | ASN per router | number **or** [Random] (draws an unused ASN from the R4 range) | from R4 | in RR mode: origin ASN for the AS_PATH |
@@ -80,7 +80,7 @@ Status: **PROPOSED v0.4 (2026‑10‑19)** — Q1–Q6 answered (spec v0.4). **E
 
 | ID | Control | Type | Default | Validation / notes |
 |---|---|---|---|---|
-| T1 | Total target rate | number + unit (Mbit/s · kpps) | 900 Mbit/s | 1–1000; capped by S3 |
+| T1 | Total target rate | number + unit (Mbit/s · kpps) | 900 Mbit/s | 1–1000; capped by S3; no single node above link − S7 reserve |
 | T2 | Duration / ramp‑up | numbers (s) | 60 / 5 | 0 = until Stop |
 | T3 | Rate split | equal · weighted per node | equal | |
 | T4 | Next‑hop IP | IPv4 + "resolve" (shows the MAC) | DUT IP | must resolve before Start |
@@ -107,6 +107,7 @@ Status: **PROPOSED v0.4 (2026‑10‑19)** — Q1–Q6 answered (spec v0.4). **E
 | M4 | Live latency | p50/p99 per second + offered rate | live F4 |
 | M5 | DUT resources | CPU / memory sparkline (if U5/U6) | live F10 |
 | M6 | Generator health | per node: CPU node‑average, send lag, temperature (70 %/90 % marks) | AC3/AC4 at a glance |
+| M6a | Control‑plane health | CMNODE01 reserve in use (CPU / RAM / link), API response time, live‑update delay; amber/red when the reservation is at risk | AC6; the scenario pauses automatically when red |
 | M7 | Data plane | rate chart (L2/L1), per‑node table, sink loss/latency | when traffic is running |
 | M8 | Events | scrolling list: session changes, NOTIFICATIONs, warnings, safety refusals | |
 
@@ -147,8 +148,9 @@ Status: **PROPOSED v0.4 (2026‑10‑19)** — Q1–Q6 answered (spec v0.4). **E
 | ID | Control | Type | Default | Notes |
 |---|---|---|---|---|
 | S1 | Node status | reachable · agent version · link · EEE · CPU · RAM · temperature · restart agent | — | |
-| S2 | Sink node | none · CMNODE0x | none | receives and counts data‑plane traffic (stand‑in or measurement) |
+| S2 | Sink node | none · CMNODE02–06 (CMNODE01 excluded, §10.2) | none | receives and counts data‑plane traffic (stand‑in or measurement) |
 | S3 | Safety limits | max data rate (≤ 1000 Mbit/s) · max duration · subnet allow‑list · max routers/prefixes | 1000 · 3600 s · empty · 180 / 2 M | |
 | S4 | Router IP pool | range on the traffic subnet | 10.100.0.20–250 (231) | ≥ number of routers; nodes .11–.16 and DUT excluded |
 | S5 | Workers per node | number 1–3 | 2 | advanced |
 | S6 | Login | admin password: login page, change password, logout | set at install | D2 |
+| S7 | **Control‑plane reservation** | CMNODE01: CPU reserve % · memory reserve % · load weight · per‑link bandwidth reserve (Mbit/s) | 30 % · 30 % · 0.7 · 20 Mbit/s | label: *"Keeps the web interface and controller reachable while a simulation runs at full load."*; minimum 20 % / 20 % / 5 Mbit/s |
