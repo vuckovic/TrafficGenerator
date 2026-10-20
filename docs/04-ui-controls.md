@@ -1,6 +1,6 @@
 # 04 — Web interface controls (for confirmation)
 
-Status: **FROZEN v1.0 (2026‑10‑19)**, with **v1.1 additions 2026‑10‑20: G9 ✅ confirmed; U2 change and U8–U16 (marked 🆕) awaiting confirmation** · visual design LOCKED v1 (`docs/design/`) — Q1–Q6 answered (spec v0.4). **Every non‑obvious control gets a short help text (ⓘ tooltip); role and mode choices also show a visible explanation label; every metric (live tiles, tables, report verdict rows, figure values) shows a short explanation on hover and on keyboard focus.** **Every chart is interactive:** a cursor follows the mouse (or a slider, for keyboard use) and shows the exact value of each series at that point; time‑based charts have zoom levels and a window slider to move the time range left and right. Please mark each control: ✅ accept · ✏️ change (say how) · ❌ drop. A short reply is enough, e.g. *"all ✅ except C9 ❌, R3b ✏️ max 2 M"*.
+Status: **FROZEN v1.1 (2026‑10‑20)**: v1.0 of 2026‑10‑19 plus G9, the U2 change and U8–U16, all confirmed · visual design LOCKED v1 (`docs/design/`) — Q1–Q6 answered (spec v0.4). **Every non‑obvious control gets a short help text (ⓘ tooltip); role and mode choices also show a visible explanation label; every metric (live tiles, tables, report verdict rows, figure values) shows a short explanation on hover and on keyboard focus.** **Every chart is interactive:** a cursor follows the mouse (or a slider, for keyboard use) and shows the exact value of each series at that point; time‑based charts have zoom levels and a window slider to move the time range left and right. Please mark each control: ✅ accept · ✏️ change (say how) · ❌ drop. A short reply is enough, e.g. *"all ✅ except C9 ❌, R3b ✏️ max 2 M"*.
 
 **Layout** (tabs):
 1. **Benchmark** — set up the DUT, routers and scenario on the left; live view on the right.
@@ -22,7 +22,7 @@ Status: **FROZEN v1.0 (2026‑10‑19)**, with **v1.1 additions 2026‑10‑20: 
 | G6 | Run name / notes | text | auto `run‑YYYYMMDD‑HHMMSS` | stored with the run and printed on the report |
 | G7 | Profiles | dropdown + Save / Load / Delete | — | complete configurations (DUT, routers, scenario, traffic) |
 | G8 | Random seed | number | random, shown | same seed = same ASNs, prefixes and timings |
-| G9 ✅ | **Language** | flag button in the top‑right corner of every page → menu with flag + native name: 🇬🇧 English · 🇷🇸 Српски | browser language (sr* → Српски), else English | choice kept per browser; all texts from `ui/i18n/labels.csv` (one column per language, English fallback); adding a language = adding a column and a flag (see `ui/i18n/README.md`) |
+| G9 | **Language** | flag button in the top‑right corner of every page → menu with flag + native name: 🇬🇧 English · 🇷🇸 Српски | browser language (sr* → Српски), else English | choice kept per browser; all texts from `ui/i18n/labels.csv` (one column per language, English fallback); adding a language = adding a column and a flag (see `ui/i18n/README.md`) |
 
 ## U — Device under test (Benchmark tab)
 
@@ -30,7 +30,7 @@ Status: **FROZEN v1.0 (2026‑10‑19)**, with **v1.1 additions 2026‑10‑20: 
 |---|---|---|---|---|
 | U1 | **DUT role** | radio: **Route server** (default) · **Route reflector** · **Router (forwards traffic)** — with the explanation label below | Route server | Q1/Q5; sets session type, ASN handling, correctness checks and whether data‑plane tests are available |
 | U1a | Role explanation label (shown under U1, changes with the selection) | text | — | **Route server:** *"IXP route server. Every emulated router is a separate eBGP peer with its own AS number. The route server passes routes between peers without adding its own AS number and without changing the next hop. Control‑plane test only."* · **Route reflector:** *"iBGP route reflector. All emulated routers are clients in the DUT's AS; the AS numbers you set appear as origin AS in the AS_PATH. The reflector adds ORIGINATOR_ID and CLUSTER_LIST and keeps the next hop. Control‑plane test only."* · **Router (forwards traffic):** *"BGP router that sets itself as next hop. Routes are learned and re‑advertised, and data traffic between the emulated routers' prefixes is sent through the DUT, so forwarding, loss and data‑plane convergence can be measured."* |
-| U2 ✏️ | Detected platform | read‑only: model and version read from the DUT (U14 Test connection), e.g. "RouterOS 7.11 · CRS106‑1C‑5S" | — | was a dropdown; the platform is now chosen in U8. Printed on the report; selects the log parser |
+| U2 | Detected platform | read‑only: model and version read from the DUT (U14 Test connection), e.g. "RouterOS 7.11 · CRS106‑1C‑5S" | — | was a dropdown; the platform is now chosen in U8. Printed on the report; selects the log parser |
 | U3 | DUT IP and ASN | IPv4 + ASN | from cluster config | in RR mode all routers use this ASN |
 | U4 | DUT config export | button: download a neighbour config for the selected platform | — | BIRD, FRR, RouterOS 7, IOS‑XE |
 | U5 | SNMP polling (Q3: option) | checkbox + version (v2c / v3) + community or v3 user/auth/priv | off | read‑only; "Test" button |
@@ -41,15 +41,15 @@ Status: **FROZEN v1.0 (2026‑10‑19)**, with **v1.1 additions 2026‑10‑20: 
 
 | ID | Control | Type | Default | Validation / notes |
 |---|---|---|---|---|
-| U8 🆕 | **Platform** | segmented: **MikroTik RouterOS 7** · **Cisco IOS / IOS‑XE** (IOS 15.x, IOS‑XE 16.x/17.x, 2015 and later) · **BIRD 2/3** · **Quagga / FRR** — plus a note label under it per platform; dropdown entries *BIRD stand‑in on a cluster node* and *Other (configure manually)* | BIRD stand‑in | note texts: RouterOS adds its own AS (no transparent RS); Cisco RS needs route‑server‑client (IOS‑XE 3.3S+/IOS 15.2S+) and writes running‑config only; BIRD uses its own include file; Quagga is EOL, FRR commands are used |
-| U9 🆕 | Configure the DUT before each run | checkbox | on | off = neighbours are configured by hand (U4 export still available) |
-| U10 🆕 | SSH address · port | IPv4/hostname · number | = DUT IP (U3) · 22 | management address may differ from the BGP peering address |
-| U11 🆕 | User | text | admin (MikroTik, Cisco) · root (BIRD, FRR) | |
-| U12 🆕 | Authentication | radio: **password — asked at start, not stored** · SSH key of CMNODE01 ("Show public key" to copy to the device) | password | password lives only in memory for the run (D2: no stored device secrets); Cisco: **enable secret** field, only if the user is not privilege 15 |
-| U13 🆕 | Linux DUT options (BIRD, FRR) | use sudo (checkbox) · BIRD include file · birdc socket | on · /etc/bird/tgen.conf · default | BIRD: bird.conf gets one `include` line the first time (shown in the run log) |
-| U14 🆕 | Actions | buttons: **Test connection** · **Preview config** · **Push now** · **Remove** · **Status** + status line (model, version, CPU, free memory, tgen neighbours, Established) | — | Preview shows the exact text that will be sent; Push now is optional (a run pushes its own config) |
-| U15 🆕 | After the run | dropdown: remove neighbours · keep neighbours | remove | keep = for manual inspection; the next run replaces them |
-| U16 🆕 | Route limit | number (routes the DUT must hold) | 20 000 for MikroTik, empty (none) otherwise | Start is refused above it, with the reason |
+| U8 | **Platform** | segmented: **MikroTik RouterOS 7** · **Cisco IOS / IOS‑XE** (IOS 15.x, IOS‑XE 16.x/17.x, 2015 and later) · **BIRD 2/3** · **Quagga / FRR** — plus a note label under it per platform; dropdown entries *BIRD stand‑in on a cluster node* and *Other (configure manually)* | BIRD stand‑in | note texts: RouterOS adds its own AS (no transparent RS); Cisco RS needs route‑server‑client (IOS‑XE 3.3S+/IOS 15.2S+) and writes running‑config only; BIRD uses its own include file; Quagga is EOL, FRR commands are used |
+| U9 | Configure the DUT before each run | checkbox | on | off = neighbours are configured by hand (U4 export still available) |
+| U10 | SSH address · port | IPv4/hostname · number | = DUT IP (U3) · 22 | management address may differ from the BGP peering address |
+| U11 | User | text | admin (MikroTik, Cisco) · root (BIRD, FRR) | |
+| U12 | Authentication | radio: **password — asked at start, not stored** · SSH key of CMNODE01 ("Show public key" to copy to the device) | password | password lives only in memory for the run (D2: no stored device secrets); Cisco: **enable secret** field, only if the user is not privilege 15 |
+| U13 | Linux DUT options (BIRD, FRR) | use sudo (checkbox) · BIRD include file · birdc socket | on · /etc/bird/tgen.conf · default | BIRD: bird.conf gets one `include` line the first time (shown in the run log) |
+| U14 | Actions | buttons: **Test connection** · **Preview config** · **Push now** · **Remove** · **Status** + status line (model, version, CPU, free memory, tgen neighbours, Established) | — | Preview shows the exact text that will be sent; Push now is optional (a run pushes its own config) |
+| U15 | After the run | dropdown: remove neighbours · keep neighbours | remove | keep = for manual inspection; the next run replaces them |
+| U16 | Route limit | number (routes the DUT must hold) | 20 000 for MikroTik, empty (none) otherwise | Start is refused above it, with the reason |
 
 ## R — Emulated routers (Benchmark tab)
 

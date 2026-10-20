@@ -1,4 +1,4 @@
-# UI design — LOCKED v1 (2026‑10‑19) · v1.1 additions proposed (2026‑10‑20)
+# UI design — LOCKED v1.1 (2026‑10‑20)
 
 Approved reference for the web interface look and behaviour. The P3 implementation follows it.
 Changes go through a new design version, not ad hoc.
@@ -21,7 +21,7 @@ Changes go through a new design version, not ad hoc.
 
 Sample values in the preview are illustrative, not measured.
 
-## v1.1 additions (proposed 2026‑10‑20, awaiting confirmation)
+## v1.1 additions (locked 2026‑10‑20, all confirmed by the user)
 | Area | Change |
 |---|---|
 | Language | Flag selector in the top‑right corner of every page (G9): 🇬🇧 EN / 🇷🇸 СР. It opens a menu with flag and native name; the choice is kept per browser. Texts come from `ui/i18n/labels.csv`. In the preview, choosing Српски opens the Serbian artboard. |
