@@ -10,4 +10,8 @@ fi
 if [[ "$host" == "dut-linux" && -n "${SIM_DUT_NETNS:-}" ]]; then   # DUT in its own network namespace
   cd "$d" && HOME="$d" exec ip netns exec "$SIM_DUT_NETNS" env PATH="$(dirname "$0")/nswrap:$PATH" bash -c "$*"
 fi
+# test: one node's agent session never ends (SIM_AGENT_STUCK=<host>)
+if [[ -n "${SIM_AGENT_STUCK:-}" && "$host" == "$SIM_AGENT_STUCK" && "$*" == *"tgen-agent --plan"* ]]; then
+  cd "$d" && HOME="$d" exec bash -c "$*; sleep 3600"
+fi
 cd "$d" && HOME="$d" exec bash -c "$*"

@@ -67,18 +67,25 @@ class Cluster:
         self.iface = env.get("MGMT_IFACE", "eth0")
 
     def ssh(self, node: str, cmd: str, check: bool = True, timeout: float | None = 120) -> subprocess.CompletedProcess:
-        r = subprocess.run(["ssh", *SSH_OPTS, f"{self.user}@{self.mgmt[node]}", cmd],
-                           capture_output=True, text=True, timeout=timeout)
+        try:
+            r = subprocess.run(["ssh", *SSH_OPTS, f"{self.user}@{self.mgmt[node]}", cmd],
+                               capture_output=True, text=True, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            r = subprocess.CompletedProcess([], 124, "", f"timed out after {timeout} s")
         if check and r.returncode != 0:
             raise RuntimeError(f"{node}: `{cmd}` failed ({r.returncode}): {r.stderr.strip()[-400:]}")
         return r
 
     def put(self, node: str, local: Path, remote: str) -> None:
-        subprocess.run(["scp", "-q", *SSH_OPTS, str(local), f"{self.user}@{self.mgmt[node]}:{remote}"], check=True)
+        subprocess.run(["scp", "-q", *SSH_OPTS, str(local), f"{self.user}@{self.mgmt[node]}:{remote}"], check=True,
+                       timeout=300)
 
     def get(self, node: str, remote: str, local: Path) -> bool:
-        return subprocess.run(["scp", "-q", *SSH_OPTS, f"{self.user}@{self.mgmt[node]}:{remote}", str(local)],
-                              capture_output=True).returncode == 0
+        try:
+            return subprocess.run(["scp", "-q", *SSH_OPTS, f"{self.user}@{self.mgmt[node]}:{remote}", str(local)],
+                                  capture_output=True, timeout=120).returncode == 0
+        except subprocess.TimeoutExpired:
+            return False
 
 
 def parallel(fn, items):
@@ -348,9 +355,15 @@ def main() -> int:
             polls.close()
         for n, p in procs.items():
             if p.poll() is None:
+                log(f"WARNING {n}: agent still running after the end of the run; stopping it")
                 p.terminate()
-            if p.wait() != 0:
-                log(f"WARNING {n}: agent exit code {p.returncode}")
+            try:
+                rc = p.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                p.kill()
+                rc = p.wait()
+            if rc != 0:
+                log(f"WARNING {n}: agent exit code {rc}")
 
         # --- collect ---------------------------------------------------------
         for n in router_nodes:
@@ -380,6 +393,9 @@ def main() -> int:
                 mt.remove()
             except DutError as e:
                 log(f"WARNING: could not remove the tgen neighbours from the DUT: {e}")
+        # never leave an agent behind (e.g. one that did not stop at end_at)
+        for n in added:
+            cl.ssh(n, "sudo pkill -x tgen-agent; true", check=False, timeout=30)
         for n, ips in added.items():
             cl.ssh(n, "; ".join(f"sudo ip addr del {ip}/32 dev {cl.iface} 2>/dev/null" for ip in ips) + "; true",
                    check=False)
