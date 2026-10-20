@@ -73,7 +73,13 @@ class Cisco(Dut):
         return c
 
     def cmd(self, command: str, timeout: float = 60) -> str:
-        out = self._connect().send_command(command, read_timeout=timeout)
+        try:
+            out = self._connect().send_command(command, read_timeout=self._timeout(timeout))
+        except DutError:
+            raise
+        except Exception as e:  # netmiko ReadTimeout and friends
+            self.close()
+            raise DutError(f"{self.host}: `{command}`: {e}") from e
         if re.search(r"^% (Invalid|Incomplete|Ambiguous)", out, re.M):
             raise DutError(f"{self.host}: `{command}`: {out.strip()[:200]}")
         return out

@@ -303,19 +303,30 @@ def main() -> int:
         mid = tm["announce_at"] / 1000 + 5
         next_poll = tm["establish_at"] / 1000 if external and args.dut_poll > 0 else None
         polls = (out / "dut-sessions.jsonl").open("w") if next_poll else None
+        poll_fail = 0
         while time.time() < tm["end_at"] / 1000 + 20 and any(p.poll() is None for p in procs.values()):
             if next_poll and time.time() >= next_poll and time.time() < tm["end_at"] / 1000:
                 # DUT's own view of the sessions, for the event timeline (F9)
                 t_poll = time.time()
+                mt.call_timeout = 15            # a poll must never stall the run
                 try:
                     sess, est = mt.sessions()
                     polls.write(json.dumps({"t": round(t_poll, 3), "established": est, "raw": sess}) + "\n")
-                    polls.flush()
+                    poll_fail = 0
                 except DutError as e:
                     polls.write(json.dumps({"t": round(t_poll, 3), "error": str(e)[:300]}) + "\n")
+                    poll_fail += 1
+                    log(f"DUT poll failed ({poll_fail}): {e}")
+                finally:
+                    mt.call_timeout = None
+                    polls.flush()
                 next_poll = t_poll + args.dut_poll
+                if poll_fail >= 2:
+                    log("DUT polling stopped after 2 failures in a row (the DUT is not answering SSH in time)")
+                    next_poll = None
             if mid and time.time() > mid:
                 if external:
+                    mt.call_timeout = 20
                     try:
                         sess, est = mt.sessions()
                         (out / "dut-sessions-mid.txt").write_text(sess)
@@ -324,6 +335,8 @@ def main() -> int:
                         log(f"DUT mid-run: {est} sessions established; {res['summary']}")
                     except DutError as e:
                         log(f"DUT mid-run query failed: {e}")
+                    finally:
+                        mt.call_timeout = None
                 else:
                     r = cl.ssh(args.dut_node, "sudo birdc -s /run/tgen-bird.ctl show protocols | grep -c Established; "
                                               "sudo birdc -s /run/tgen-bird.ctl show memory | tail -1", check=False)

@@ -18,6 +18,7 @@ from __future__ import annotations
 import getpass
 import os
 import shlex
+import signal
 import subprocess
 from pathlib import Path
 
@@ -42,6 +43,7 @@ class Dut:
         self.password = password if password is not None else os.environ.get("TGEN_DUT_PASSWORD")
         self.opts = opts
         self.notes: list[str] = []      # things the run log should mention (e.g. a one-time change)
+        self.call_timeout: float | None = None   # caps every call's timeout (set short for polling)
 
     # ------------------------------------------------------------- transport
     def ask_password_if_needed(self) -> None:
@@ -63,18 +65,37 @@ class Dut:
         opts += (["-p", str(self.port)] if prog == "ssh" else ["-P", str(self.port)])
         return [*pre, prog, *opts], env
 
+    def _timeout(self, t: float) -> float:
+        return min(t, self.call_timeout) if self.call_timeout else t
+
+    def _exec(self, argv: list[str], env: dict, timeout: float, what: str) -> subprocess.CompletedProcess:
+        """Runs sshpass/ssh/scp in its own process group. On timeout the WHOLE group
+        is killed: killing only sshpass leaves ssh holding the output pipes, and the
+        caller then waits forever (seen on the CRS106 at 100 % CPU)."""
+        timeout = self._timeout(timeout)
+        p = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL,
+                             text=True, env=env, start_new_session=True)
+        try:
+            out, err = p.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(p.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            p.communicate()
+            raise DutError(f"{self.host}: {what} timed out after {timeout:.0f} s (DUT not answering)") from None
+        return subprocess.CompletedProcess(argv, p.returncode, out, err)
+
     def run(self, command: str, timeout: float = 60, check: bool = True) -> str:
         base, env = self._ssh_base()
-        r = subprocess.run([*base, f"{self.user}@{self.host}", command],
-                           capture_output=True, text=True, timeout=timeout, env=env)
+        r = self._exec([*base, f"{self.user}@{self.host}", command], env, timeout, f"`{command[:60]}`")
         if check and r.returncode != 0:
             raise DutError(f"{self.host}: `{command[:80]}` failed: {(r.stderr or r.stdout).strip()[-300:]}")
         return r.stdout
 
     def upload(self, local: Path, remote: str) -> None:
         base, env = self._ssh_base("scp")
-        r = subprocess.run([*base, "-q", str(local), f"{self.user}@{self.host}:{remote}"],
-                           capture_output=True, text=True, timeout=60, env=env)
+        r = self._exec([*base, "-q", str(local), f"{self.user}@{self.host}:{remote}"], env, 60, "upload")
         if r.returncode != 0:
             raise DutError(f"{self.host}: upload failed: {r.stderr.strip()[-300:]}")
 
@@ -123,8 +144,7 @@ class LinuxDut(Dut):
 
     def _probe(self, cmd: str) -> bool:
         base, env = self._ssh_base()
-        return subprocess.run([*base, f"{self.user}@{self.host}", cmd], capture_output=True,
-                              timeout=15, env=env).returncode == 0
+        return self._exec([*base, f"{self.user}@{self.host}", cmd], env, 15, f"`{cmd[:60]}`").returncode == 0
 
     def host_resources(self, daemon: str) -> dict:
         out = self.run("cat /proc/loadavg; nproc; free -m | awk '/^Mem:/{print $2, $7}'; "

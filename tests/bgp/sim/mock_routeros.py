@@ -59,6 +59,9 @@ elif cmd.startswith("/import file-name="):
     print("\nScript file loaded and executed successfully")
 elif cmd.startswith("/file remove"):
     (home / "tgen-bgp.rsc").unlink(missing_ok=True)
+elif cmd.startswith("/routing bgp session print") and os.environ.get("SIM_DUT_HANG_SESSIONS"):
+    import time as _t
+    _t.sleep(3600)                                # test: DUT stops answering session queries
 elif cmd.startswith("/routing bgp session print count-only"):
     out = subprocess.run(["birdc", "-s", str(home / "bird.ctl"), "show", "protocols"], capture_output=True, text=True).stdout
     print(sum(1 for line in out.splitlines() if " BGP " in line and "Established" in line))

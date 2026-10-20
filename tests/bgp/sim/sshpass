@@ -2,4 +2,5 @@
 # fake sshpass: check that a password was handed over via the environment
 [[ "$1" == -e ]] && shift
 [[ -n "${SSHPASS:-}" ]] || { echo "sshpass: SSHPASS not set" >&2; exit 5; }
-exec "$@"
+# like the real sshpass: ssh runs as a CHILD (holds the pipes if only sshpass is killed)
+"$@"; exit $?
