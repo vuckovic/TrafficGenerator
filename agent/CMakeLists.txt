@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(tgen_agent LANGUAGES CXX VERSION 0.2.0)
+project(tgen_agent LANGUAGES CXX VERSION 0.3.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,12 +13,16 @@ find_package(Threads REQUIRED)
 find_path(ASIO_INCLUDE asio.hpp REQUIRED)            # libasio-dev (header-only)
 find_package(nlohmann_json 3 REQUIRED)               # nlohmann-json3-dev (header-only)
 
-add_library(tgen_core STATIC src/bgp.cpp src/plan.cpp src/router.cpp)
+# cpp-httplib 0.18.3, single header vendored in third_party/ (MIT): keeps the agent binary self-contained
+set(HTTPLIB_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/third_party/httplib)
+
+add_library(tgen_core STATIC src/bgp.cpp src/plan.cpp src/router.cpp src/run.cpp)
 target_include_directories(tgen_core PUBLIC include ${ASIO_INCLUDE})
 target_compile_definitions(tgen_core PUBLIC ASIO_STANDALONE ASIO_NO_DEPRECATED)
 target_link_libraries(tgen_core PUBLIC Threads::Threads nlohmann_json::nlohmann_json)
 
-add_executable(tgen-agent src/main.cpp)
+add_executable(tgen-agent src/main.cpp src/serve.cpp)
+target_include_directories(tgen-agent PRIVATE ${HTTPLIB_INCLUDE})
 target_link_libraries(tgen-agent PRIVATE tgen_core)
 # self-contained binary: same OS on all nodes, but avoid libstdc++ drift
 target_link_options(tgen-agent PRIVATE -static-libstdc++ -static-libgcc)

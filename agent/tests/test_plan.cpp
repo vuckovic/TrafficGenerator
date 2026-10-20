@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 
 #include "tgen/plan.hpp"
+#include "tgen/run.hpp"
 
 using nlohmann::json;
 using namespace tgen;
@@ -61,4 +62,38 @@ TEST(Plan, SamplingIsDeterministicAndRoughlyOnePercent) {
   EXPECT_LT(hits, 1200);
   auto p = bgp::Prefix::parse("10.1.2.0/24");
   EXPECT_EQ(sampled(p, 100), sampled(p, 100));
+}
+
+// serve mode: a plan without "timing" is valid; phases arrive over the API
+TEST(Plan, ServeModeWithoutTiming) {
+  auto j = base();
+  j.erase("timing");
+  j["iface"] = "eth0";
+  j["seed"] = 42;
+  const auto p = tgen::plan_from_json(j);
+  EXPECT_FALSE(p.timing.present);
+  EXPECT_EQ(p.iface, "eth0");
+  EXPECT_EQ(p.seed, 42u);
+  j["iface"] = "eth0; rm -rf /";
+  EXPECT_THROW(tgen::plan_from_json(j), std::invalid_argument);
+}
+
+TEST(Phase, ParseChurnFlapAndErrors) {
+  using nlohmann::json;
+  auto c = tgen::phase_from_json(json{{"type", "churn"}, {"at_ms", 1000},
+                                      {"params", {{"rate", 50}, {"mix", {{"announce", 10}, {"withdraw", 0}, {"attr", 90}}}}}});
+  EXPECT_EQ(c.type, tgen::PhaseType::Churn);
+  EXPECT_EQ(c.at_ns, 1'000'000'000);
+  EXPECT_DOUBLE_EQ(c.rate, 50);
+  EXPECT_DOUBLE_EQ(c.mix_attr, 90);
+  auto f = tgen::phase_from_json(json{{"type", "flap"}, {"at_ms", 1}, {"params", {{"kind", "silent"}, {"down_s", 3}}}});
+  EXPECT_EQ(f.flap, tgen::FlapKind::Silent);
+  EXPECT_DOUBLE_EQ(f.down_s, 3);
+  EXPECT_FALSE(tgen::phase_from_json(json{{"type", "teardown"}, {"at_ms", 1}}).close);
+  EXPECT_THROW(tgen::phase_from_json(json{{"type", "dance"}, {"at_ms", 1}}), std::invalid_argument);
+  EXPECT_THROW(tgen::phase_from_json(json{{"type", "churn"}}), std::invalid_argument);
+  EXPECT_THROW(tgen::phase_from_json(json{{"type", "churn"}, {"at_ms", 1}, {"params", {{"mix", {{"announce", 0}}}}}}),
+               std::invalid_argument);
+  EXPECT_THROW(tgen::phase_from_json(json{{"type", "flap"}, {"at_ms", 1}, {"params", {{"kind", "explode"}}}}),
+               std::invalid_argument);
 }
