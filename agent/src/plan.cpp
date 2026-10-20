@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "tgen/plan.hpp"
 
+#include <cctype>
 #include <stdexcept>
 #include <unordered_set>
 
@@ -49,16 +50,27 @@ Plan plan_from_json(const json& j) {
   p.announce_rate = j.value("announce_rate", 0.0);
   p.per_update = j.value("per_update", 0);
   p.sample_mod = j.value("sample_mod", 100);
+  p.live_sample_mod = j.value("live_sample_mod", 1000);
+  p.seed = j.value("seed", 1ull);
+  p.iface = j.value("iface", "");
+  for (char c : p.iface)
+    if (!(std::isalnum(static_cast<unsigned char>(c)) || c == '.' || c == '-' || c == '_'))
+      throw std::invalid_argument("iface: invalid name");
+  p.controller_timeout_s = j.value("controller_timeout_s", 5.0);
   p.cores = j.value("cores", std::vector<int>{});
 
-  const json& t = j.at("timing");
-  p.timing.establish_at = req<std::int64_t>(t, "establish_at", "timing");
-  p.timing.announce_at = req<std::int64_t>(t, "announce_at", "timing");
-  if (t.contains("withdraw_at") && !t["withdraw_at"].is_null()) p.timing.withdraw_at = t["withdraw_at"].get<std::int64_t>();
-  p.timing.end_at = req<std::int64_t>(t, "end_at", "timing");
-  p.timing.establish_per_s = t.value("establish_per_s", 0.0);
-  if (!(p.timing.establish_at <= p.timing.announce_at && p.timing.announce_at < p.timing.end_at))
-    throw std::invalid_argument("timing: need establish_at <= announce_at < end_at");
+  // timing: CLI mode (whole timeline in the plan); serve mode sends phases over the API
+  if (j.contains("timing") && j["timing"].is_object() && j["timing"].contains("establish_at")) {
+    const json& t = j.at("timing");
+    p.timing.present = true;
+    p.timing.establish_at = req<std::int64_t>(t, "establish_at", "timing");
+    p.timing.announce_at = req<std::int64_t>(t, "announce_at", "timing");
+    if (t.contains("withdraw_at") && !t["withdraw_at"].is_null()) p.timing.withdraw_at = t["withdraw_at"].get<std::int64_t>();
+    p.timing.end_at = req<std::int64_t>(t, "end_at", "timing");
+    p.timing.establish_per_s = t.value("establish_per_s", 0.0);
+    if (!(p.timing.establish_at <= p.timing.announce_at && p.timing.announce_at < p.timing.end_at))
+      throw std::invalid_argument("timing: need establish_at <= announce_at < end_at");
+  }
 
   std::unordered_set<std::uint32_t> ips;
   for (const json& r : j.at("routers")) {

@@ -27,7 +27,8 @@ struct RouterPlan {
   std::uint64_t expected_rx = 0;  // routes this router should end up holding
 };
 
-struct Timing {             // absolute times, ms since the Unix epoch (chrony-synced)
+struct Timing {             // absolute times, ms since the Unix epoch (chrony-synced); CLI mode only
+  bool present = false;     // serve mode: phases arrive over the API instead
   std::int64_t establish_at = 0;
   std::int64_t announce_at = 0;
   std::optional<std::int64_t> withdraw_at;
@@ -47,6 +48,10 @@ struct Plan {
   double announce_rate = 0;       // prefixes/s per router; 0 = as fast as the session allows
   std::size_t per_update = 0;     // max prefixes per UPDATE; 0 = fill 4096 bytes
   std::uint32_t sample_mod = 100; // latency sample: prefixes with hash % sample_mod == 0
+  std::uint32_t live_sample_mod = 1000;  // subset reported live (serve mode stats)
+  std::uint64_t seed = 1;         // churn / flap randomness (reproducible)
+  std::string iface;              // serve mode: interface for the routers' /32 addresses ("" = do not manage)
+  double controller_timeout_s = 5;  // serve mode: stop the run without controller contact for this long
   std::vector<int> cores;         // worker threads pinned to these cores (empty = no pinning)
   Timing timing;
   std::vector<RouterPlan> routers;
