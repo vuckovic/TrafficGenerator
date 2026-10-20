@@ -151,6 +151,25 @@ tools/tgen_series.py --rates 2,4,6,8,10,12 -- --dut mikrotik --routers 12 --pref
 
 ## Results on the cluster (CM5, real hardware)
 
+### P2 gate on the cluster: **PASSED** (2026‑10‑20, `p2-20261020-233819`)
+
+60 routers × 10 000 prefixes against the BIRD 2 stand‑in on CMNODE06. Routers on CMNODE01–05 (CMNODE01 at 0.7 weight).
+
+| Check | Result |
+|---|---|
+| Sessions | **60/60 Established**, setup p90 11.2 s, 0 resets |
+| Initial convergence | **18.8 s**: all 60 receivers hold 590 000 routes each (35.4 M routes) |
+| Correctness | 0 missing, 0 extra, 0 attribute violations, nothing added beyond the role |
+| Announce latency p50 / p99 | 9.4 s / 18.6 s (n = 349 103): BIRD's queue under a 600 k burst |
+| Withdraw convergence | 9.2 s (latency p50 / p99 4.6 s / 9.1 s) |
+| DUT output | **1.88 M prefixes/s** (BIRD on one CM5) |
+| Generator CPU (node average p95) | CMNODE01 2 %, CMNODE02 4 %, CMNODE03–05 2 %. Large headroom. CMNODE06 (BIRD) p95 25 % |
+
+**Compared with the development machine** (x86, everything on one box): convergence is faster on the cluster (18.8 vs 28.6 s), because BIRD has its own node.
+
+**Open observation:** session setup p90 is 11.2 s (2.7 s on the development machine). Likely BIRD bringing 60 passive protocols up on a CM5, or our connect retry after early refusals. It does not affect the gate. To look at in P3, where sessions start in the Establish phase.
+
+
 | Date | Run | DUT | Sessions | Initial convergence | Announce latency p50 / p99 | Withdraw convergence | DUT output | Gate |
 |---|---|---|---|---|---|---|---|---|
 | 2026‑10‑20 | `p2-20261020-194352`: 12 × 100, route server, max rate | MikroTik CRS106‑1C‑5S, RouterOS 7.11 | 12/12, setup p90 2.4 s | 13.5 s | 6.8 s / 13.5 s | 2.4 s | **1 062 prefixes/s** | PASS |
