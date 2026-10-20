@@ -133,6 +133,7 @@ Not yet verified on real hardware:
 | 2026‑10‑20 | `p2-20261020-202630`: same, BGP debug logging on the DUT | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 12/12, setup p90 2.5 s | 13.6 s | 8.9 s / 11.5 s | 2.4 s | **1 053 prefixes/s** (logging cost ≤ 2 %) | PASS |
 | 2026‑10‑20 | `p2-20261020-214235`: 12 × 100, **router** (new default), polling 10 s | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 12/12, setup p90 2.7 s | 14.7 s | 11.9 s / 14.3 s | 2.4 s | **966 prefixes/s** | PASS; AS + next‑hop‑self on 13 200/13 200 ✔ |
 | 2026‑10‑20 | `p2-20261020-214711`: 12 × 100, **route reflector** | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 12/12, setup p90 2.7 s | 14.9 s | 7.4 s / 14.8 s | 2.4 s | **957 prefixes/s** | PASS; **no ORIGINATOR_ID on 13 200/13 200** (INFO) |
+| 2026‑10‑20 | `p2-20261020-220302`: route reflector, repeat (DUT view: 18 polls, 0 failed; sessions up 22:03:32–35) | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 12/12, setup p90 2.7 s | 15.3 s | 11.9 s / 14.6 s | 2.6 s | **933 prefixes/s** | PASS; no ORIGINATOR_ID on 13 200/13 200 (INFO), repeatable |
 
 **Reading:**
 - **The CRS106 is the bottleneck.** 13 200 route deliveries (1 200 prefixes × 11 receivers) at about 1 060/s matches the 13.5 s convergence.
