@@ -136,7 +136,7 @@ Not yet verified on real hardware:
 - **Generator CPU was about 0 %.** The cluster was not a factor.
 - **Repeatable:** three runs within 1 % (1 062 / 1 070 / 1 075 prefixes/s; convergence 13.5 / 13.4 / 13.3 s). The DUT's CPU was still at 43–65 % a few minutes after the previous run.
 - **RouterOS is not a transparent route server.** In the `route_server` role it added its AS (64500) to **all 13 200** delivered routes and kept the next hop (0 changed). RouterOS 7 has no route‑server mode and no filter that removes its own AS, so this is a property of the device. The gate reports it as INFO for real DUTs.
-- **The DUT's clock is not synchronised.** Its log showed `01-02 00:40` and `06:11` while CMNODE01 showed 20:26. Point it at CMNODE01's chrony: `/system ntp client set enabled=yes servers=192.168.100.11`.
+- **The DUT's clock is not synchronised.** Its log showed `01-02 00:40` and `06:11` while CMNODE01 showed 20:26. Point it at CMNODE01's chrony on the traffic network: on CMNODE01 `allow 10.100.0.0/24` in chrony, then on the router `/system ntp client set enabled=yes servers=10.100.0.11`.
 - **Next:** paced runs (`--rate 5`, `--rate 10`) to find the knee.
 
 ## Results so far (development machine, x86, 2 cores, BIRD 2.14 on loopback)
