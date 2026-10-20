@@ -50,6 +50,7 @@ if cmd.startswith("/system resource print"):
 elif cmd.startswith("/import file-name="):
     rsc = (home / "tgen-bgp.rsc").read_text()
     adds = [l[len("/routing bgp connection add "):] for l in rsc.splitlines() if l.startswith("/routing bgp connection add ")]
+    (home / "logging.txt").write_text("\n".join(l for l in rsc.splitlines() if l.startswith("/system logging add")))
     state.write_text("\n".join(adds) + "\n")
     start_bird(connections())
     print("\nScript file loaded and executed successfully")
@@ -60,6 +61,8 @@ elif cmd.startswith("/routing bgp session print count-only"):
     print(sum(1 for line in out.splitlines() if " BGP " in line and "Established" in line))
 elif "count-only" in cmd:
     print(len(connections()))
+elif cmd.startswith("/system logging remove"):
+    (home / "logging.txt").write_text("")
 elif cmd.startswith("/routing bgp connection remove"):
     state.write_text("")
     start_bird([])

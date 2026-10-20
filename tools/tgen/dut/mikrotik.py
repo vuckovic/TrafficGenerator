@@ -47,6 +47,10 @@ class MikroTik(Dut):
             f"# TrafficGenerator run {run_id}: {len(meta['routers'])} emulated routers, role {role}",
             f'# generated - do not edit; removed by: /routing bgp connection remove [find where comment~"{TAG}"]',
             f'/routing bgp connection remove [find where comment~"{TAG}"]',
+            # RouterOS 7 does not log BGP by default: log BGP events (no per-update
+            # debug lines) to memory for the run, so dut-bgp.log is not empty
+            f'/system logging remove [find where comment~"{TAG}"]',
+            f'/system logging add topics=bgp,!debug action=memory comment="{TAG} BGP events during the run"',
         ]
         for r in meta["routers"]:
             remote_as = dut_asn if role == "route_reflector" else r["asn"]
@@ -81,6 +85,7 @@ class MikroTik(Dut):
 
     def remove(self) -> None:
         self.run(f'/routing bgp connection remove [find where comment~"{TAG}"]')
+        self.run(f'/system logging remove [find where comment~"{TAG}"]')
 
     def sessions(self) -> tuple[str, int]:
         out = self.run(f'/routing bgp session print terse where name~"{TAG}"')
