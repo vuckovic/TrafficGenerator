@@ -342,6 +342,7 @@ UpdateMsg decode_update(std::span<const std::uint8_t> body, bool as4) {
     auto v = a.take(len);
     Reader vr(v, 3, 5);
     u.has_attrs = true;
+    u.attr_types.set(type);
     switch (type) {
       case attr::kOrigin:
         if (len != 1) throw DecodeError(3, 5, "bad ORIGIN length");

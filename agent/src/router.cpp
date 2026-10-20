@@ -199,6 +199,7 @@ void Router::build_batches() {
       b.msg = std::make_shared<bgp::Bytes>(m);
       const auto u = bgp::decode_update(std::span<const std::uint8_t>(m).subspan(bgp::kHeaderLen), st_.as4);
       const auto& list = withdraw ? u.withdrawn : u.nlri;
+      if (!withdraw) sent_types_ |= u.attr_types;
       b.prefixes = list.size();
       for (const auto& p : list)
         if (sampled(p, plan_.sample_mod)) b.samples.push_back(p);
@@ -335,6 +336,8 @@ void Router::on_update(const bgp::UpdateMsg& u) {
       return;
     }
     if (!path.empty() && path.front() == plan_.dut_asn) st_.paths_with_dut_asn += n;
+    for (int ty = 0; ty < 256; ++ty)
+      if (u.attr_types[static_cast<std::size_t>(ty)]) st_.attr_rx[ty] += n;
     if (u.attrs.has_next_hop && u.attrs.next_hop == plan_.dut_ip) st_.next_hop_is_dut += n;
     if (plan_.role == DutRole::RouteReflector && !u.attrs.originator_id) st_.paths_without_originator += n;
     for (const auto& p : u.nlri) {
@@ -470,6 +473,8 @@ json Router::result() const {
       {"t_empty_after_withdraw", st_.t_empty_after_withdraw},
       {"checks", {{"paths_with_dut_asn", st_.paths_with_dut_asn}, {"next_hop_is_dut", st_.next_hop_is_dut},
                   {"paths_without_originator", st_.paths_without_originator}, {"looped_rx", st_.looped_rx}}},
+      {"attrs_sent", [&] { json a = json::array(); for (int ty = 0; ty < 256; ++ty) if (sent_types_[static_cast<std::size_t>(ty)]) a.push_back(ty); return a; }()},
+      {"attrs_rx", [&] { json o = json::object(); for (const auto& [ty, n] : st_.attr_rx) o[std::to_string(ty)] = n; return o; }()},
       {"max_keepalive_gap_ms", st_.max_keepalive_gap_ns / 1e6},
       {"notifications_rx", notif_rx}, {"notifications_tx", notif_tx}, {"errors", st_.errors},
       {"samples", {{"tx", samples(sample_tx_)}, {"rx", samples(sample_rx_)},

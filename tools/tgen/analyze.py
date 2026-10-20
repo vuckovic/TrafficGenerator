@@ -44,10 +44,13 @@ def analyze(meta: dict, results: list[dict]) -> dict:
     last_send = max((r["t_last_send"] for r in routers if r["t_last_send"]), default=0)
     convergence = {
         "receivers_converged": len(conv), "receivers": n,
-        "initial_s": max(conv) if len(conv) == n else None,
+        "initial_s": max(conv) if conv and len(conv) == n else None,
         "per_receiver_s": dist(conv),
         "not_converged": not_conv[:20],
         "send_window_s": s(last_send - first_send) if first_send else None,
+        # paced runs: how long after our last announcement every receiver was complete (the DUT's lag)
+        "after_last_send_s": (s(max(r["t_converged"] for r in routers) - last_send)
+                              if last_send and len(conv) == n and n else None),
     }
 
     def latency(tx_key: str, rx_key: str) -> dict:
@@ -86,6 +89,7 @@ def analyze(meta: dict, results: list[dict]) -> dict:
         **checks,
         # route server: must add nothing; reflector: must add ORIGINATOR_ID; router: must
         # add its AS and set itself as next hop on every route it passes on
+        "attributes": unexpected_attributes(routers, role),
         "attribute_violations": (checks.get("paths_with_dut_asn", 0) + checks.get("next_hop_is_dut", 0))
         if role == "route_server" else checks.get("paths_without_originator", 0) if role == "route_reflector" else
         max(0, rx_total - checks.get("paths_with_dut_asn", 0)) + max(0, rx_total - checks.get("next_hop_is_dut", 0)),
@@ -101,6 +105,31 @@ def analyze(meta: dict, results: list[dict]) -> dict:
     return {"run_id": meta["run_id"], "sessions": sessions, "convergence": convergence,
             "latency_announce_ms": lat_ann, "latency_withdraw_ms": lat_wd, "withdraw": withdraw,
             "dut_output": dut_out, "correctness": correctness, "generator": generator}
+
+
+ATTR_NAMES = {1: "ORIGIN", 2: "AS_PATH", 3: "NEXT_HOP", 4: "MED", 5: "LOCAL_PREF", 6: "ATOMIC_AGGREGATE",
+              7: "AGGREGATOR", 8: "COMMUNITIES", 9: "ORIGINATOR_ID", 10: "CLUSTER_LIST", 14: "MP_REACH_NLRI",
+              15: "MP_UNREACH_NLRI", 16: "EXT_COMMUNITIES", 17: "AS4_PATH", 18: "AS4_AGGREGATOR",
+              32: "LARGE_COMMUNITY", 35: "OTC"}
+# attributes a DUT in this role may (or must) add to the routes it passes on
+ROLE_MAY_ADD = {"route_server": set(), "route_reflector": {5, 9, 10}, "router": set()}
+
+
+def attr_name(t: int) -> str:
+    return f"{ATTR_NAMES.get(t, 'type')}({t})"
+
+
+def unexpected_attributes(routers: list[dict], role: str) -> dict:
+    """Attribute types the DUT added that neither our routers sent nor the role allows."""
+    sent = set().union(*(set(r.get("attrs_sent", [])) for r in routers)) if routers else set()
+    rx: dict[int, int] = {}
+    for r in routers:
+        for t, n in (r.get("attrs_rx") or {}).items():
+            rx[int(t)] = rx.get(int(t), 0) + n
+    allowed = sent | ROLE_MAY_ADD.get(role, set())
+    return {"sent": sorted(sent), "received": {attr_name(t): n for t, n in sorted(rx.items())},
+            "unexpected": {attr_name(t): n for t, n in sorted(rx.items()) if t not in allowed},
+            "dropped": [attr_name(t) for t in sorted(sent) if t not in rx and t not in (4, 5)]}
 
 
 EXPECT = {"route_server": "route server adds no AS and keeps the next hop",
@@ -134,6 +163,10 @@ def gate(report: dict, cpu: dict[str, float] | None = None, cpu_limit: float = 7
          and report["correctness"]["extra_routes"] == 0,
          f'missing {report["correctness"]["missing_routes"]}, extra {report["correctness"]["extra_routes"]}'),
         ("no unexpected session resets", s["resets"] == 0, str(s["resets"])),
+        ("no attributes added beyond the role",
+         (not report["correctness"]["attributes"]["unexpected"]) if reference_dut else None,
+         ", ".join(f"{k} on {v:,} routes" for k, v in report["correctness"]["attributes"]["unexpected"].items())
+         or "none"),
         (f"route attributes as expected ({EXPECT[role]})",
          (report["correctness"]["attribute_violations"] == 0) if reference_dut else None,
          attribute_detail(report, role)),

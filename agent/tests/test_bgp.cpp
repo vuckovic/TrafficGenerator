@@ -192,3 +192,23 @@ TEST(Notification, RoundTripAndText) {
   EXPECT_EQ(notification_text(6, 2), "Cease: Administrative shutdown");
   EXPECT_EQ(notification_text(4, 0), "Hold Timer Expired");
 }
+
+// RouterOS 7.11.2 as route reflector: UPDATE with ATOMIC_AGGREGATE (type 6) and
+// without ORIGINATOR_ID / CLUSTER_LIST (seen in a capture on the cluster)
+TEST(Decode, RecordsAttributeTypesIncludingAtomicAggregate) {
+  const std::vector<std::uint8_t> body = {
+      0x00, 0x00,                                                    // no withdrawn routes
+      0x00, 0x1E,                                                    // 30 bytes of attributes
+      0x40, 0x01, 0x01, 0x00,                                        // ORIGIN IGP
+      0x40, 0x02, 0x06, 0x02, 0x01, 0x00, 0x00, 0xFD, 0xE8,          // AS_PATH 65000 (4-octet)
+      0x40, 0x03, 0x04, 0x0A, 0x64, 0x00, 0x14,                      // NEXT_HOP 10.100.0.20
+      0x40, 0x05, 0x04, 0x00, 0x00, 0x00, 0x64,                      // LOCAL_PREF 100
+      0x40, 0x06, 0x00,                                              // ATOMIC_AGGREGATE
+      0x18, 0x0A, 0x01, 0x02};                                       // NLRI 10.1.2.0/24
+  const auto u = decode_update(body, true);
+  ASSERT_EQ(u.nlri.size(), 1u);
+  EXPECT_TRUE(u.attr_types[1] && u.attr_types[2] && u.attr_types[3] && u.attr_types[5] && u.attr_types[6]);
+  EXPECT_FALSE(u.attr_types[9] || u.attr_types[10]);
+  EXPECT_EQ(u.attr_types.count(), 5u);
+  EXPECT_FALSE(u.attrs.originator_id.has_value());
+}

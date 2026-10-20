@@ -112,6 +112,31 @@ Not yet verified on real hardware:
 - the CRS106 at 10.100.0.111;
 - any Cisco device. The Cisco test runs against a mock; real IOS prompts and timing are handled by Netmiko.
 
+## Rate series: finding the knee (`tools/tgen_series.py`)
+
+```bash
+tools/tgen_series.py --rates 2,4,6,8,10,12 -- --dut mikrotik --routers 12 --prefixes 100 --withdraw-timeout 30
+```
+
+**What it does:**
+- Runs `tgen_p2.py` once per paced rate (prefixes/s per router). Everything after `--` goes to every run.
+- Asks for the DUT password once, for the whole series.
+- Sets each run's convergence timeout to prefixes ÷ rate × 1.5 + 60 s, unless you give one.
+- Stops one run after the knee (`--stop-after-knee`).
+
+**Knee rule:** announce p99 > 1 000 ms (`--knee-p99-ms`), or DUT output < 0.9 × offered deliveries (`--knee-ratio`). Offered deliveries = rate × routers × (routers − 1).
+
+**Output:** `~/tgen-test-results/series-<timestamp>/series.md|csv|json`. Each run keeps its own `p2-*` folder.
+
+**Columns:**
+- offered prefixes/s, offered deliveries/s, DUT output /s;
+- convergence: from the first announcement, and **after the last send** (the DUT's lag);
+- announce latency p50 / p99, our send lag p99, DUT CPU mid‑run, missing routes, resets, gate.
+
+**Pacing:** works per UPDATE message. Without `--per-update`, a paced run now sends about one UPDATE every 100 ms (rate ÷ 10 prefixes per UPDATE, at least 1). Before this fix, all of a router's prefixes went out in one UPDATE, so "paced" runs were not paced.
+
+**Unexpected attributes:** the agent records every path‑attribute type it receives (`attrs_rx`) and every type our routers send (`attrs_sent`). The report flags types the DUT added beyond the role: a route server and a router may add nothing new; a reflector may add LOCAL_PREF, ORIGINATOR_ID and CLUSTER_LIST. This is PASS/FAIL for the BIRD stand‑in and INFO for a real DUT. Example: CRS106 reflector → `ATOMIC_AGGREGATE(6)` on every route. FRR 8.4 as reflector in our configuration advertises MED 0 to the clients (`Metric 0` in `advertised-routes`, none on the stored path); possibly caused by our outbound route‑map.
+
 ## P2 gate (spec §14)
 
 | Check | Pass when |

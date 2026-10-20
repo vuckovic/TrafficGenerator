@@ -9,6 +9,7 @@
 #pragma once
 
 #include <array>
+#include <bitset>
 #include <cstdint>
 #include <optional>
 #include <span>
@@ -103,6 +104,7 @@ struct UpdateMsg {
   std::vector<Prefix> withdrawn;
   PathAttributes attrs;
   bool has_attrs = false;
+  std::bitset<256> attr_types;  // every path attribute type code present (decoded only)
   std::vector<Prefix> nlri;
 };
 

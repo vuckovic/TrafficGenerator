@@ -53,6 +53,16 @@ def split(total: int, nodes: list[NodeSpec]) -> list[int]:
     return out
 
 
+def effective_per_update(sc: Scenario) -> int:
+    """Pacing works per UPDATE message. Without a limit all of a router's prefixes
+    fit in one or a few UPDATEs (about 800 per 4 KB message), which are sent at
+    once - a paced run would not be paced. With a rate and no explicit limit,
+    send about one UPDATE every 100 ms."""
+    if sc.per_update or sc.announce_rate <= 0:
+        return sc.per_update
+    return max(1, int(sc.announce_rate / 10))
+
+
 def build(sc: Scenario, nodes: list[NodeSpec], now_ms: int | None = None) -> tuple[dict[str, dict], dict]:
     counts = split(sc.routers_total, nodes)
     asns = generate_asns(sc.routers_total, sc.seed, exclude=[sc.dut_asn])
@@ -89,7 +99,7 @@ def build(sc: Scenario, nodes: list[NodeSpec], now_ms: int | None = None) -> tup
         plans[node.name] = {
             "run_id": sc.run_id, "node": node.name,
             "dut": {"ip": sc.dut_ip, "asn": sc.dut_asn, "role": sc.role},
-            "hold_time": sc.hold_time, "announce_rate": sc.announce_rate, "per_update": sc.per_update,
+            "hold_time": sc.hold_time, "announce_rate": sc.announce_rate, "per_update": effective_per_update(sc),
             "sample_mod": sc.sample_mod, "cores": node.cores,
             "timing": {},
             "routers": [{

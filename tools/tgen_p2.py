@@ -250,6 +250,8 @@ def main() -> int:
     plans, meta = build(sc, nodes)
     log(f"plan: {args.routers} routers x {args.prefixes} prefixes = {meta['total_prefixes']} on "
         + ", ".join(f"{k} {v}" for k, v in meta["router_counts"].items()) + f" ({time.time() - t0:.0f} s)")
+    if args.rate > 0:
+        log(f"paced: {args.rate:g} prefixes/s per router, {plans[router_nodes[0]]['per_update']} prefixes per UPDATE")
 
     added: dict[str, list[str]] = {}
     bird_started = False
@@ -451,6 +453,10 @@ def main() -> int:
         f"correctness   : missing {report['correctness']['missing_routes']:,}, extra "
         f"{report['correctness']['extra_routes']:,}, attribute violations {report['correctness']['attribute_violations']:,} "
         f"({attribute_detail(report, args.role)}), own routes sent back {report['correctness'].get('looped_rx', 0):,}",
+        "attributes    : added by the DUT beyond the role: " + (", ".join(
+            f"{k} on {v:,}" for k, v in report["correctness"]["attributes"]["unexpected"].items()) or "none")
+        + (f"; dropped: {', '.join(report['correctness']['attributes']['dropped'])}"
+           if report["correctness"]["attributes"]["dropped"] else ""),
         *([f"DUT view      : {dv['sessions']} sessions, started {(dv.get('first_start') or '?')[-8:]}-"
             f"{(dv.get('last_start') or '?')[-8:]} (DUT clock), restarts {dv.get('restarts', 0)}, "
             f"peak prefixes from our routers {dv.get('max_prefixes_from_peers', 0):,} "

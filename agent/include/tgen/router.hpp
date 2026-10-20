@@ -5,6 +5,8 @@
 #pragma once
 
 #include <array>
+#include <bitset>
+#include <map>
 #include <cstdint>
 #include <deque>
 #include <functional>
@@ -49,6 +51,7 @@ struct RouterStats {
   std::uint64_t routes_held = 0, routes_peak = 0;
   std::int64_t t_first_rx = 0, t_converged = 0, t_last_rx = 0, t_empty_after_withdraw = 0;
   std::uint64_t paths_with_dut_asn = 0, next_hop_is_dut = 0, paths_without_originator = 0;
+  std::map<int, std::uint64_t> attr_rx;  // attribute type code -> NLRI received with it
   std::uint64_t looped_rx = 0;  // own routes sent back (own AS in AS_PATH / own ORIGINATOR_ID): dropped, RFC 4271 9.1.2
 
   std::int64_t max_keepalive_gap_ns = 0;
@@ -114,6 +117,7 @@ class Router : public std::enable_shared_from_this<Router> {
   std::int64_t rx_time_ = 0;           // arrival time of the current read
   std::int64_t establish_offset_ns_ = 0;
   std::uint32_t local_as_ = 0;
+  std::bitset<256> sent_types_;  // attribute types in our own announcements
 
   std::deque<Out> outq_;
   bool writing_ = false;
