@@ -154,7 +154,7 @@ Not yet verified on real hardware:
 - **Router role:** correct (AS added and next hop = DUT on every route). It is about 10 % slower than in the route‑server role (966 vs about 1 060 prefixes/s): rewriting the next hop costs work, and polling may add a little.
 - **Route‑reflector role, confirmed by a packet capture:** every route was reflected (0 missing), but RouterOS 7.11.2 adds **neither ORIGINATOR_ID (type 9) nor CLUSTER_LIST (type 10)**, both of which RFC 4456 §8 requires. It also adds **ATOMIC_AGGREGATE (type 6)** to every reflected route, without aggregating.
   - Capture: `tcpdump` on CMNODE02, all BGP traffic with 10.100.0.111.
-  - Attribute types counted in the 104 UPDATEs: 1, 2, 3, 5 on all of them; 6 on 102 (the 2 without it are our own announcements); 9 and 10 on none; 8 UPDATEs carried no attributes (withdrawals / End‑of‑RIB).
+  - UPDATEs **sent by the DUT** (`ip.src == 10.100.0.111`): 102 with attributes, each carrying types 1, 2, 3, 5 **and 6**, none carrying 9 or 10; 6 without attributes (withdrawals / End‑of‑RIB). Our own 2 announcements carry 1, 2, 3, 5 only.
   - Command: `tshark -r rr.pcap -Y "bgp.type == 2" -T fields -e bgp.update.path_attribute.type_code | tr "," "\n" | sort -n | uniq -c`.
 - **DUT view:** `dut-sessions.jsonl` gives per‑session `E` flag, `last-started` and `prefix-count` (format: `tests/fixtures/dut-sessions/`). Summarised as `dut_view` in `report.json` and in the summary.
 - **Next:** paced runs (`--rate 5`, `--rate 10`, …) to find the knee.
