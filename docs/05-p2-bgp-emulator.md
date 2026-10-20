@@ -134,7 +134,8 @@ Not yet verified on real hardware:
 - **The latency is queueing.** All routers sent at once, so prefixes waited in the DUT's queue.
 - **Generator CPU was about 0 %.** The cluster was not a factor.
 - **Repeatable:** three runs within 1 % (1 062 / 1 070 / 1 075 prefixes/s; convergence 13.5 / 13.4 / 13.3 s). The DUT's CPU was still at 43–65 % a few minutes after the previous run.
-- **Next:** paced runs (`--rate 5`, `--rate 10`) to find the knee, and an AS‑prepend check in `report.json`.
+- **RouterOS is not a transparent route server.** In the `route_server` role it added its AS (64500) to **all 13 200** delivered routes and kept the next hop (0 changed). RouterOS 7 has no route‑server mode and no filter that removes its own AS, so this is a property of the device. The gate reports it as INFO for real DUTs.
+- **Next:** paced runs (`--rate 5`, `--rate 10`) to find the knee.
 
 ## Results so far (development machine, x86, 2 cores, BIRD 2.14 on loopback)
 
