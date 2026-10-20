@@ -1,0 +1,456 @@
+key,type,en,sr-Cyrl
+_lang.name,meta,English,Српски
+_lang.flag,meta,gb,rs
+_lang.html,meta,en,sr-Cyrl
+_lang.number_group,meta, ,.
+_lang.decimal,meta,.,","
+app.title,heading,TrafficGenerator,TrafficGenerator
+app.controller,text,Controller,Контролер
+app.preview_banner,text,"Preview — layout mock‑up with illustrative sample values, not measured data.","Преглед — макета изгледа са илустративним вредностима, не измереним подацима."
+app.preview_banner_charts,text,Charts are interactive: move the mouse over a chart or use its sliders.,Графици су интерактивни: померајте миш преко графика или користите клизаче испод њега.
+lang.select,label,Language,Језик
+lang.select.tip,tooltip,Interface language. Saved in this browser.,Језик интерфејса. Чува се у овом прегледачу.
+nav.main,aria,Main,Главни мени
+nav.benchmark,tab,Benchmark,Мерење
+nav.traffic,tab,Traffic,Саобраћај
+nav.reports,tab,Reports,Извештаји
+nav.dut_logs,tab,DUT logs,Логови DUT‑а
+nav.history,tab,History,Историја
+nav.settings,tab,Nodes & settings,Чворови и подешавања
+run.start,button,Start,Покрени
+run.stop,button,Stop,Заустави
+auth.logout,button,Log out,Одјава
+auth.login,button,Log in,Пријава
+auth.password,label,Password,Лозинка
+auth.change_password,button,Change password,Промени лозинку
+state.idle,state,IDLE,МИРУЈЕ
+state.validating,state,VALIDATING,ПРОВЕРА
+state.arming,state,ARMING,ПРИПРЕМА
+state.running,state,RUNNING,У ТОКУ
+state.stopping,state,STOPPING,ЗАУСТАВЉАЊЕ
+state.analysing,state,ANALYSING,АНАЛИЗА
+state.done,state,DONE,ЗАВРШЕНО
+state.error,state,ERROR,ГРЕШКА
+run.phase_of,text,{phase} ({n}/{m}),{phase} ({n}/{m})
+g.run_type,label,Run type,Врста теста
+g.run_type.bgp,option,BGP benchmark,BGP мерење
+g.run_type.tcpip,option,TCP/IP traffic,TCP/IP саобраћај
+g.run_type.stateless,option,BGP stateless,BGP без стања (stateless)
+g.run_type.both,option,Benchmark + data‑plane traffic,Мерење + саобраћај у равни података
+g.nodes,label,Nodes,Чворови
+g.run_name,label,Run name,Назив теста
+g.notes,label,Notes,Белешке
+g.profile,label,Profile,Профил
+g.profile.save,button,Save,Сачувај
+g.profile.load,button,Load,Учитај
+g.profile.delete,button,Delete,Обриши
+g.seed,label,Seed,Семе
+g.seed.tip,tooltip,"Random seed. The same seed gives the same AS numbers, prefixes and timings.","Семе генератора случајних бројева. Исто семе даје исте AS бројеве, префиксе и тајминге."
+dut.title,heading,Device under test,Уређај под тестом
+dut.export,button,Export DUT config,Извези конфигурацију DUT‑а
+dut.role,label,DUT role,Улога DUT‑а
+dut.role.route_server,option,Route server,Рут сервер
+dut.role.route_reflector,option,Route reflector,Рут рефлектор
+dut.role.router,option,Router (forwards traffic),Рутер (прослеђује саобраћај)
+dut.role.route_server.explain,text,IXP route server. Every emulated router is a separate eBGP peer with its own AS number. The route server passes routes between peers without adding its own AS number and without changing the next hop. Control‑plane test only.,Рут сервер IXP‑а. Сваки емулирани рутер је засебан eBGP сусед са сопственим AS бројем. Рут сервер прослеђује руте између суседа без додавања свог AS броја и без промене следећег скока (next hop). Само тест контролне равни.
+dut.role.route_reflector.explain,text,iBGP route reflector. All emulated routers are clients in the DUT's AS; the AS numbers you set appear as origin AS in the AS_PATH. The reflector adds ORIGINATOR_ID and CLUSTER_LIST and keeps the next hop. Control‑plane test only.,iBGP рут рефлектор. Сви емулирани рутери су клијенти у AS‑у DUT‑а; AS бројеви које задате појављују се као изворни AS у AS_PATH. Рефлектор додаје ORIGINATOR_ID и CLUSTER_LIST и задржава следећи скок. Само тест контролне равни.
+dut.role.router.explain,text,"BGP router that sets itself as next hop. Routes are learned and re‑advertised, and data traffic between the emulated routers' prefixes is sent through the DUT, so forwarding, loss and data‑plane convergence can be measured.","BGP рутер који себе поставља као следећи скок. Руте се уче и поново оглашавају, а саобраћај између префикса емулираних рутера шаље се кроз DUT, па се могу мерити прослеђивање, губици и конвергенција равни података."
+dut.platform,label,Platform / version,Платформа / верзија
+dut.platform.mikrotik,option,MikroTik RouterOS 7,MikroTik RouterOS 7
+dut.platform.cisco,option,Cisco IOS / IOS‑XE (2015 and later),Cisco IOS / IOS‑XE (2015. и новији)
+dut.platform.bird,option,BIRD 2 / 3,BIRD 2 / 3
+dut.platform.frr,option,Quagga / FRR,Quagga / FRR
+dut.platform.standin,option,BIRD stand‑in on a cluster node,BIRD замена на чвору кластера
+dut.platform.other,option,Other (configure manually),Друго (ручна конфигурација)
+dut.version,label,Version,Верзија
+dut.ip,label,DUT IP,IP DUT‑а
+dut.asn,label,DUT ASN,ASN DUT‑а
+dut.polling,label,DUT polling,Праћење DUT‑а
+dut.snmp,label,SNMP,SNMP
+dut.ssh,label,SSH,SSH
+dut.snmp.version,label,SNMP version,SNMP верзија
+dut.snmp.community,label,Community,Community
+dut.snmp.v3user,label,v3 user / auth / priv,v3 корисник / auth / priv
+dut.poll_interval,label,Polling interval (s),Интервал праћења (s)
+dut.test,button,Test,Провери
+dutcfg.title,heading,DUT configuration,Конфигурација DUT‑а
+dutcfg.subtitle,text,Neighbours are added over SSH before the run and removed after it.,Суседи се додају преко SSH‑а пре теста и уклањају после њега.
+dutcfg.auto,label,Configure the DUT before each run,Конфигуриши DUT пре сваког теста
+dutcfg.auto.tip,tooltip,"Adds one BGP neighbour per emulated router (its IP and AS number) to the device, verifies the count, and removes exactly these neighbours after the run. Nothing else in the device configuration is changed.","Додаје на уређај по један BGP сусед за сваки емулирани рутер (његов IP и AS број), проверава број суседа и после теста уклања управо те суседе. Ништа друго у конфигурацији уређаја се не мења."
+dutcfg.ssh_host,label,SSH address,SSH адреса
+dutcfg.ssh_host.tip,tooltip,Management address for SSH. Empty = the DUT IP.,Адреса за управљање преко SSH‑а. Празно = IP DUT‑а.
+dutcfg.port,label,Port,Порт
+dutcfg.user,label,User,Корисник
+dutcfg.auth,label,Authentication,Аутентикација
+dutcfg.auth.password,option,"Password (asked at start, not stored)","Лозинка (тражи се при покретању, не чува се)"
+dutcfg.auth.key,option,SSH key of CMNODE01,SSH кључ чвора CMNODE01
+dutcfg.auth.show_key,button,Show public key,Прикажи јавни кључ
+dutcfg.enable,label,Enable secret,Enable лозинка
+dutcfg.enable.tip,tooltip,"Only if the Cisco user is not privilege 15. Asked at start, not stored.","Само ако Cisco корисник нема ниво привилегија 15. Тражи се при покретању, не чува се."
+dutcfg.sudo,label,Use sudo,Користи sudo
+dutcfg.sudo.tip,tooltip,birdc and vtysh need root or passwordless sudo on the DUT host.,birdc и vtysh захтевају root или sudo без лозинке на рачунару DUT‑а.
+dutcfg.bird_include,label,BIRD include file,BIRD include датотека
+dutcfg.bird_include.tip,tooltip,The neighbours are written to this file; bird.conf gets one include line the first time.,Суседи се уписују у ову датотеку; у bird.conf се први пут додаје један ред include.
+dutcfg.bird_socket,label,birdc socket,birdc сокет
+dutcfg.max_routes,label,Route limit,Ограничење броја рута
+dutcfg.max_routes.tip,tooltip,"Runs above this many routes are refused, to protect small devices (MikroTik CRS106: 20 000). Empty = no limit.","Тестови са више рута од овога се одбијају, ради заштите малих уређаја (MikroTik CRS106: 20 000). Празно = без ограничења."
+dutcfg.after,label,After the run,После теста
+dutcfg.after.remove,option,Remove neighbours,Уклони суседе
+dutcfg.after.keep,option,Keep neighbours,Задржи суседе
+dutcfg.btn.test,button,Test connection,Провери везу
+dutcfg.btn.preview,button,Preview config,Прегледај конфигурацију
+dutcfg.btn.push,button,Push now,Пошаљи сада
+dutcfg.btn.remove,button,Remove,Уклони
+dutcfg.btn.status,button,Status,Стање
+dutcfg.status.connected,text,Connected,Повезано
+dutcfg.status.neighbours,text,{n} tgen neighbours configured,Конфигурисано tgen суседа: {n}
+dutcfg.status.established,text,{n} Established,Established: {n}
+dutcfg.status.failed,text,Connection failed,Повезивање није успело
+dutcfg.preview.title,heading,Configuration for {platform},Конфигурација за {platform}
+dutcfg.preview.copy,button,Copy,Копирај
+dutcfg.preview.download,button,Download,Преузми
+dutcfg.note.rs_mikrotik,text,RouterOS has no transparent route‑server mode: it adds its own AS number. The report shows this as altered routes.,RouterOS нема транспарентни режим рут сервера: додаје сопствени AS број. Извештај то приказује као измењене руте.
+dutcfg.note.rs_cisco,text,"Route‑server role uses route‑server‑client (IOS‑XE 3.3S and later, IOS 15.2S and later).","Улога рут сервера користи route‑server‑client (IOS‑XE 3.3S и новији, IOS 15.2S и новији)."
+dutcfg.note.running_only,text,Running configuration only — nothing is saved to the startup configuration.,Само текућа конфигурација — ништа се не уписује у почетну (startup) конфигурацију.
+dutcfg.note.quagga,text,Quagga is end‑of‑life; the FRR commands are used. Tested with FRR.,Quagga се више не одржава; користе се FRR команде. Тестирано са FRR‑ом.
+routers.title,heading,Emulated routers,Емулирани рутери
+routers.bulk_add,button,Bulk add…,Додај више…
+routers.generate_all,button,Generate all,Генериши све
+routers.clear_all,button,Clear all,Обриши све
+routers.import_export,button,Import / Export,Увоз / извоз
+routers.per_node,label,Routers per node,Рутера по чвору
+routers.total_auto,option,"Total, auto‑distribute","Укупно, аутоматска расподела"
+routers.placement,label,Placement,Распоређивање
+routers.placement.equal,option,Equal per node,Једнако по чвору
+routers.placement.ram,option,RAM‑weighted,Према количини RAM‑а
+routers.placement.cmnode01,text,CMNODE01 at 0.7 weight,"CMNODE01 са тежином 0,7"
+routers.asn_mode,label,ASN assignment,Додела ASN‑ова
+routers.asn_mode.sequential,option,Sequential,Редом
+routers.asn_mode.random,option,Random,Насумично
+routers.asn_mode.paste,option,Paste list,Налепи листу
+routers.asn_range.private16,option,Private 16‑bit,Приватни 16‑битни
+routers.asn_range.private32,option,Private 32‑bit,Приватни 32‑битни
+routers.asn_range.documentation,option,Documentation,За документацију
+routers.asn_range.custom,option,Custom,Прилагођено
+routers.asn_first_step,label,First / step,Први / корак
+routers.prefix_count_bulk,label,Prefix count (all routers),Број префикса (сви рутери)
+routers.fixed,option,Fixed,Фиксно
+routers.random_minmax,option,Random min–max,Насумично мин–макс
+routers.pool,label,Prefix pool,Скуп префикса
+routers.pool.private_large,option,"Private large (10.0.0.0/8, /24–/28)","Приватни велики (10.0.0.0/8, /24–/28)"
+routers.pool.benchmarking,option,Benchmarking 198.18.0.0/15 (small tests),За мерења 198.18.0.0/15 (мали тестови)
+routers.pool.rfc1918,option,"RFC 1918, all","RFC 1918, сви"
+routers.pool.public,option,Public‑looking (isolated DUT only),Јавни изглед (само изоловани DUT)
+routers.pool.custom,option,Custom,Прилагођено
+routers.prefix_len,label,Prefix length min–max,Дужина префикса мин–макс
+routers.uniqueness,label,Uniqueness,Јединственост
+routers.uniqueness.all,option,Across all routers,У свим рутерима
+routers.uniqueness.router,option,Per router,По рутеру
+routers.uniqueness.overlap,option,Overlap allowed,Дозвољено преклапање
+routers.col.router,column,Router,Рутер
+routers.col.node,column,Node,Чвор
+routers.col.asn,column,ASN,ASN
+routers.col.prefixes,column,Prefixes,Префикси
+routers.col.status,column,Status,Стање
+routers.col.receive,column,Receive,Пријем
+routers.col.session,column,Session,Сесија
+routers.col.peer_ip,column,Peer IP,IP суседа
+routers.random_asn,aria,Random ASN for {router},Насумичан ASN за {router}
+routers.generate,button,Generate,Генериши
+routers.paste,button,Paste…,Налепи…
+routers.delete,button,Delete,Обриши
+routers.generated,text,{n} generated,генерисано: {n}
+routers.pasted,text,{n} pasted,налепљено: {n}
+routers.receive.full,option,full,пуно
+routers.receive.timestamps,option,timestamps,временске ознаке
+routers.receive.count,option,count,бројање
+routers.receive.tip,tooltip,full: keeps every received route with its attributes (exact correctness check). timestamps: keeps prefixes and arrival times (latency). count: counts only (least memory).,пуно: чува сваку примљену руту са атрибутима (тачна провера исправности). временске ознаке: чува префиксе и времена доласка (кашњење). бројање: само броји (најмање меморије).
+routers.showing,text,Showing {n} of {m} routers,Приказано {n} од {m} рутера
+routers.show_all,link,show all,прикажи све
+routers.summary,text,{routers} routers · {prefixes} prefixes · est. RAM {ram} GB/node,{routers} рутера · {prefixes} префикса · процена RAM‑а {ram} GB/чвору
+routers.paste.title,heading,Paste prefixes,Налепи префиксе
+routers.paste.help,text,"One CIDR per line (commas and spaces also work), or upload a .txt file.","Један CIDR по реду (раде и зарези и размаци), или отпремите .txt датотеку."
+routers.paste.invalid,text,Invalid lines: {lines},Неисправни редови: {lines}
+routers.as_path,label,AS_PATH length · origin prepend · transit ASNs,Дужина AS_PATH · понављање изворног AS‑а · транзитни ASN‑ови
+routers.origin,label,ORIGIN,ORIGIN
+routers.next_hop,label,NEXT_HOP,NEXT_HOP
+routers.next_hop.self,option,self,сопствени
+routers.next_hop.custom,option,custom,прилагођени
+routers.med,label,MED,MED
+routers.communities,label,Communities,Communities
+routers.communities.random,option,Random k from pool,Насумично k из скупа
+routers.timers,label,Hold / keepalive (s),Hold / keepalive (s)
+routers.cap_4byte,label,4‑byte ASN,4‑бајтни ASN
+routers.cap_refresh,label,Route refresh,Route refresh
+routers.mrt_import,button,MRT import…,MRT увоз…
+scenario.title,heading,Scenario,Сценарио
+scenario.preset,label,Preset,Предложак
+scenario.preset.quick,option,Quick check,Брза провера
+scenario.preset.initial,option,Initial convergence,Почетна конвергенција
+scenario.preset.knee,option,Throughput knee,Тачка засићења
+scenario.preset.resilience,option,Resilience,Отпорност
+scenario.preset.ixp_day,option,Full IXP day,Цео дан IXP‑а
+scenario.preset.custom,option,Custom,Прилагођено
+scenario.phases,aria,Phases,Фазе
+scenario.phase.establish,option,Establish,Успостављање
+scenario.phase.initial_load,option,Initial load,Почетно учитавање
+scenario.phase.steady,option,Steady,Стабилно стање
+scenario.phase.churn,option,Churn,Промене рута
+scenario.phase.churn_stepped,option,"Churn, stepped","Промене рута, у корацима"
+scenario.phase.flap,option,Flap / failure,Прекид / отказ
+scenario.phase.teardown,option,Teardown,Гашење
+scenario.phase.done,state,DONE,ЗАВРШЕНО
+scenario.phase.running,state,RUNNING,У ТОКУ
+scenario.phase.next,state,NEXT,СЛЕДИ
+scenario.phase.add,button,Add phase,Додај фазу
+scenario.phase.duplicate,button,Duplicate,Дуплирај
+scenario.phase.remove,button,Remove,Уклони
+scenario.all_at_once,text,all at once,све одједном
+scenario.max_rate,text,max rate,максимална брзина
+scenario.withdraw_all,text,withdraw all,повуци све
+scenario.sessions_per_s,label,Sessions per second (0 = all at once),Сесија у секунди (0 = све одједном)
+scenario.timeout,label,Timeout (s),Временско ограничење (s)
+scenario.announce_rate,label,"Announce rate (prefixes/s, 0 = as fast as possible)","Брзина оглашавања (префикса/s, 0 = што брже)"
+scenario.per_update,label,Prefixes per UPDATE,Префикса по UPDATE поруци
+scenario.duration,label,Duration (s),Трајање (s)
+scenario.start_rate,label,Start rate (upd/s),Почетна брзина (ажур./s)
+scenario.step_every,label,Step / every,Корак / сваких
+scenario.max,label,Maximum,Максимум
+scenario.mix,label,Mix ann/wd/attr %,Однос огл./пов./атр. %
+scenario.shape,label,Shape,Облик
+scenario.shape.constant,option,Constant,Константно
+scenario.shape.onoff,option,On/off,Укључено/искључено
+scenario.shape.ramp,option,Ramp,Рампа
+scenario.flap_share,label,% of routers,% рутера
+scenario.flap_type,label,Failure type,Врста отказа
+scenario.flap_type.reset,option,Reset (NOTIFICATION),Ресет (NOTIFICATION)
+scenario.flap_type.silent,option,Silent (hold‑timer expiry),Тихи (истек hold тајмера)
+scenario.flap_type.mass_withdraw,option,Mass withdraw,Масовно повлачење
+scenario.interval_count,label,Interval · count,Интервал · број
+scenario.withdraw_rate,label,Withdraw rate (0 = all at once),Брзина повлачења (0 = све одједном)
+scenario.close_sessions,label,Close sessions,Затвори сесије
+scenario.repetitions,label,Repetitions,Понављања
+scenario.thresholds,label,Thresholds,Прагови
+scenario.knee_limit,label,p99 latency limit for the knee (s),Граница p99 кашњења за тачку засићења (s)
+scenario.conv_target,label,Convergence target (s),Циљна конвергенција (s)
+scenario.allowed_missing,label,Allowed missing routes,Дозвољено руте које недостају
+scenario.timeline,heading,Timeline preview,Преглед временског тока
+traffic.title,heading,Data‑plane traffic,Саобраћај у равни података
+traffic.rate,label,Total target rate,Укупна циљна брзина
+traffic.duration_ramp,label,Duration / ramp‑up (s),Трајање / постепено повећање (s)
+traffic.split,label,Rate split,Расподела брзине
+traffic.split.equal,option,Equal,Једнако
+traffic.split.weighted,option,Weighted per node,Пондерисано по чвору
+traffic.next_hop,label,Next‑hop IP,IP следећег скока
+traffic.resolve,button,Resolve,Разреши
+traffic.destinations,label,Destinations,Одредишта
+traffic.destinations.subnets,option,Subnets,Подмреже
+traffic.destinations.prefixes,option,Scenario prefixes,Префикси сценарија
+traffic.destinations.explain,text,"A route server or reflector keeps the original next hop, so traffic would bypass the DUT.","Рут сервер или рефлектор задржава изворни следећи скок, па би саобраћај заобишао DUT."
+traffic.subnets,label,Source / destination subnets,Изворне / одредишне подмреже
+traffic.addr_sel,label,Address selection,Избор адреса
+traffic.addr_sel.sequential,option,Sequential,Редом
+traffic.addr_sel.random,option,Random,Насумично
+traffic.mix,label,Protocol mix TCP / UDP / ICMP %,Однос протокола TCP / UDP / ICMP %
+traffic.tcp_flags,label,TCP flags profile,Профил TCP заставица
+traffic.tcp_flags.custom,option,Custom,Прилагођено
+traffic.ports,label,Ports (source range · destination list),Портови (изворни опсег · одредишна листа)
+traffic.size,label,Packet size,Величина пакета
+traffic.size.fixed,option,Fixed,Фиксна
+traffic.size.range,option,Range,Опсег
+traffic.size.imix,option,IMIX 7:4:1,IMIX 7:4:1
+traffic.flows,label,Flows per node · refresh (s),Токова по чвору · освежавање (s)
+traffic.dscp_ttl,label,DSCP · TTL,DSCP · TTL
+traffic.payload,label,Payload,Садржај пакета
+traffic.payload.zeros,option,Zeros,Нуле
+traffic.payload.random,option,Random,Насумично
+traffic.payload.incrementing,option,Incrementing,Растуће
+traffic.marker,label,Marker (loss/latency at the sink),Маркер (губици/кашњење на пријемнику)
+traffic.shape,label,Traffic shape,Облик саобраћаја
+traffic.stateless,label,BGP stateless message mix,Однос порука за BGP без стања
+live.title,aria,Live view,Приказ уживо
+live.config,aria,Configuration,Конфигурација
+metric.sessions,metric,Sessions,Сесије
+metric.sessions.tip,tooltip,"Emulated routers whose BGP session with the DUT is in state ""Established"", out of all configured routers.","Емулирани рутери чија је BGP сесија са DUT‑ом у стању „Established“, од свих конфигурисаних рутера."
+metric.sessions.all_established,text,all Established,све Established
+metric.initial_conv,metric,Initial convergence,Почетна конвергенција
+metric.initial_conv.tip,tooltip,Time from the first announcement until every receiving router held every route it should get from the DUT.,Време од првог оглашавања док сваки рутер пријемник не прими сваку руту коју треба да добије од DUT‑а.
+metric.routes_received,text,{pct} routes received,примљено рута: {pct}
+metric.latency_now,metric,Latency p99 (now),Кашњење p99 (сада)
+metric.latency_now.tip,tooltip,Propagation latency in the last second: 99 % of prefixes travelled from their origin router through the DUT to the other routers faster than this. p50 = median.,Кашњење простирања у последњој секунди: 99 % префикса стигло је од изворног рутера кроз DUT до осталих рутера брже од овога. p50 = медијана.
+metric.dut_output,metric,DUT output,Излаз DUT‑а
+metric.dut_output.tip,tooltip,"Route updates per second the DUT sends to our routers, compared with the rate we offer. Output above the offered rate is normal: each update is re-sent to many peers.","Ажурирања рута у секунди која DUT шаље нашим рутерима, у поређењу са брзином коју нудимо. Излаз већи од понуђене брзине је нормалан: свако ажурирање се шаље многим суседима."
+metric.updates_offered,text,updates/s · offered {n},ажур./s · понуђено {n}
+chart.latency_load,heading,Propagation latency vs offered load,Кашњење простирања у односу на понуђено оптерећење
+chart.latency_load.aria,aria,Line chart of p50 and p99 propagation latency with the offered update rate; use the time cursor and window sliders below to read values,Линијски график p50 и p99 кашњења простирања са понуђеном брзином ажурирања; вредности читајте помоћу клизача временског курсора и прозора испод
+chart.window,aria,Time window,Временски прозор
+chart.min5,button,5 min,5 мин
+chart.min2,button,2 min,2 мин
+chart.min1,button,1 min,1 мин
+chart.time_cursor,label,Time cursor,Временски курсор
+chart.window_slider,label,Window,Прозор
+chart.now,text,now,сада
+chart.offered,text,offered,понуђено
+chart.offered_right,text,offered updates/s (right axis),понуђена ажурирања/s (десна оса)
+live.generator_health,heading,Generator health,Стање генератора
+live.generator_health.sub,text,node‑average CPU · marks at 70 % and 90 %,просечан CPU чвора · ознаке на 70 % и 90 %
+live.control_health,heading,Control‑plane health,Стање контролне равни
+live.control_health.reserve,text,CMNODE01 reserve: {cpu} CPU · {ram} RAM · {bw} per link,Резерва CMNODE01: {cpu} CPU · {ram} RAM · {bw} по линку
+live.api,text,API,API
+live.live_delay,text,Live delay,Кашњење приказа
+live.ok,state,OK,У реду
+live.events,heading,Events,Догађаји
+event.warn,state,WARN,УПОЗОРЕЊЕ
+event.phase,state,PHASE,ФАЗА
+event.info,state,INFO,ИНФО
+event.error,state,ERROR,ГРЕШКА
+live.phase_bar,heading,Phases,Фазе
+live.convergence,heading,Convergence progress,Напредак конвергенције
+live.dut_resources,heading,DUT resources,Ресурси DUT‑а
+live.data_plane,heading,Data plane,Раван података
+reports.title,heading,Run report,Извештај о тесту
+reports.compare,button,Compare…,Упореди…
+reports.export_data,button,Export CSV/JSON,Извези CSV/JSON
+reports.export_pdf,button,Export PDF,Извези PDF
+reports.notes,label,Report notes,Белешке уз извештај
+reports.regenerate,button,Regenerate,Поново генериши
+reports.role_line,text,DUT role: {role} · {nodes} nodes · clock offset to DUT log {offset} ({mode}) · timing uncertainty ±{unc},Улога DUT‑а: {role} · {nodes} чворова · помак сата према логу DUT‑а {offset} ({mode}) · несигурност тајминга ±{unc}
+reports.col.metric,column,Metric,Метрика
+reports.col.metric_hint,column,(hover for explanation),(пређите мишем за објашњење)
+reports.col.result,column,Result,Резултат
+reports.col.threshold,column,Threshold,Праг
+reports.col.verdict,column,Verdict,Оцена
+verdict.pass,state,PASS,ПРОЛАЗИ
+verdict.fail,state,FAIL,НЕ ПРОЛАЗИ
+verdict.info,state,INFO,ИНФО
+rm.sessions,metric,Sessions established ({n}),Успостављене сесије ({n})
+rm.sessions.tip,tooltip,"How many emulated routers reached the BGP state ""Established"" with the DUT, how long until the last one did, and the 95th‑percentile time from TCP connect to Established.","Колико емулираних рутера је достигло BGP стање „Established“ са DUT‑ом, колико је трајало док последњи није, и 95. перцентил времена од TCP повезивања до стања Established."
+rm.initial_conv,metric,Initial convergence ({n} routes),Почетна конвергенција ({n} рута)
+rm.initial_conv.tip,tooltip,Time from the first announcement sent until every receiving router held every route it should get from the DUT. Lower is better.,Време од првог послатог оглашавања док сваки рутер пријемник не прими сваку руту коју треба да добије од DUT‑а. Мање је боље.
+rm.knee,metric,Max sustainable update rate (knee),Највећа одржива брзина ажурирања (тачка засићења)
+rm.knee.tip,tooltip,"Highest offered rate of route updates at which the DUT still keeps up: the backlog stays bounded and p99 propagation latency stays under the threshold. Above it, the DUT falls behind.","Највећа понуђена брзина ажурирања рута коју DUT још прати: заостатак остаје ограничен, а p99 кашњење простирања испод прага. Изнад ње DUT заостаје."
+rm.latency,metric,Announce latency p50 / p99,Кашњење оглашавања p50 / p99
+rm.latency.tip,tooltip,Time from a prefix being sent by its origin router until it arrives at the other routers through the DUT. p50 = median; p99 = 99 % of prefixes arrived faster than this.,Време од слања префикса са изворног рутера до његовог доласка кроз DUT до осталих рутера. p50 = медијана; p99 = 99 % префикса стигло је брже од овога.
+rm.correctness,metric,Missing / extra / altered routes,Руте које недостају / вишак / измењене
+rm.correctness.tip,tooltip,Routes that should have arrived but did not / arrived but were not expected / arrived with changed attributes (e.g. the route server added its AS number or changed the next hop).,Руте које је требало да стигну а нису / стигле су а нису очекиване / стигле су са измењеним атрибутима (нпр. рут сервер је додао свој AS број или променио следећи скок).
+rm.looped,metric,Own routes sent back,Сопствене руте враћене назад
+rm.looped.tip,tooltip,Routes the DUT sent back to the router that announced them. Our routers drop them like a real router (own AS in AS_PATH / own ORIGINATOR_ID); a high count means extra work for the DUT.,Руте које је DUT вратио рутеру који их је огласио. Наши рутери их одбацују као прави рутер (сопствени AS у AS_PATH / сопствени ORIGINATOR_ID); велики број значи додатни посао за DUT.
+rm.resets,metric,Unexpected session resets,Неочекивани прекиди сесија
+rm.resets.tip,tooltip,"BGP sessions that went down outside a planned flap phase, with the cause: a NOTIFICATION code from the DUT or an expired hold timer.","BGP сесије које су пале ван планиране фазе прекида, са узроком: NOTIFICATION код од DUT‑а или истекао hold тајмер."
+rm.generator,metric,"Generator valid (send lag p99, CPU)","Генератор исправан (кашњење слања p99, CPU)"
+rm.generator.tip,tooltip,"Confirms the cluster itself was not the bottleneck: our own send delay (p99) and the highest node‑average CPU. If this fails, the DUT figures are not trustworthy.","Потврђује да сам кластер није био уско грло: наше сопствено кашњење слања (p99) и највећи просечни CPU чвора. Ако ово не прође, резултатима за DUT се не може веровати."
+rm.all,text,all,сви
+fig.f1,heading,Session establishment,Успостављање сесија
+fig.f2,heading,Initial convergence,Почетна конвергенција
+fig.f3,heading,Propagation latency (CDF),Кашњење простирања (CDF)
+fig.f4,heading,Latency vs load over time,Кашњење у односу на оптерећење током времена
+fig.f5,heading,Throughput knee,Тачка засићења пропусности
+fig.f6,heading,Backlog,Заостатак
+fig.f7,heading,Per‑router convergence heatmap,Топлотна мапа конвергенције по рутеру
+fig.f8,heading,Correctness,Исправност
+fig.f9,heading,Event timeline — our observations and DUT log,Временски ток догађаја — наша запажања и лог DUT‑а
+fig.f10,heading,DUT resources,Ресурси DUT‑а
+fig.f11,heading,Data‑plane convergence (router role),Конвергенција равни података (улога рутера)
+fig.f12,heading,Generator health,Стање генератора
+fig.zoom,aria,Zoom {fig},Увећање {fig}
+fig.f2.aria,aria,Convergence curve: percent of expected routes received over time; use the time cursor slider below to read values,Крива конвергенције: проценат примљених очекиваних рута током времена; вредности читајте клизачем временског курсора испод
+fig.f2.caption,text,"Solid: all receivers. Dashed: slowest receiver ({router}, {t}). Zoom in, then slide the window left/right.","Пуна линија: сви пријемници. Испрекидана: најспорији пријемник ({router}, {t}). Увећајте, па померајте прозор лево/десно."
+fig.f3.aria,aria,Cumulative distribution of propagation latency for announcements and withdrawals; use the latency cursor slider below to read values,Кумулативна расподела кашњења простирања за оглашавања и повлачења; вредности читајте клизачем курсора кашњења испод
+fig.f3.cursor,label,Latency cursor,Курсор кашњења
+fig.f3.caption,text,Teal: announce. Violet: withdraw. Log latency axis; height = share of prefixes that arrived faster.,Тиркизна: оглашавање. Љубичаста: повлачење. Логаритамска оса кашњења; висина = удео префикса који су стигли брже.
+fig.f5.aria,aria,Delivered update rate and p99 latency against offered update rate; use the offered-rate cursor slider below to read values,Испоручена брзина ажурирања и p99 кашњење у односу на понуђену брзину; вредности читајте клизачем курсора понуђене брзине испод
+fig.f5.cursor,label,Offered‑rate cursor,Курсор понуђене брзине
+fig.f5.knee,text,knee {n}/s,засићење {n}/s
+fig.f5.axis,text,offered upd/s,понуђено ажур./s
+fig.f5.caption,text,"Teal: delivered updates/s (left scale). Orange: p99 latency (right scale, to 1 s). Dashed: ideal 1:1.","Тиркизна: испоручена ажурирања/s (лева скала). Наранџаста: p99 кашњење (десна скала, до 1 s). Испрекидана: идеално 1:1."
+fig.f7.aria,aria,"Heatmap: routers by minute, darker means more expected routes received, orange means session down; use the minute slider below to read values","Топлотна мапа: рутери по минутима, тамније значи више примљених очекиваних рута, наранџасто значи пала сесија; вредности читајте клизачем минута испод"
+fig.f7.minute,label,Minute,Минут
+fig.f7.caption,text,Darker = more expected routes received. Orange = session down. Hover a cell or use the slider. {n} of {m} routers shown.,Тамније = више примљених очекиваних рута. Наранџасто = пала сесија. Пређите мишем преко поља или користите клизач. Приказано {n} од {m} рутера.
+fig.f9.aria,aria,"Timeline of phases, our session events and DUT log events; use the time cursor and window sliders below to read and move along the timeline","Временски ток фаза, наших догађаја сесија и догађаја из лога DUT‑а; читајте и крећите се клизачима временског курсора и прозора испод"
+fig.f9.phases,label,Phases,Фазе
+fig.f9.ours,label,Our sessions,Наше сесије
+fig.f9.dut_log,label,DUT log ({platform}),Лог DUT‑а ({platform})
+fig.f9.caption,text,"Green: sessions up ({n}). Red: session down. Amber: DUT warnings. DUT timestamps shifted by {offset} to match our clock. Zoom in, then slide the window left/right.","Зелено: активне сесије ({n}). Црвено: пала сесија. Жуто: упозорења DUT‑а. Временске ознаке DUT‑а померене су за {offset} ради поклапања са нашим сатом. Увећајте, па померајте прозор лево/десно."
+fig.also,text,Also in the full report:,Такође у пуном извештају:
+fig.option.log,option,Log axis,Логаритамска оса
+fig.option.linear,option,Linear axis,Линеарна оса
+reports.comparison,heading,Comparison,Поређење
+reports.comparison.help,text,Select 2–5 runs.,Изаберите 2–5 тестова.
+logs.upload,button,Upload logs,Отпреми логове
+logs.run,label,Run,Тест
+logs.run.latest,option,Latest,Последњи
+logs.platform,label,Platform,Платформа
+logs.platform.auto,option,Auto‑detect,Аутоматско препознавање
+logs.offset,label,Time offset,Временски помак
+logs.offset.auto,option,Auto (match session‑up events),Аутоматски (поклапање успостављања сесија)
+logs.offset.manual,option,"Manual (± s, time zone)","Ручно (± s, временска зона)"
+logs.col.time,column,Time,Време
+logs.col.neighbour,column,Neighbour,Сусед
+logs.col.event,column,Event,Догађај
+logs.col.detail,column,Detail,Детаљи
+logs.col.severity,column,Severity,Озбиљност
+logs.unclassified,tab,Unclassified lines,Неразврстани редови
+logs.summary,heading,Log summary,Сажетак лога
+history.col.time,column,Time,Време
+history.col.name,column,Name,Назив
+history.col.type,column,Run type,Врста теста
+history.col.dut,column,DUT,DUT
+history.col.scale,column,Scale,Обим
+history.col.duration,column,Duration,Трајање
+history.col.key_metric,column,Key metric,Кључна метрика
+history.col.verdict,column,Verdict,Оцена
+history.open,button,Open report,Отвори извештај
+history.rerun,button,Re‑run,Понови
+history.capture,button,Capture sample,Сними узорак
+history.delete,button,Delete run,Обриши тест
+history.delete.confirm,text,Delete this run and its report? This cannot be undone.,Обрисати овај тест и његов извештај? Ово се не може поништити.
+settings.node_status,heading,Node status,Стање чворова
+settings.col.reachable,column,Reachable,Доступан
+settings.col.agent,column,Agent version,Верзија агента
+settings.col.link,column,Link,Линк
+settings.col.eee,column,EEE,EEE
+settings.col.cpu,column,CPU,CPU
+settings.col.ram,column,RAM,RAM
+settings.col.temp,column,Temperature,Температура
+settings.restart_agent,button,Restart agent,Поново покрени агента
+settings.sink,label,Sink node,Чвор пријемник
+settings.sink.none,option,None,Ниједан
+settings.safety,heading,Safety limits,Безбедносна ограничења
+settings.max_rate,label,Max data rate (Mbit/s),Највећа брзина података (Mbit/s)
+settings.max_duration,label,Max duration (s),Највеће трајање (s)
+settings.allow_list,label,Subnet allow‑list,Дозвољене подмреже
+settings.max_routers,label,Max routers / prefixes,Највише рутера / префикса
+settings.ip_pool,label,Router IP pool,Скуп IP адреса рутера
+settings.workers,label,Workers per node,Радних нити по чвору
+settings.reserve,heading,Control‑plane reservation,Резервација за контролну раван
+settings.reserve.explain,text,Keeps the web interface and controller reachable while a simulation runs at full load.,Одржава веб интерфејс и контролер доступним док симулација ради пуним оптерећењем.
+settings.reserve.cpu,label,CPU reserve %,Резерва CPU %
+settings.reserve.mem,label,Memory reserve %,Резерва меморије %
+settings.reserve.weight,label,Load weight,Тежина оптерећења
+settings.reserve.bw,label,Per‑link bandwidth reserve (Mbit/s),Резерва пропусног опсега по линку (Mbit/s)
+common.ok,button,OK,У реду
+common.cancel,button,Cancel,Откажи
+common.close,button,Close,Затвори
+common.apply,button,Apply,Примени
+common.yes,text,Yes,Да
+common.no,text,No,Не
+common.on,text,on,укључено
+common.off,text,off,искључено
+common.auto,text,auto,аутоматски
+common.none,text,none,нема
+common.loading,text,Loading…,Учитавање…
+common.saved,text,Saved,Сачувано
+common.required,text,Required,Обавезно
+common.invalid,text,Invalid value,Неисправна вредност
+common.download,button,Download,Преузми
+common.upload,button,Upload,Отпреми
+common.copy,button,Copy,Копирај
+common.show_all,text,Show all,Прикажи све
+unit.s,unit,s,s
+unit.ms,unit,ms,ms
+unit.min,unit,min,мин
+unit.upd_s,unit,upd/s,ажур./s
+unit.prefixes_s,unit,prefixes/s,префикса/s
+unit.mbit_s,unit,Mbit/s,Mbit/s
+unit.kpps,unit,kpps,kpps
+unit.gb,unit,GB,GB

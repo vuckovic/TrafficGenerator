@@ -30,7 +30,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "tools"))
 from tgen.analyze import analyze, gate  # noqa: E402
-from tgen.dut_mikrotik import DEFAULT_MAX_ROUTES, DutError, MikroTik, render_rsc  # noqa: E402
+from tgen.dut import ADAPTERS, DutError, make as make_dut  # noqa: E402
 from tgen.planner import NodeSpec, Scenario, bird_config, build, set_timeline  # noqa: E402
 
 SSH_OPTS = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=5", "-o", "StrictHostKeyChecking=accept-new"]
@@ -125,14 +125,25 @@ def cpu_summary(mpstat_text: str, t_from: float, t_to: float) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", default=str(REPO / "deploy" / "cluster.env"))
-    ap.add_argument("--dut", default="bird", choices=["bird", "mikrotik"],
-                    help="bird = BIRD 2 stand-in on --dut-node; mikrotik = external RouterOS 7 device at --dut-ip")
+    ap.add_argument("--dut", default="bird", choices=["bird", *ADAPTERS],
+                    help="bird = BIRD 2 stand-in started on --dut-node; mikrotik (RouterOS 7), cisco (IOS 15 / "
+                         "IOS-XE), bird-ssh (existing BIRD 2/3), frr, quagga = external device at --dut-ip, "
+                         "configured over SSH before the run and cleaned up after it")
     ap.add_argument("--dut-node", default="CMNODE06", help="node running BIRD as stand-in DUT (--dut bird)")
-    ap.add_argument("--dut-ip", default="10.100.0.111", help="DUT address (--dut mikrotik)")
-    ap.add_argument("--dut-user", default="admin", help="DUT SSH user; password from TGEN_DUT_PASSWORD or prompt")
+    ap.add_argument("--dut-ip", default="10.100.0.111", help="DUT BGP peering address (external DUT)")
+    ap.add_argument("--dut-ssh-host", default="", help="DUT SSH/management address if not --dut-ip")
+    ap.add_argument("--dut-port", type=int, default=22, help="DUT SSH port")
+    ap.add_argument("--dut-user", default=None,
+                    help="DUT SSH user (default admin for mikrotik/cisco, root for bird-ssh/frr/quagga); "
+                         "password from TGEN_DUT_PASSWORD or prompt; Cisco enable secret from TGEN_DUT_ENABLE")
+    ap.add_argument("--dut-key", default=None, help="SSH private key for the DUT (instead of a password)")
+    ap.add_argument("--dut-no-sudo", action="store_true", help="Linux DUT: run birdc/vtysh without sudo")
+    ap.add_argument("--dut-bird-include", default=None, help="bird-ssh: include file (default /etc/bird/tgen.conf)")
+    ap.add_argument("--dut-bird-conf", default=None, help="bird-ssh: main config (default /etc/bird/bird.conf)")
+    ap.add_argument("--dut-bird-socket", default=None, help="bird-ssh: birdc control socket")
     ap.add_argument("--dut-asn", type=int, default=64500)
-    ap.add_argument("--dut-max-routes", type=int, default=DEFAULT_MAX_ROUTES,
-                    help="refuse larger runs against small hardware DUTs (routes the DUT must hold)")
+    ap.add_argument("--dut-max-routes", type=int, default=None,
+                    help="refuse larger runs (routes the DUT must hold); default 20 000 for mikrotik, none otherwise")
     ap.add_argument("--keep-dut-config", action="store_true", help="leave the BGP neighbours on the DUT after the run")
     ap.add_argument("--nodes", default="", help="router nodes, comma list (default: all except the DUT node)")
     ap.add_argument("--routers", type=int, default=60)
@@ -150,7 +161,7 @@ def main() -> int:
     env = load_env(Path(args.config))
     cl = Cluster(env)
     names = env["NODE_HOSTNAMES"]
-    external = args.dut == "mikrotik"
+    external = args.dut != "bird"
     if not external and args.dut_node not in names:
         sys.exit(f"unknown DUT node {args.dut_node}")
     # with an external DUT every node can host routers; with BIRD the DUT node is reserved
@@ -159,24 +170,24 @@ def main() -> int:
     controller = names[0]
     nodes = [NodeSpec(n, 0.7 if n == controller else 1.0, [1, 2, 3]) for n in router_nodes]
     dut_ip = args.dut_ip if external else cl.traffic[args.dut_node]
-    dut_label = f"MikroTik {args.dut_ip}" if external else f"BIRD on {args.dut_node}"
-    dut_routes = args.routers * args.prefixes
-    if external and dut_routes > args.dut_max_routes:
-        sys.exit(f"{args.routers} x {args.prefixes} = {dut_routes} routes is above --dut-max-routes "
-                 f"{args.dut_max_routes} for this DUT (a CRS106 has 128 MB RAM). Reduce --routers/--prefixes, "
-                 "or raise --dut-max-routes deliberately.")
     mt = None
     if external:
-        mt = MikroTik(args.dut_ip, args.dut_user)
+        mt = make_dut(args.dut, args.dut_ssh_host or args.dut_ip, args.dut_user, port=args.dut_port, key=args.dut_key,
+                      no_sudo=args.dut_no_sudo, bird_include=args.dut_bird_include, bird_conf=args.dut_bird_conf,
+                      bird_socket=args.dut_bird_socket, multihop=args.bird_multihop)
+    dut_label = f"{mt.platform} {args.dut_ip}" if external else f"BIRD on {args.dut_node}"
+    dut_routes = args.routers * args.prefixes
+    max_routes = args.dut_max_routes if args.dut_max_routes is not None else (mt.default_max_routes if mt else None)
+    if external and max_routes and dut_routes > max_routes:
+        sys.exit(f"{args.routers} x {args.prefixes} = {dut_routes} routes is above the limit of {max_routes} for "
+                 f"this DUT ({mt.platform}). Reduce --routers/--prefixes, or raise --dut-max-routes deliberately.")
+    if external:
         mt.ask_password_if_needed()
         try:
             res = mt.resources()
         except DutError as e:
-            sys.exit(f"cannot reach the DUT: {e}")
-        log(f"DUT: {res['board']} RouterOS {res['version']}, CPU {res['cpu']} load {res['cpu_load']}, "
-            f"memory free {res['free_memory']} of {res['total_memory']}")
-        if int(res["version"].split(".")[0]) < 7:
-            sys.exit("RouterOS 7 required on the DUT")
+            sys.exit(f"DUT check failed: {e}")
+        log(f"DUT: {res['summary']}")
 
     out = Path.home() / "tgen-test-results" / time.strftime("p2-%Y%m%d-%H%M%S")
     out.mkdir(parents=True)
@@ -202,11 +213,13 @@ def main() -> int:
     try:
         if external:
             # --- external DUT: push the BGP neighbours of this run --------------------
-            rsc = render_rsc(meta, dut_ip, args.dut_asn, args.role)
-            (out / "dut-config.rsc").write_text(rsc)
-            n = mt.push(rsc, expected=len(meta["routers"]))
-            dut_configured = True
-            log(f"DUT configured: {n} BGP connections (comment \"tgen\"), role {args.role}, AS {args.dut_asn}")
+            cfg = mt.render(meta, dut_ip, args.dut_asn, args.role)
+            (out / f"dut-config.{mt.config_ext}").write_text(cfg)
+            dut_configured = True      # set before push: a half-applied config is removed too
+            n = mt.push(cfg, expected=len(meta["routers"]))
+            for note in mt.notes:
+                log(f"DUT note: {note}")
+            log(f"DUT configured: {n} BGP neighbours (tagged \"tgen\"), role {args.role}, AS {args.dut_asn}")
         else:
             # --- DUT stand-in: BIRD 2 on the DUT node -----------------------------
             log(f"starting BIRD 2 route server on {args.dut_node} ({dut_ip}, AS {args.dut_asn})")
@@ -279,12 +292,11 @@ def main() -> int:
             if mid and time.time() > mid:
                 if external:
                     try:
-                        sess = mt.sessions()
+                        sess, est = mt.sessions()
                         (out / "dut-sessions-mid.txt").write_text(sess)
                         res = mt.resources()
                         (out / "dut-resources-mid.json").write_text(json.dumps(res))
-                        log(f"DUT mid-run: {sess.count('established')} sessions established, "
-                            f"CPU load {res['cpu_load']}, free memory {res['free_memory']}")
+                        log(f"DUT mid-run: {est} sessions established; {res['summary']}")
                     except DutError as e:
                         log(f"DUT mid-run query failed: {e}")
                 else:
@@ -313,7 +325,7 @@ def main() -> int:
                                      tm["end_at"] / 1000)
         if external:
             try:
-                (out / "dut-bgp.log").write_text(mt.bgp_log())
+                (out / "dut-bgp.log").write_text(mt.log())
                 (out / "dut-resources-end.json").write_text(json.dumps(mt.resources()))
             except DutError as e:
                 log(f"could not fetch DUT log: {e}")

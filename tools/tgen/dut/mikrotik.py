@@ -1,0 +1,91 @@
+# SPDX-License-Identifier: MIT
+"""MikroTik RouterOS 7 as DUT: one passive /routing bgp connection per emulated
+router, deployed as a .rsc script (scp + /import). Everything carries the
+comment "tgen"; removal touches nothing else."""
+from __future__ import annotations
+
+import re
+import tempfile
+from pathlib import Path
+
+from .base import TAG, Dut, DutError
+
+RSC_NAME = "tgen-bgp.rsc"
+
+# DUT role -> RouterOS 7 connection settings (spec §5.1)
+ROLE_SETTINGS = {
+    # RouterOS has no transparent route-server mode: it will most likely prepend
+    # its own AS; the correctness check reports this ("paths_with_dut_asn").
+    "route_server": {"local.role": "ebgp", "nexthop-choice": "propagate"},
+    "route_reflector": {"local.role": "ibgp-rr", "nexthop-choice": "propagate"},
+    "router": {"local.role": "ebgp", "nexthop-choice": "force-self"},
+}
+
+
+class MikroTik(Dut):
+    platform = "MikroTik RouterOS 7"
+    config_ext = "rsc"
+    default_max_routes = 20_000     # CRS106-1C-5S: 1 core 400 MHz, 128 MB RAM
+
+    def resources(self) -> dict:
+        out = self.run("/system resource print")
+        get = lambda k: (re.search(rf"{k}:\s*(.+)", out) or [None, ""])[1].strip()  # noqa: E731
+        r = {"version": get("version"), "board": get("board-name"), "cpu": get("cpu"),
+             "cpu_load": get("cpu-load"), "free_memory": get("free-memory"), "total_memory": get("total-memory")}
+        if not r["version"]:
+            raise DutError("could not read RouterOS version (is this a MikroTik?)")
+        if int(r["version"].split(".")[0]) < 7:
+            raise DutError(f"RouterOS {r['version']}: version 7 required (BGP syntax differs in v6)")
+        r["summary"] = (f"{r['board']} RouterOS {r['version']}, CPU {r['cpu']} load {r['cpu_load']}, "
+                        f"memory free {r['free_memory']} of {r['total_memory']}")
+        return r
+
+    def render(self, meta: dict, dut_ip: str, dut_asn: int, role: str, hold_time: int = 90) -> str:
+        rs = ROLE_SETTINGS[role]
+        run_id = meta["run_id"]
+        lines = [
+            f"# TrafficGenerator run {run_id}: {len(meta['routers'])} emulated routers, role {role}",
+            f'# generated - do not edit; removed by: /routing bgp connection remove [find where comment~"{TAG}"]',
+            f'/routing bgp connection remove [find where comment~"{TAG}"]',
+        ]
+        for r in meta["routers"]:
+            remote_as = dut_asn if role == "route_reflector" else r["asn"]
+            lines.append(
+                "/routing bgp connection add "
+                f'name={TAG}-{r["name"]} comment="{TAG} {run_id} {r["name"]} node {r["node"]}" '
+                f"as={dut_asn} router-id={dut_ip} local.address={dut_ip} local.role={rs['local.role']} "
+                f'remote.address={r["ip"]} remote.as={remote_as} '
+                f"connect=no listen=yes hold-time={hold_time}s nexthop-choice={rs['nexthop-choice']} "
+                "routing-table=main")
+        return "\n".join(lines) + "\n"
+
+    def push(self, config: str, expected: int) -> int:
+        with tempfile.NamedTemporaryFile("w", suffix=".rsc", delete=False) as f:
+            f.write(config)
+            tmp = Path(f.name)
+        try:
+            self.upload(tmp, RSC_NAME)
+        finally:
+            tmp.unlink(missing_ok=True)
+        out = self.run(f"/import file-name={RSC_NAME} verbose=no", timeout=120)
+        if "executed successfully" not in out:
+            raise DutError(f"import did not succeed: {out.strip()[-400:]}")
+        self.run(f'/file remove [find name="{RSC_NAME}"]')
+        n = self.count()
+        if n != expected:
+            raise DutError(f"router has {n} tgen BGP connections, expected {expected}")
+        return n
+
+    def count(self) -> int:
+        return int(self.run(f'/routing bgp connection print count-only where comment~"{TAG}"').strip() or 0)
+
+    def remove(self) -> None:
+        self.run(f'/routing bgp connection remove [find where comment~"{TAG}"]')
+
+    def sessions(self) -> tuple[str, int]:
+        out = self.run(f'/routing bgp session print terse where name~"{TAG}"')
+        n = self.run(f'/routing bgp session print count-only where name~"{TAG}" and established')
+        return out, int(n.strip() or 0)
+
+    def log(self) -> str:
+        return self.run('/log print where topics~"bgp"')

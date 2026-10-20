@@ -43,45 +43,72 @@ Options: `--role route_reflector|router`, `--rate N` (prefixes/s per router, pac
 - `result-<node>.json`, `agent-<node>.log`, `cpu-<node>.txt`;
 - `bird.conf`, `bird.log` (also sample input for the P5 log parser), `bird-mid.txt`.
 
-## MikroTik RouterOS 7 as DUT (`--dut mikrotik`)
+## External DUT: MikroTik, Cisco, BIRD, Quagga/FRR
 
-Tested target: CRS106‑1C‑5S, RouterOS 7.11, at 10.100.0.111/24 on the traffic segment.
+`tgen_p2.py --dut <platform>` configures a real device over SSH before the run and cleans it up afterwards. `--dut bird`, the default, is still the managed BIRD stand‑in on CMNODE06.
+
+| `--dut` | Platform | Transport | What is deployed | Default user |
+|---|---|---|---|---|
+| `mikrotik` | RouterOS 7 | ssh + scp + `/import` | one `/routing bgp connection` per router, comment `tgen` | admin |
+| `cisco` | IOS 15.x, IOS‑XE 16.x/17.x (2015 and later) | Netmiko (`python3-netmiko`) | `router bgp` neighbours with description `tgen …`, **running‑config only** | admin |
+| `bird-ssh` | BIRD 2/3 on any Linux host | ssh + scp, `birdc configure` | protocols `tgen_R..` in their own include file (default `/etc/bird/tgen.conf`) | root |
+| `frr` / `quagga` | FRRouting, Quagga | ssh, `vtysh -c …` | neighbours with description `tgen …` + route‑map `TGEN-ALL` (permit) in/out | root |
 
 ```bash
-export TGEN_DUT_PASSWORD='…'     # or leave unset: asked interactively; an SSH key also works
-tools/tgen_p2.py --dut mikrotik --routers 12 --prefixes 100 --converge-timeout 60
+export TGEN_DUT_PASSWORD='…'        # or leave unset: asked interactively; SSH keys work too (--dut-key)
+export TGEN_DUT_ENABLE='…'          # Cisco only, if the user is not privilege 15
+tools/tgen_p2.py --dut mikrotik --dut-ip 10.100.0.111 --routers 12 --prefixes 100 --converge-timeout 60
+tools/tgen_p2.py --dut cisco    --dut-ip 10.100.0.1 --dut-ssh-host 192.168.100.1 --routers 12 --prefixes 1000
+tools/tgen_p2.py --dut frr      --dut-ip 10.100.0.30 --role router
+tools/tgen_dut.py --dut cisco --dut-ip 10.100.0.1 --routers 12 preview     # show the config, change nothing
+tools/tgen_dut.py --dut cisco --dut-ip 10.100.0.1 test|push|status|remove
 ```
+
+**Options:**
+
+| Option | Purpose |
+|---|---|
+| `--dut-ssh-host`, `--dut-port` | management address and SSH port, if different from the peering address |
+| `--dut-user`, `--dut-key` | SSH user and private key |
+| `--dut-no-sudo` | run `birdc` / `vtysh` without sudo (otherwise root or passwordless sudo is needed) |
+| `--dut-bird-include`, `--dut-bird-conf`, `--dut-bird-socket` | BIRD include file, main config file and control socket |
+| `--dut-max-routes` | route‑limit guard; default 20 000 for MikroTik, none for the others |
+| `--keep-dut-config` | leave the neighbours on the device after the run |
 
 **What the tool does:**
 
 1. **Before the run:**
-   - reads `/system resource` (RouterOS v7 is required);
-   - refuses a run above `--dut-max-routes` (default 20 000 for the 128 MB CRS106).
-2. **Configures the DUT:**
-   - renders one passive `/routing bgp connection` per emulated router, with that router's IP and AS (`dut-config.rsc` in the results folder);
-   - uploads the script with scp and runs `/import`;
-   - checks the connection count.
-3. **During and after the run:**
-   - mid‑run: `dut-sessions-mid.txt`, `dut-resources-mid.json`;
-   - at the end: `dut-bgp.log` (input for the P5 parser), `dut-resources-end.json`.
-4. **Cleanup:** removes every connection whose comment contains `tgen`. `--keep-dut-config` leaves them in place.
-
-**Layout differences from the BIRD stand‑in:**
-- Routers run on all six nodes, because no node hosts the DUT.
-- Router addresses start at 10.100.0.20 and skip the DUT and node addresses.
+   - reads the device's facts (platform, version, CPU, memory) and refuses unsupported versions (RouterOS 6, IOS before 15, IOS‑XR, NX‑OS);
+   - applies the route‑limit guard;
+   - removes tgen leftovers of an earlier run;
+   - pushes the configuration (saved as `dut-config.<rsc|ios|conf|vtysh>`) and checks the neighbour count.
+2. **During the run:** `dut-sessions-mid.txt`, `dut-resources-mid.json`.
+3. **After the run:** `dut-bgp.log` (P5 parser input), `dut-resources-end.json`, then removes the tgen neighbours.
 
 **Role mapping:**
 
-| `--role` | `local.role` | `nexthop-choice` | `remote.as` |
-|---|---|---|---|
-| route_server | ebgp | propagate | router's AS |
-| route_reflector | ibgp-rr | propagate | DUT AS |
-| router | ebgp | force-self | router's AS |
+| Role | MikroTik | Cisco | BIRD | FRR / Quagga |
+|---|---|---|---|---|
+| route_server | `local.role=ebgp`, NH propagate (**adds its AS**) | `route-server-client` | `rs client` | `route-server-client` |
+| route_reflector | `local.role=ibgp-rr` | `route-reflector-client` | `rr client` | `route-reflector-client` |
+| router | `nexthop-choice=force-self` | `next-hop-self` | `next hop self` | `next-hop-self` |
 
-**Caveats:**
-- RouterOS has no transparent route‑server mode. In the `route_server` role it most likely prepends its own AS, and the correctness check reports this.
-- The password is never written to disk or put on the command line. Only connections commented `tgen` are touched.
-- The simulation (`tests/bgp/sim/run_sim.sh --dut mikrotik`) uses `tests/bgp/sim/mock_routeros.py`. That mock turns the uploaded script into a BIRD configuration, so a run only passes if the script is complete.
+**Loop detection:** the emulated routers drop routes that carry their own AS (eBGP) or their own ORIGINATOR_ID (iBGP), like a real router does. These are counted as `looped_rx` in `report.json`. FRR sends every route back to its originator, so this is normal there: one route back per announced prefix.
+
+**Verified in the simulation, all gate checks passing, cleanup checked:**
+
+| DUT | route_server | router | route_reflector |
+|---|---|---|---|
+| MikroTik (mock RouterOS 7 → BIRD) | 12/12 PASS | — | — |
+| Cisco (mock Netmiko + IOS‑XE → BIRD) | 6/6 PASS, transparent | 6/6 PASS, DUT AS + NH self | 6/6 PASS |
+| BIRD 2.14, real daemon via `bird-ssh` | 12/12 PASS | 6/6 PASS | 6/6 PASS |
+| FRR 8.4.4, real bgpd in its own netns | 12/12 PASS, transparent, 3 600 looped back | 6/6 PASS | 6/6 PASS |
+
+Commands: `tests/bgp/sim/run_sim.sh --dut mikrotik …` and `tests/bgp/sim/run_dut.sh bird-ssh|frr|cisco …`.
+
+Not yet verified on real hardware:
+- the CRS106 at 10.100.0.111;
+- any Cisco device. The Cisco test runs against a mock; real IOS prompts and timing are handled by Netmiko.
 
 ## P2 gate (spec §14)
 

@@ -320,6 +320,20 @@ void Router::on_update(const bgp::UpdateMsg& u) {
   if (!u.nlri.empty()) {
     const auto n = u.nlri.size();
     const auto& path = u.attrs.as_path;
+    // Loop detection like a real router (RFC 4271 9.1.2, RFC 4456 8): a route
+    // carrying our own AS (eBGP) or our own ORIGINATOR_ID (iBGP via a reflector)
+    // is unusable - treated as withdrawn and counted, not held. Some DUTs (e.g.
+    // FRR) send routes back to their originator and rely on this check.
+    const bool looped = plan_.role == DutRole::RouteReflector
+                            ? (u.attrs.originator_id && *u.attrs.originator_id == rp_.router_id)
+                            : std::find(path.begin(), path.end(), rp_.asn) != path.end();
+    if (looped) {
+      st_.looped_rx += n;
+      if (keep)
+        for (const auto& p : u.nlri) held_.erase(p.key());
+      after_rx(t, keep);
+      return;
+    }
     if (!path.empty() && path.front() == plan_.dut_asn) st_.paths_with_dut_asn += n;
     if (u.attrs.has_next_hop && u.attrs.next_hop == plan_.dut_ip) st_.next_hop_is_dut += n;
     if (plan_.role == DutRole::RouteReflector && !u.attrs.originator_id) st_.paths_without_originator += n;
@@ -329,6 +343,10 @@ void Router::on_update(const bgp::UpdateMsg& u) {
       if (sampled(p, plan_.sample_mod)) sample_rx_.emplace(p.key(), t);  // first arrival only
     }
   }
+  after_rx(t, keep);
+}
+
+void Router::after_rx(std::int64_t t, bool keep) {
   st_.routes_held = keep ? held_.size()
                          : (st_.nlri_rx > st_.withdrawn_rx ? st_.nlri_rx - st_.withdrawn_rx : 0);
   st_.routes_peak = std::max(st_.routes_peak, st_.routes_held);
@@ -451,7 +469,7 @@ json Router::result() const {
       {"t_first_rx", st_.t_first_rx}, {"t_converged", st_.t_converged}, {"t_last_rx", st_.t_last_rx},
       {"t_empty_after_withdraw", st_.t_empty_after_withdraw},
       {"checks", {{"paths_with_dut_asn", st_.paths_with_dut_asn}, {"next_hop_is_dut", st_.next_hop_is_dut},
-                  {"paths_without_originator", st_.paths_without_originator}}},
+                  {"paths_without_originator", st_.paths_without_originator}, {"looped_rx", st_.looped_rx}}},
       {"max_keepalive_gap_ms", st_.max_keepalive_gap_ns / 1e6},
       {"notifications_rx", notif_rx}, {"notifications_tx", notif_tx}, {"errors", st_.errors},
       {"samples", {{"tx", samples(sample_tx_)}, {"rx", samples(sample_rx_)},

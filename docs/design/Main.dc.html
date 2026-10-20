@@ -33,7 +33,7 @@ a{color:#0E6E66}a:hover{color:#0A524C}
 .tip{display:inline-flex;width:16px;height:16px;border-radius:50%;border:1px solid #8A9097;color:#545A61;font-size:10px;align-items:center;justify-content:center;margin-left:4px}
 </style>
 </helmet>
-<div style="min-height: 1240px; display: flex; flex-direction: column">
+<div style="min-height: 1760px; display: flex; flex-direction: column">
 
 <header style="background: #16191D; color: #F3F4F1; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px; padding: 0 28px; min-height: 64px">
 <div style="display: flex; align-items: center; gap: 10px">
@@ -54,6 +54,15 @@ a{color:#0E6E66}a:hover{color:#0A524C}
 <button class="btn" type="button" disabled="disabled" style="background: #2A2F35; color: #8A9097; border-color: #3A4047">Start</button>
 <button class="btn" type="button" style="background: #B42318; color: #FFFFFF; border-color: #B42318; font-weight: 600">Stop</button>
 <button class="btn btn-sm" type="button" style="background: transparent; color: #C4C9CE; border-color: #3A4047">admin · Log out</button>
+<div style="position: relative">
+<button type="button" aria-haspopup="menu" aria-expanded="{{lang.open}}" aria-label="Language: English" title="Interface language" onClick="{{lang.toggle}}" style="height: 36px; min-width: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 6px; border: 1px solid #3A4047; background: transparent; color: #F3F4F1; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer"><svg width="22" height="11" viewBox="0 0 60 30" aria-hidden="true" style="border-radius: 2px; display: block"><clipPath id="gbA1"><path d="M0,0 v30 h60 v-30 z"></path></clipPath><clipPath id="gbA2"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"></path></clipPath><g clip-path="url(#gbA1)"><path d="M0,0 v30 h60 v-30 z" fill="#012169"></path><path d="M0,0 L60,30 M60,0 L0,30" stroke="#FFFFFF" stroke-width="6"></path><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#gbA2)" stroke="#C8102E" stroke-width="4"></path><path d="M30,0 v30 M0,15 h60" stroke="#FFFFFF" stroke-width="10"></path><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"></path></g></svg><span>EN</span><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5 L5 6.5 L8 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<sc-if value="{{lang.open}}" hint-placeholder-val="{{ false }}">
+<div role="menu" aria-label="Language" style="position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; min-width: 190px; background: #FFFFFF; color: #16191D; border: 1px solid #D9DCD6; border-radius: 8px; box-shadow: 0 10px 28px rgba(22, 25, 29, 0.22); padding: 6px; display: flex; flex-direction: column; gap: 2px">
+<a href="#" role="menuitemradio" aria-checked="true" onClick="{{lang.toggle}}" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 6px; background: #EEF6F5; color: #16191D; text-decoration: none; font-weight: 600"><svg width="22" height="11" viewBox="0 0 60 30" aria-hidden="true" style="border-radius: 2px; display: block"><clipPath id="gbB1"><path d="M0,0 v30 h60 v-30 z"></path></clipPath><clipPath id="gbB2"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"></path></clipPath><g clip-path="url(#gbB1)"><path d="M0,0 v30 h60 v-30 z" fill="#012169"></path><path d="M0,0 L60,30 M60,0 L0,30" stroke="#FFFFFF" stroke-width="6"></path><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#gbB2)" stroke="#C8102E" stroke-width="4"></path><path d="M30,0 v30 M0,15 h60" stroke="#FFFFFF" stroke-width="10"></path><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"></path></g></svg><span style="flex: 1 1 auto">English</span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 7.5 L6 10 L11 4" fill="none" stroke="#0E6E66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
+<a href="Main.sr.dc.html" role="menuitemradio" aria-checked="false" lang="sr-Cyrl" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 6px; color: #16191D; text-decoration: none"><svg width="22" height="15" viewBox="0 0 3 2" aria-hidden="true" style="border-radius: 2px; display: block; box-shadow: 0 0 0 1px #D9DCD6"><rect width="3" height="2" fill="#FFFFFF"></rect><rect width="3" height="1.3333" fill="#0C4076"></rect><rect width="3" height="0.6667" fill="#C6363C"></rect></svg><span style="flex: 1 1 auto">Српски</span></a>
+</div>
+</sc-if>
+</div>
 </div>
 </header>
 
@@ -81,7 +90,7 @@ a{color:#0E6E66}a:hover{color:#0A524C}
 <p style="margin: 4px 0 0; padding: 10px 12px; background: #EEF6F5; border-radius: 6px; color: #23403C; font-size: 13px; line-height: 1.5">IXP route server. Every emulated router is a separate eBGP peer with its own AS number. The route server passes routes between peers without adding its own AS number and without changing the next hop. Control‑plane test only.</p>
 </fieldset>
 <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
-<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="plat">Platform / version</label><select id="plat" class="inp"><option>BIRD 2.15</option></select></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Detected platform</span><span class="mono" style="height: 36px; display: flex; align-items: center; font-size: 13px; color: #23403C">{{cfg.detected}}</span></div>
 <div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="dutip">DUT IP</label><input id="dutip" class="inp mono" value="10.100.0.1"></div>
 <div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="dutas">DUT ASN</label><input id="dutas" class="inp mono" value="64500"></div>
 <div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">DUT polling</span><div style="display: flex; gap: 14px; align-items: center; height: 36px"><label style="display: flex; gap: 6px; align-items: center"><input type="checkbox" checked="checked">SSH</label><label style="display: flex; gap: 6px; align-items: center"><input type="checkbox">SNMP</label></div></div>
@@ -89,11 +98,55 @@ a{color:#0E6E66}a:hover{color:#0A524C}
 </div>
 
 <div class="card">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap"><div style="display: flex; flex-direction: column; gap: 4px"><h2 class="h2">DUT configuration</h2><span style="font-size: 12px; color: #545A61">Neighbours are added over SSH before the run and removed after it.</span></div><label style="display: flex; gap: 8px; align-items: center; font-size: 13px; font-weight: 500; min-height: 36px"><input type="checkbox" checked="checked" style="accent-color: #0E6E66; width: 18px; height: 18px; margin: 0">Configure the DUT before each run</label></div>
+<fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+<legend class="lbl" style="padding: 0; margin-bottom: 8px">Platform</legend>
+<div style="display: flex; flex-wrap: wrap; border: 1px solid #C9CDC6; border-radius: 8px; overflow: hidden; width: fit-content; max-width: 100%">
+<sc-for list="{{cfg.plats}}" as="p" hint-placeholder-count="4">
+<label style="{{p.style}}"><input type="radio" name="dutplat" checked="{{p.on}}" onChange="{{p.pick}}" style="margin: 0; accent-color: #FFFFFF">{{p.label}}</label>
+</sc-for>
+</div>
+<p style="margin: 4px 0 0; padding: 10px 12px; background: #EEF6F5; border-radius: 6px; color: #23403C; font-size: 13px; line-height: 1.5">{{cfg.note}}</p>
+</fieldset>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="sshhost">SSH address</label><input id="sshhost" class="inp mono" placeholder="= DUT IP" value="{{cfg.host}}"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="sshport">Port</label><input id="sshport" class="inp mono" value="22"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="sshuser">User</label><input id="sshuser" class="inp mono" value="{{cfg.user}}"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="sshauth">Authentication</label><select id="sshauth" class="inp"><option>Password (asked at start, not stored)</option><option>SSH key of CMNODE01</option></select></div>
+<sc-if value="{{cfg.isCisco}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="ensec">Enable secret <span class="tip" title="Only if the Cisco user is not privilege 15. Asked at start, not stored.">i</span></label><input id="ensec" class="inp" type="password" placeholder="asked at start"></div>
+</sc-if>
+<sc-if value="{{cfg.isLinux}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Privileges <span class="tip" title="birdc and vtysh need root or passwordless sudo on the DUT host.">i</span></span><label style="display: flex; gap: 8px; align-items: center; height: 36px"><input type="checkbox" checked="checked" style="accent-color: #0E6E66; margin: 0">Use sudo</label></div>
+</sc-if>
+<sc-if value="{{cfg.isBird}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="birdinc">BIRD include file <span class="tip" title="The neighbours are written to this file; bird.conf gets one include line the first time.">i</span></label><input id="birdinc" class="inp mono" value="/etc/bird/tgen.conf"></div>
+</sc-if>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="maxr">Route limit <span class="tip" title="Runs above this many routes are refused, to protect small devices (MikroTik CRS106: 20 000). Empty = no limit.">i</span></label><input id="maxr" class="inp mono" placeholder="no limit" value="{{cfg.limit}}"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="after">After the run</label><select id="after" class="inp"><option>Remove neighbours</option><option>Keep neighbours</option></select></div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<button class="btn btn-sm" type="button" style="height: 36px">Test connection</button>
+<button class="btn btn-sm" type="button" aria-expanded="{{cfg.prevOpen}}" onClick="{{cfg.togglePrev}}" style="{{cfg.prevBtnStyle}}">Preview config</button>
+<button class="btn btn-sm" type="button" style="height: 36px">Push now</button>
+<button class="btn btn-sm" type="button" style="height: 36px">Remove</button>
+<button class="btn btn-sm" type="button" style="height: 36px">Status</button>
+<span style="display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: #1E7B3A; font-weight: 500; flex: 1 1 260px; min-width: 0"><span style="width: 8px; height: 8px; border-radius: 50%; background: #1E7B3A; flex: none"></span><span class="mono" style="color: #23403C; overflow-wrap: anywhere">{{cfg.status}}</span></span>
+</div>
+<sc-if value="{{cfg.prevOpen}}" hint-placeholder-val="{{ false }}">
+<div style="border: 1px solid #ECEEEA; border-radius: 8px; overflow: hidden">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; background: #F3F4F1; font-size: 12px; color: #545A61"><span>Configuration for {{cfg.platLabel}} · first router of 60</span><span style="display: flex; gap: 6px"><button class="btn btn-sm" type="button">Copy</button><button class="btn btn-sm" type="button">Download</button></span></div>
+<pre class="mono" style="margin: 0; padding: 12px; font-size: 12px; line-height: 1.55; overflow-x: auto; white-space: pre; background: #FFFFFF; color: #16191D">{{cfg.preview}}</pre>
+</div>
+</sc-if>
+</div>
+
+<div class="card">
 <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap"><h2 class="h2">Emulated routers</h2><div style="display: flex; gap: 8px; flex-wrap: wrap"><button class="btn btn-sm" type="button">Bulk add…</button><button class="btn btn-sm" type="button">Generate all</button><button class="btn btn-sm" type="button">Import / Export</button></div></div>
 <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
 <div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="rpn">Routers per node</label><input id="rpn" class="inp mono" value="10"></div>
 <div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="asnmode">ASN assignment</label><select id="asnmode" class="inp"><option>Random · private 32‑bit</option></select></div>
-<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="pool">Prefix pool</label><input id="pool" class="inp mono" value="198.18.0.0/15 · /24"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="pool">Prefix pool</label><input id="pool" class="inp mono" value="10.0.0.0/8 · /24–/28"></div>
 <div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Placement</span><span style="height: 36px; display: flex; align-items: center; font-size: 13px">CMNODE01 at 0.7 weight</span></div>
 </div>
 <div style="overflow-x: auto; border: 1px solid #ECEEEA; border-radius: 8px">
@@ -193,7 +246,7 @@ a{color:#0E6E66}a:hover{color:#0A524C}
 </main>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1760}}'>
 var M50 = [[-300,42.4],[-270,44.7],[-240,44.7],[-209,47.1],[-179,47.1],[-149,49.4],[-118,51.8],[-88,51.8],[-58,54.1],[-28,56.5],[0,56.5]];
 var M99 = [[-300,70.6],[-270,72.9],[-240,75.3],[-209,77.6],[-179,82.4],[-149,89.4],[-118,117.6],[-88,160],[-58,216.5],[-28,301.2],[0,367.1]];
 function lerp(p, x) {
@@ -205,9 +258,54 @@ function lerp(p, x) {
 }
 function offered(t) { return Math.min(1000, 100 * (Math.floor((t + 300) / 30) + 1)); }
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+var PLATS = [
+  { id: "mikrotik", label: "MikroTik RouterOS 7", user: "admin", limit: "20000", host: "",
+    detected: "RouterOS 7.11 · CRS106‑1C‑5S",
+    note: "RouterOS has no transparent route‑server mode: it adds its own AS number. The report shows this as altered routes.",
+    status: "Connected · CRS106‑1C‑5S · RouterOS 7.11 · CPU 3 % · 92 MiB free · 0 tgen neighbours",
+    preview: "/routing bgp connection remove [find where comment~\"tgen\"]\n/routing bgp connection add name=tgen-R01 comment=\"tgen run R01 node CMNODE01\" \\\n    as=64500 local.address=10.100.0.1 local.role=ebgp remote.address=10.100.0.20 \\\n    remote.as=4200000117 connect=no listen=yes hold-time=90s nexthop-choice=propagate\n# … 59 more connections" },
+  { id: "cisco", label: "Cisco IOS / IOS‑XE", user: "admin", limit: "", host: "192.168.100.1",
+    detected: "IOS‑XE 17.9.4a · ISR4331",
+    note: "Route‑server role uses route‑server‑client (IOS‑XE 3.3S and later, IOS 15.2S and later). Running configuration only — nothing is saved to the startup configuration.",
+    status: "Connected · ISR4331 · IOS‑XE 17.9.4a · CPU 4 % · 1.36 GiB free · 0 tgen neighbours",
+    preview: "router bgp 64500\n neighbor 10.100.0.20 remote-as 4200000117\n neighbor 10.100.0.20 description tgen run R01 node CMNODE01\n neighbor 10.100.0.20 transport connection-mode passive\n neighbor 10.100.0.20 timers 30 90\n address-family ipv4\n  neighbor 10.100.0.20 activate\n  neighbor 10.100.0.20 route-server-client\n! … 59 more neighbours" },
+  { id: "bird", label: "BIRD 2 / 3", user: "root", limit: "", host: "",
+    detected: "BIRD 2.15",
+    note: "Neighbours go to their own include file; bird.conf gets one include line the first time. Applied with birdc configure — other protocols keep running.",
+    status: "Connected · BIRD 2.15 on dut-bird · load 0.4 · 7.4 GiB free · 60 tgen neighbours · 60 Established",
+    preview: "template bgp tgen_tpl {\n  local 10.100.0.1 as 64500;\n  passive on; hold time 90; rs client;\n  ipv4 { import all; export all; };\n}\nprotocol bgp tgen_R01 from tgen_tpl { neighbor 10.100.0.20 as 4200000117; }\n# … 59 more protocols" },
+  { id: "frr", label: "Quagga / FRR", user: "root", limit: "", host: "",
+    detected: "FRRouting 8.4.4",
+    note: "Applied with vtysh. Each neighbour gets route‑map TGEN-ALL (permit) in and out; no global setting changes. Quagga is end‑of‑life: the FRR commands are used, tested with FRR.",
+    status: "Connected · FRRouting 8.4.4 on dut-frr · load 0.2 · bgpd 25 MiB · 0 tgen neighbours",
+    preview: "configure terminal\nroute-map TGEN-ALL permit 10\nrouter bgp 64500\n neighbor 10.100.0.20 remote-as 4200000117\n neighbor 10.100.0.20 description tgen run R01 node CMNODE01\n neighbor 10.100.0.20 passive\n address-family ipv4 unicast\n  neighbor 10.100.0.20 route-server-client\n  neighbor 10.100.0.20 route-map TGEN-ALL in\n  neighbor 10.100.0.20 route-map TGEN-ALL out\n! … 59 more neighbours" }
+];
+var SEG_ON = "display: flex; align-items: center; gap: 8px; min-height: 44px; box-sizing: border-box; padding: 0 16px; background: #0E6E66; color: #FFFFFF; font-weight: 600; cursor: pointer";
+var SEG_OFF = "display: flex; align-items: center; gap: 8px; min-height: 44px; box-sizing: border-box; padding: 0 16px; background: #FFFFFF; color: #16191D; cursor: pointer";
 function ago(t) { var s = Math.round(-t); return s === 0 ? "now" : "−" + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
 
 class Component extends DCLogic {
+  cfgVals() {
+    var self = this, st = this.state || {}, cur = st.plat || "bird", prev = !!st.prev;
+    var P = PLATS.filter(function (p) { return p.id === cur; })[0];
+    return {
+      plats: PLATS.map(function (p, i) {
+        return { label: p.label, on: p.id === cur,
+                 style: (p.id === cur ? SEG_ON : SEG_OFF) + (i ? "; border-left: 1px solid #C9CDC6" : ""),
+                 pick: function () { self.setState({ plat: p.id }); } };
+      }),
+      note: P.note, user: P.user, limit: P.limit, host: P.host, status: P.status, preview: P.preview,
+      detected: P.detected, platLabel: P.label,
+      isCisco: cur === "cisco", isLinux: cur === "bird" || cur === "frr", isBird: cur === "bird",
+      prevOpen: prev,
+      prevBtnStyle: "height: 36px" + (prev ? "; background: #EEF6F5; border-color: #0E6E66; color: #0A524C" : ""),
+      togglePrev: function () { self.setState({ prev: !prev }); }
+    };
+  }
+  langVals() {
+    var self = this, open = !!(this.state || {}).langOpen;
+    return { open: open, toggle: function (e) { if (e && e.preventDefault) e.preventDefault(); self.setState({ langOpen: !open }); } };
+  }
   renderVals() {
     var self = this;
     var s = Object.assign({ span: 300, pan: -300, cur: -60 }, (this.state || {}).ch);
@@ -233,7 +331,7 @@ class Component extends DCLogic {
       move: function (e) { var r = e.currentTarget.getBoundingClientRect(); if (!r.width) return; var vx = (e.clientX - r.left) / r.width * 560; if (vx < L || vx > R) return; put({ cur: a + (vx - L) / (R - L) * (b - a) }); },
       slide: function (e) { put({ cur: parseFloat(e.target.value) }); },
       panTo: function (e) { var p = parseFloat(e.target.value); put({ pan: p, cur: clamp(c, p, p + s.span) }); }
-    }, ticks) };
+    }, ticks), cfg: this.cfgVals(), lang: this.langVals() };
   }
 }
 </script>

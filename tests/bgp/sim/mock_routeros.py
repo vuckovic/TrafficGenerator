@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 """Mock RouterOS 7 for the loopback simulation (used by the fake ssh).
 
-Understands the commands tools/tgen/dut_mikrotik.py sends. On /import it parses
+Understands the commands tools/tgen/dut/mikrotik.py sends. On /import it parses
 the uploaded tgen-bgp.rsc and starts BIRD on the DUT address with exactly the
 neighbours, AS numbers and roles the script defines - so a run only works if
 the generated RouterOS script is complete and consistent.
@@ -55,6 +55,9 @@ elif cmd.startswith("/import file-name="):
     print("\nScript file loaded and executed successfully")
 elif cmd.startswith("/file remove"):
     (home / "tgen-bgp.rsc").unlink(missing_ok=True)
+elif cmd.startswith("/routing bgp session print count-only"):
+    out = subprocess.run(["birdc", "-s", str(home / "bird.ctl"), "show", "protocols"], capture_output=True, text=True).stdout
+    print(sum(1 for line in out.splitlines() if " BGP " in line and "Established" in line))
 elif "count-only" in cmd:
     print(len(connections()))
 elif cmd.startswith("/routing bgp connection remove"):

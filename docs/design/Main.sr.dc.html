@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="sr-Cyrl">
+<head>
+<meta charset="utf-8">
+<title>TrafficGenerator — Мерење</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F4F1;color:#16191D;font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:14px}
+a{color:#0E6E66}a:hover{color:#0A524C}
+.card{background:#FFFFFF;border:1px solid #D9DCD6;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.h2{margin:0;font-size:15px;font-weight:600;letter-spacing:.01em}
+.lbl{font-size:12px;color:#545A61;font-weight:500}
+.inp{height:36px;box-sizing:border-box;border:1px solid #C9CDC6;border-radius:6px;padding:0 10px;font:inherit;background:#FFFFFF;color:#16191D}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.btn{height:36px;padding:0 14px;border-radius:6px;border:1px solid #C9CDC6;background:#FFFFFF;color:#16191D;font:inherit;font-weight:500;cursor:pointer}
+.btn-sm{height:30px;padding:0 10px;font-size:12px}
+.th{font-size:11px;color:#545A61;font-weight:600;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:8px 10px;border-bottom:1px solid #D9DCD6}
+.td{padding:8px 10px;border-bottom:1px solid #ECEEEA;white-space:nowrap}
+.kpi{background:#FFFFFF;border:1px solid #D9DCD6;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;flex:1 1 150px}
+.kv{font-size:24px;font-weight:600;font-family:'IBM Plex Mono',ui-monospace,monospace}
+.hint{position:relative;display:inline-block;cursor:help;border-bottom:1px dotted #8A9097;outline:none;width:fit-content}
+.hint:focus-visible{box-shadow:0 0 0 2px #0E6E66;border-radius:2px}
+.tt{display:none;position:absolute;left:0;top:calc(100% + 6px);width:260px;white-space:normal;background:#16191D;color:#F3F4F1;font-size:12px;font-weight:400;line-height:1.45;padding:8px 10px;border-radius:6px;z-index:5}
+.hint:hover .tt,.hint:focus .tt{display:block}
+.zb{height:32px;min-width:44px;padding:0 10px;border:1px solid #C9CDC6;background:#FFFFFF;color:#16191D;border-radius:6px;font:inherit;font-size:12px;font-weight:500;cursor:pointer}
+.zon{background:#0E6E66;color:#FFFFFF;border-color:#0E6E66}
+.tip{display:inline-flex;width:16px;height:16px;border-radius:50%;border:1px solid #8A9097;color:#545A61;font-size:10px;align-items:center;justify-content:center;margin-left:4px}
+</style>
+</helmet>
+<div style="min-height: 1760px; display: flex; flex-direction: column">
+
+<header style="background: #16191D; color: #F3F4F1; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px; padding: 0 28px; min-height: 64px">
+<div style="display: flex; align-items: center; gap: 10px">
+<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="1" y="1" width="24" height="24" rx="6" fill="none" stroke="#5FD3C5" stroke-width="2"></rect><path d="M6 17 L10 9 L14 15 L17 11 L20 17" fill="none" stroke="#5FD3C5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span style="font-weight: 700; font-size: 16px">TrafficGenerator</span>
+<span class="mono" style="font-size: 11px; color: #A9AFB5">CMNODE01 · 192.168.100.11</span>
+</div>
+<nav aria-label="Главни мени" style="display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 auto">
+<a href="#" style="color: #FFFFFF; text-decoration: none; padding: 21px 12px 19px; border-bottom: 3px solid #5FD3C5; font-weight: 600">Мерење</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 12px">Саобраћај</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 12px">Извештаји</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 12px">Логови DUT‑а</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 12px">Историја</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 12px">Чворови и подешавања</a>
+</nav>
+<div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+<span style="display: inline-flex; align-items: center; gap: 8px; background: #23403C; color: #BFF2EA; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 600"><span style="width: 8px; height: 8px; border-radius: 50%; background: #5FD3C5"></span>У ТОКУ · Промене рута (4/6) · <span class="mono">07:42</span></span>
+<button class="btn" type="button" disabled="disabled" style="background: #2A2F35; color: #8A9097; border-color: #3A4047">Покрени</button>
+<button class="btn" type="button" style="background: #B42318; color: #FFFFFF; border-color: #B42318; font-weight: 600">Заустави</button>
+<button class="btn btn-sm" type="button" style="background: transparent; color: #C4C9CE; border-color: #3A4047">admin · Одјава</button>
+<div style="position: relative">
+<button type="button" aria-haspopup="menu" aria-expanded="{{lang.open}}" aria-label="Језик: српски" title="Језик интерфејса" onClick="{{lang.toggle}}" style="height: 36px; min-width: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 6px; border: 1px solid #3A4047; background: transparent; color: #F3F4F1; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer"><svg width="22" height="15" viewBox="0 0 3 2" aria-hidden="true" style="border-radius: 2px; display: block; box-shadow: 0 0 0 1px #3A4047"><rect width="3" height="2" fill="#FFFFFF"></rect><rect width="3" height="1.3333" fill="#0C4076"></rect><rect width="3" height="0.6667" fill="#C6363C"></rect></svg><span>СР</span><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5 L5 6.5 L8 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<sc-if value="{{lang.open}}" hint-placeholder-val="{{ false }}">
+<div role="menu" aria-label="Језик" style="position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; min-width: 190px; background: #FFFFFF; color: #16191D; border: 1px solid #D9DCD6; border-radius: 8px; box-shadow: 0 10px 28px rgba(22, 25, 29, 0.22); padding: 6px; display: flex; flex-direction: column; gap: 2px">
+<a href="Main.dc.html" role="menuitemradio" aria-checked="false" lang="en" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 6px; color: #16191D; text-decoration: none"><svg width="22" height="11" viewBox="0 0 60 30" aria-hidden="true" style="border-radius: 2px; display: block"><clipPath id="gbB1"><path d="M0,0 v30 h60 v-30 z"></path></clipPath><clipPath id="gbB2"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"></path></clipPath><g clip-path="url(#gbB1)"><path d="M0,0 v30 h60 v-30 z" fill="#012169"></path><path d="M0,0 L60,30 M60,0 L0,30" stroke="#FFFFFF" stroke-width="6"></path><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#gbB2)" stroke="#C8102E" stroke-width="4"></path><path d="M30,0 v30 M0,15 h60" stroke="#FFFFFF" stroke-width="10"></path><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"></path></g></svg><span style="flex: 1 1 auto">English</span></a>
+<a href="#" role="menuitemradio" aria-checked="true" onClick="{{lang.toggle}}" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 6px; background: #EEF6F5; color: #16191D; text-decoration: none; font-weight: 600"><svg width="22" height="15" viewBox="0 0 3 2" aria-hidden="true" style="border-radius: 2px; display: block; box-shadow: 0 0 0 1px #D9DCD6"><rect width="3" height="2" fill="#FFFFFF"></rect><rect width="3" height="1.3333" fill="#0C4076"></rect><rect width="3" height="0.6667" fill="#C6363C"></rect></svg><span style="flex: 1 1 auto">Српски</span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 7.5 L6 10 L11 4" fill="none" stroke="#0E6E66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
+</div>
+</sc-if>
+</div>
+</div>
+</header>
+
+<div style="background: #FFF7E6; color: #6B3E00; font-size: 12px; padding: 6px 28px; border-bottom: 1px solid #F0DDB5">Преглед — макета изгледа са илустративним вредностима, не измереним подацима.</div>
+
+<main style="flex: 1 1 auto; width: 100%; max-width: 1440px; margin: 0 auto; box-sizing: border-box; padding: 24px 28px 40px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+<section aria-label="Конфигурација" style="flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+<div style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 220px"><label class="lbl" for="runname">Назив теста</label><input id="runname" class="inp" value="BIRD 2.15 · тачка засићења · 60×10k"></div>
+<div style="display: flex; flex-direction: column; gap: 6px; flex: 0 1 200px"><label class="lbl" for="profile">Профил</label><select id="profile" class="inp"><option>IXP подразумевано 60×10k</option></select></div>
+<div style="display: flex; flex-direction: column; gap: 6px; flex: 0 1 140px"><label class="lbl" for="seed">Семе</label><input id="seed" class="inp mono" value="482193"></div>
+</div>
+
+<div class="card">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap"><h2 class="h2">Уређај под тестом</h2><button class="btn btn-sm" type="button">Извези конфигурацију DUT‑а ▾</button></div>
+<fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+<legend class="lbl" style="padding: 0; margin-bottom: 8px">Улога DUT‑а</legend>
+<div style="display: flex; flex-wrap: wrap; border: 1px solid #C9CDC6; border-radius: 8px; overflow: hidden; width: fit-content; max-width: 100%">
+<label style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #0E6E66; color: #FFFFFF; font-weight: 600"><input type="radio" name="role" checked="checked" style="accent-color: #FFFFFF; margin: 0">Рут сервер</label>
+<label style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-left: 1px solid #C9CDC6"><input type="radio" name="role" style="margin: 0">Рут рефлектор</label>
+<label style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-left: 1px solid #C9CDC6"><input type="radio" name="role" style="margin: 0">Рутер (прослеђује саобраћај)</label>
+</div>
+<p style="margin: 4px 0 0; padding: 10px 12px; background: #EEF6F5; border-radius: 6px; color: #23403C; font-size: 13px; line-height: 1.5">Рут сервер IXP‑а. Сваки емулирани рутер је засебан eBGP сусед са сопственим AS бројем. Рут сервер прослеђује руте између суседа без додавања свог AS броја и без промене следећег скока (next hop). Само тест контролне равни.</p>
+</fieldset>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Препозната платформа</span><span class="mono" style="height: 36px; display: flex; align-items: center; font-size: 13px; color: #23403C">{{cfg.detected}}</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="dutip">IP DUT‑а</label><input id="dutip" class="inp mono" value="10.100.0.1"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="dutas">ASN DUT‑а</label><input id="dutas" class="inp mono" value="64500"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Праћење DUT‑а</span><div style="display: flex; gap: 14px; align-items: center; height: 36px"><label style="display: flex; gap: 6px; align-items: center"><input type="checkbox" checked="checked">SSH</label><label style="display: flex; gap: 6px; align-items: center"><input type="checkbox">SNMP</label></div></div>
+</div>
+</div>
+
+<div class="card">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap"><div style="display: flex; flex-direction: column; gap: 4px"><h2 class="h2">Конфигурација DUT‑а</h2><span style="font-size: 12px; color: #545A61">Суседи се додају преко SSH‑а пре теста и уклањају после њега.</span></div><label style="display: flex; gap: 8px; align-items: center; font-size: 13px; font-weight: 500; min-height: 36px"><input type="checkbox" checked="checked" style="accent-color: #0E6E66; width: 18px; height: 18px; margin: 0">Конфигуриши DUT пре сваког теста</label></div>
+<fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+<legend class="lbl" style="padding: 0; margin-bottom: 8px">Платформа</legend>
+<div style="display: flex; flex-wrap: wrap; border: 1px solid #C9CDC6; border-radius: 8px; overflow: hidden; width: fit-content; max-width: 100%">
+<sc-for list="{{cfg.plats}}" as="p" hint-placeholder-count="4">
+<label style="{{p.style}}"><input type="radio" name="dutplat" checked="{{p.on}}" onChange="{{p.pick}}" style="margin: 0; accent-color: #FFFFFF">{{p.label}}</label>
+</sc-for>
+</div>
+<p style="margin: 4px 0 0; padding: 10px 12px; background: #EEF6F5; border-radius: 6px; color: #23403C; font-size: 13px; line-height: 1.5">{{cfg.note}}</p>
+</fieldset>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="sshhost">SSH адреса</label><input id="sshhost" class="inp mono" placeholder="= IP DUT‑а" value="{{cfg.host}}"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="sshport">Порт</label><input id="sshport" class="inp mono" value="22"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="sshuser">Корисник</label><input id="sshuser" class="inp mono" value="{{cfg.user}}"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="sshauth">Аутентикација</label><select id="sshauth" class="inp"><option>Лозинка (тражи се при покретању, не чува се)</option><option>SSH кључ чвора CMNODE01</option></select></div>
+<sc-if value="{{cfg.isCisco}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="ensec">Enable лозинка <span class="tip" title="Само ако Cisco корисник нема ниво привилегија 15. Тражи се при покретању, не чува се.">i</span></label><input id="ensec" class="inp" type="password" placeholder="тражи се при покретању"></div>
+</sc-if>
+<sc-if value="{{cfg.isLinux}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Привилегије <span class="tip" title="birdc и vtysh захтевају root или sudo без лозинке на рачунару DUT‑а.">i</span></span><label style="display: flex; gap: 8px; align-items: center; height: 36px"><input type="checkbox" checked="checked" style="accent-color: #0E6E66; margin: 0">Користи sudo</label></div>
+</sc-if>
+<sc-if value="{{cfg.isBird}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="birdinc">BIRD include датотека <span class="tip" title="Суседи се уписују у ову датотеку; у bird.conf се први пут додаје један ред include.">i</span></label><input id="birdinc" class="inp mono" value="/etc/bird/tgen.conf"></div>
+</sc-if>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="maxr">Ограничење броја рута <span class="tip" title="Тестови са више рута од овога се одбијају, ради заштите малих уређаја (MikroTik CRS106: 20 000). Празно = без ограничења.">i</span></label><input id="maxr" class="inp mono" placeholder="без ограничења" value="{{cfg.limit}}"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="after">После теста</label><select id="after" class="inp"><option>Уклони суседе</option><option>Задржи суседе</option></select></div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<button class="btn btn-sm" type="button" style="height: 36px">Провери везу</button>
+<button class="btn btn-sm" type="button" aria-expanded="{{cfg.prevOpen}}" onClick="{{cfg.togglePrev}}" style="{{cfg.prevBtnStyle}}">Прегледај конфигурацију</button>
+<button class="btn btn-sm" type="button" style="height: 36px">Пошаљи сада</button>
+<button class="btn btn-sm" type="button" style="height: 36px">Уклони</button>
+<button class="btn btn-sm" type="button" style="height: 36px">Стање</button>
+<span style="display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: #1E7B3A; font-weight: 500; flex: 1 1 260px; min-width: 0"><span style="width: 8px; height: 8px; border-radius: 50%; background: #1E7B3A; flex: none"></span><span class="mono" style="color: #23403C; overflow-wrap: anywhere">{{cfg.status}}</span></span>
+</div>
+<sc-if value="{{cfg.prevOpen}}" hint-placeholder-val="{{ false }}">
+<div style="border: 1px solid #ECEEEA; border-radius: 8px; overflow: hidden">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; background: #F3F4F1; font-size: 12px; color: #545A61"><span>Конфигурација за {{cfg.platLabel}} · први рутер од 60</span><span style="display: flex; gap: 6px"><button class="btn btn-sm" type="button">Копирај</button><button class="btn btn-sm" type="button">Преузми</button></span></div>
+<pre class="mono" style="margin: 0; padding: 12px; font-size: 12px; line-height: 1.55; overflow-x: auto; white-space: pre; background: #FFFFFF; color: #16191D">{{cfg.preview}}</pre>
+</div>
+</sc-if>
+</div>
+
+<div class="card">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap"><h2 class="h2">Емулирани рутери</h2><div style="display: flex; gap: 8px; flex-wrap: wrap"><button class="btn btn-sm" type="button">Додај више…</button><button class="btn btn-sm" type="button">Генериши све</button><button class="btn btn-sm" type="button">Увоз / извоз</button></div></div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="rpn">Рутера по чвору</label><input id="rpn" class="inp mono" value="10"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="asnmode">Додела ASN‑ова</label><select id="asnmode" class="inp"><option>Насумично · приватни 32‑битни</option></select></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="pool">Скуп префикса</label><input id="pool" class="inp mono" value="10.0.0.0/8 · /24–/28"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Распоређивање</span><span style="height: 36px; display: flex; align-items: center; font-size: 13px">CMNODE01 са тежином 0,7</span></div>
+</div>
+<div style="overflow-x: auto; border: 1px solid #ECEEEA; border-radius: 8px">
+<table style="border-collapse: collapse; width: 100%; font-size: 13px">
+<thead><tr><th class="th">Рутер</th><th class="th">Чвор</th><th class="th">ASN</th><th class="th">Префикси</th><th class="th">Стање</th><th class="th">Пријем</th><th class="th">Сесија</th></tr></thead>
+<tbody>
+<tr><td class="td mono">R01</td><td class="td">CMNODE01</td><td class="td"><span class="mono">4200000117</span> <button class="btn btn-sm" type="button" aria-label="Насумичан ASN за R01" style="height: 26px; padding: 0 8px">⟳</button></td><td class="td mono">10 000</td><td class="td"><span style="color: #1E7B3A; font-weight: 500">генерисано: 10 000</span> <button class="btn btn-sm" type="button" style="height: 26px">Генериши</button> <button class="btn btn-sm" type="button" style="height: 26px">Налепи…</button></td><td class="td">пуно</td><td class="td"><span style="color: #1E7B3A; font-weight: 600">Established</span></td></tr>
+<tr><td class="td mono">R02</td><td class="td">CMNODE01</td><td class="td"><span class="mono">4200003561</span> <button class="btn btn-sm" type="button" aria-label="Насумичан ASN за R02" style="height: 26px; padding: 0 8px">⟳</button></td><td class="td mono">10 000</td><td class="td"><span style="color: #1E7B3A; font-weight: 500">генерисано: 10 000</span> <button class="btn btn-sm" type="button" style="height: 26px">Генериши</button> <button class="btn btn-sm" type="button" style="height: 26px">Налепи…</button></td><td class="td">временске ознаке</td><td class="td"><span style="color: #1E7B3A; font-weight: 600">Established</span></td></tr>
+<tr><td class="td mono">R08</td><td class="td">CMNODE02</td><td class="td"><span class="mono">64512</span> <button class="btn btn-sm" type="button" aria-label="Насумичан ASN за R08" style="height: 26px; padding: 0 8px">⟳</button></td><td class="td mono">245</td><td class="td"><span style="color: #0E6E66; font-weight: 500">налепљено: 245</span> <button class="btn btn-sm" type="button" style="height: 26px">Генериши</button> <button class="btn btn-sm" type="button" style="height: 26px">Налепи…</button></td><td class="td">пуно</td><td class="td"><span style="color: #1E7B3A; font-weight: 600">Established</span></td></tr>
+<tr><td class="td mono">R09</td><td class="td">CMNODE02</td><td class="td"><span class="mono">4200019020</span> <button class="btn btn-sm" type="button" aria-label="Насумичан ASN за R09" style="height: 26px; padding: 0 8px">⟳</button></td><td class="td mono">10 000</td><td class="td"><span style="color: #1E7B3A; font-weight: 500">генерисано: 10 000</span> <button class="btn btn-sm" type="button" style="height: 26px">Генериши</button> <button class="btn btn-sm" type="button" style="height: 26px">Налепи…</button></td><td class="td">временске ознаке</td><td class="td"><span style="color: #A15C07; font-weight: 600">OpenConfirm</span></td></tr>
+</tbody>
+</table>
+</div>
+<div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 13px; color: #545A61"><span>Приказано 4 од 60 рутера · <a href="#">прикажи све</a></span><span class="mono">60 рутера · 590.245 префикса · процена RAM‑а 0,3 GB/чвору</span></div>
+</div>
+
+<div class="card">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap"><h2 class="h2">Сценарио</h2><div style="display: flex; gap: 8px; align-items: center"><label class="lbl" for="preset">Предложак</label><select id="preset" class="inp" style="height: 32px"><option>Тачка засићења</option></select></div></div>
+<ol aria-label="Фазе" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px">
+<li style="border: 1px solid #C7E3DF; background: #EEF6F5; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; color: #3B6E68; font-weight: 600">1 · ЗАВРШЕНО</span><span style="font-weight: 600">Успостављање</span><span class="mono" style="font-size: 12px; color: #545A61">све одједном</span></li>
+<li style="border: 1px solid #C7E3DF; background: #EEF6F5; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; color: #3B6E68; font-weight: 600">2 · ЗАВРШЕНО</span><span style="font-weight: 600">Почетно учитавање</span><span class="mono" style="font-size: 12px; color: #545A61">максимална брзина</span></li>
+<li style="border: 1px solid #C7E3DF; background: #EEF6F5; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; color: #3B6E68; font-weight: 600">3 · ЗАВРШЕНО</span><span style="font-weight: 600">Стабилно стање</span><span class="mono" style="font-size: 12px; color: #545A61">60 s</span></li>
+<li style="border: 2px solid #0E6E66; background: #FFFFFF; border-radius: 8px; padding: 9px 11px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; color: #0E6E66; font-weight: 700">4 · У ТОКУ</span><span style="font-weight: 600">Промене рута, у корацима</span><span class="mono" style="font-size: 12px; color: #545A61">100→2000 /s</span></li>
+<li style="border: 1px solid #D9DCD6; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; color: #545A61; font-weight: 600">5 · СЛЕДИ</span><span style="font-weight: 600">Гашење</span><span class="mono" style="font-size: 12px; color: #545A61">повуци све</span></li>
+</ol>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="cs">Почетна брзина (ажур./s)</label><input id="cs" class="inp mono" value="100"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="cst">Корак / сваких</label><input id="cst" class="inp mono" value="+100 / 30 s"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="cm">Однос огл./пов./атр. %</label><input id="cm" class="inp mono" value="40 / 40 / 20"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="shape">Облик</label><select id="shape" class="inp"><option>Константно</option></select></div>
+</div>
+</div>
+
+</section>
+
+<section aria-label="Приказ уживо" style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+
+<div style="display: flex; flex-wrap: wrap; gap: 12px">
+<div class="kpi"><span class="lbl hint" tabindex="0">Сесије<span class="tt" role="tooltip">Емулирани рутери чија је BGP сесија са DUT‑ом у стању „Established“, од свих конфигурисаних рутера.</span></span><span class="kv">60<span style="font-size: 15px; color: #545A61">/60</span></span><span style="font-size: 12px; color: #1E7B3A">све Established</span></div>
+<div class="kpi"><span class="lbl hint" tabindex="0">Почетна конвергенција<span class="tt" role="tooltip">Време од првог оглашавања док сваки рутер пријемник не прими сваку руту коју треба да добије од DUT‑а.</span></span><span class="kv">41,2 s</span><span style="font-size: 12px; color: #545A61">примљено 100 % рута</span></div>
+<div class="kpi"><span class="lbl hint" tabindex="0">Кашњење p99 (сада)<span class="tt" role="tooltip">Кашњење простирања у последњој секунди: 99 % префикса стигло је од изворног рутера кроз DUT до осталих рутера брже од овога. p50 = медијана.</span></span><span class="kv" style="color: #A15C07">312 ms</span><span style="font-size: 12px; color: #545A61">p50 48 ms</span></div>
+<div class="kpi"><span class="lbl hint" tabindex="0">Излаз DUT‑а<span class="tt" role="tooltip">Ажурирања рута у секунди која DUT шаље нашим рутерима, у поређењу са брзином коју нудимо. Излаз већи од понуђене брзине је нормалан: свако ажурирање се шаље многим суседима.</span></span><span class="kv">1.840</span><span style="font-size: 12px; color: #545A61">ажур./s · понуђено 1.000</span></div>
+</div>
+
+<div class="card" style="gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px"><h2 class="h2">Кашњење простирања у односу на понуђено оптерећење</h2><div role="group" aria-label="Временски прозор" style="display: flex; gap: 4px"><button type="button" class="{{ch.c5}}" onClick="{{ch.z5}}">5 мин</button><button type="button" class="{{ch.c2}}" onClick="{{ch.z2}}">2 мин</button><button type="button" class="{{ch.c1}}" onClick="{{ch.z1}}">1 мин</button></div></div>
+<div style="position: relative">
+<svg viewBox="0 0 560 220" role="img" aria-label="Линијски график p50 и p99 кашњења простирања са понуђеном брзином ажурирања; вредности читајте помоћу клизача временског курсора и прозора испод" style="width: 100%; height: auto; cursor: crosshair" onMouseMove="{{ch.move}}">
+<defs><clipPath id="clipLat"><rect x="44" y="0" width="476" height="200"></rect></clipPath></defs>
+<g stroke="#ECEEEA" stroke-width="1"><line x1="44" y1="20" x2="520" y2="20"></line><line x1="44" y1="62.5" x2="520" y2="62.5"></line><line x1="44" y1="105" x2="520" y2="105"></line><line x1="44" y1="147.5" x2="520" y2="147.5"></line></g>
+<line x1="44" y1="190" x2="520" y2="190" stroke="#8A9097"></line>
+<g font-family="IBM Plex Mono, monospace" font-size="10" fill="#545A61"><text x="38" y="194" text-anchor="end">0</text><text x="38" y="109" text-anchor="end">200</text><text x="38" y="24" text-anchor="end">400 ms</text><text x="526" y="194">0</text><text x="526" y="104">1k/s</text></g>
+<g clip-path="url(#clipLat)">
+<polyline fill="none" stroke="#B9BEC3" stroke-width="2" stroke-dasharray="4 3" points="{{ch.po}}"></polyline>
+<polyline fill="none" stroke="#0E6E66" stroke-width="2.5" points="{{ch.p50}}"></polyline>
+<polyline fill="none" stroke="#C2410C" stroke-width="2.5" points="{{ch.p99}}"></polyline>
+</g>
+<line x1="{{ch.cx}}" y1="14" x2="{{ch.cx}}" y2="190" stroke="#5B4FC4" stroke-width="1.5"></line>
+<circle cx="{{ch.cx}}" cy="{{ch.y50}}" r="4.5" fill="#0E6E66" stroke="#FFFFFF" stroke-width="1.5"></circle>
+<circle cx="{{ch.cx}}" cy="{{ch.y99}}" r="4.5" fill="#C2410C" stroke="#FFFFFF" stroke-width="1.5"></circle>
+</svg>
+<div style="position: absolute; left: {{ch.tl}}; right: {{ch.tr}}; top: 51%; background: rgba(22, 25, 29, 0.92); color: #FFFFFF; font-family: 'IBM Plex Mono', monospace; font-size: 11px; line-height: 1.5; padding: 6px 9px; border-radius: 5px; white-space: nowrap; pointer-events: none"><div>{{ch.l1}}</div><div>{{ch.l2}}</div><div>{{ch.l3}}</div></div><span style="position: absolute; left: {{ch.t0.x}}; top: 94.5%; transform: translateX(0); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{ch.t0.l}}</span><span style="position: absolute; left: {{ch.t1.x}}; top: 94.5%; transform: translateX(-50%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{ch.t1.l}}</span><span style="position: absolute; left: {{ch.t2.x}}; top: 94.5%; transform: translateX(-50%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{ch.t2.l}}</span><span style="position: absolute; left: {{ch.t3.x}}; top: 94.5%; transform: translateX(-50%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{ch.t3.l}}</span><span style="position: absolute; left: {{ch.t4.x}}; top: 94.5%; transform: translateX(-100%); font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #545A61; white-space: nowrap; pointer-events: none">{{ch.t4.l}}</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 12px; color: #545A61"><label style="display: flex; align-items: center; gap: 8px">Временски курсор <input type="range" min="{{ch.d0}}" max="{{ch.d1}}" step="1" value="{{ch.cur}}" onChange="{{ch.slide}}" style="width: 200px; accent-color: #0E6E66"></label><label style="display: flex; align-items: center; gap: 8px">Прозор <input type="range" min="-300" max="{{ch.panMax}}" step="1" value="{{ch.pan}}" onChange="{{ch.panTo}}" disabled="{{ch.panDis}}" style="width: 200px; accent-color: #0E6E66"></label></div>
+<p class="mono" style="margin: 0; font-size: 12px; background: #F3F4F1; padding: 7px 10px; border-radius: 6px">{{ch.read}}</p>
+<div style="display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; color: #545A61"><span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 16px; height: 3px; background: #0E6E66"></span>p50</span><span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 16px; height: 3px; background: #C2410C"></span>p99</span><span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 16px; border-top: 2px dashed #8A9097"></span>понуђена ажурирања/s (десна оса)</span></div>
+</div>
+
+<div class="card" style="gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px"><h2 class="h2">Стање генератора</h2><span style="font-size: 12px; color: #545A61">просечан CPU чвора · ознаке на 70 % и 90 %</span></div>
+<div style="display: grid; grid-template-columns: 92px minmax(0, 1fr) 56px 64px; gap: 8px 12px; align-items: center; font-size: 13px">
+<span class="mono">CMNODE01</span><span style="position: relative; height: 10px; background: #ECEEEA; border-radius: 5px"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 38%; background: #0E6E66; border-radius: 5px"></span><span style="position: absolute; left: 70%; top: -3px; bottom: -3px; width: 2px; background: #A15C07"></span><span style="position: absolute; left: 90%; top: -3px; bottom: -3px; width: 2px; background: #B42318"></span></span><span class="mono">38 %</span><span style="font-size: 12px; color: #545A61">58 °C</span>
+<span class="mono">CMNODE02</span><span style="position: relative; height: 10px; background: #ECEEEA; border-radius: 5px"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 52%; background: #0E6E66; border-radius: 5px"></span><span style="position: absolute; left: 70%; top: -3px; bottom: -3px; width: 2px; background: #A15C07"></span><span style="position: absolute; left: 90%; top: -3px; bottom: -3px; width: 2px; background: #B42318"></span></span><span class="mono">52 %</span><span style="font-size: 12px; color: #545A61">61 °C</span>
+<span class="mono">CMNODE03</span><span style="position: relative; height: 10px; background: #ECEEEA; border-radius: 5px"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 51%; background: #0E6E66; border-radius: 5px"></span><span style="position: absolute; left: 70%; top: -3px; bottom: -3px; width: 2px; background: #A15C07"></span><span style="position: absolute; left: 90%; top: -3px; bottom: -3px; width: 2px; background: #B42318"></span></span><span class="mono">51 %</span><span style="font-size: 12px; color: #545A61">60 °C</span>
+<span class="mono">CMNODE04</span><span style="position: relative; height: 10px; background: #ECEEEA; border-radius: 5px"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 53%; background: #0E6E66; border-radius: 5px"></span><span style="position: absolute; left: 70%; top: -3px; bottom: -3px; width: 2px; background: #A15C07"></span><span style="position: absolute; left: 90%; top: -3px; bottom: -3px; width: 2px; background: #B42318"></span></span><span class="mono">53 %</span><span style="font-size: 12px; color: #545A61">62 °C</span>
+<span class="mono">CMNODE05</span><span style="position: relative; height: 10px; background: #ECEEEA; border-radius: 5px"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 49%; background: #0E6E66; border-radius: 5px"></span><span style="position: absolute; left: 70%; top: -3px; bottom: -3px; width: 2px; background: #A15C07"></span><span style="position: absolute; left: 90%; top: -3px; bottom: -3px; width: 2px; background: #B42318"></span></span><span class="mono">49 %</span><span style="font-size: 12px; color: #545A61">59 °C</span>
+<span class="mono">CMNODE06</span><span style="position: relative; height: 10px; background: #ECEEEA; border-radius: 5px"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 50%; background: #0E6E66; border-radius: 5px"></span><span style="position: absolute; left: 70%; top: -3px; bottom: -3px; width: 2px; background: #A15C07"></span><span style="position: absolute; left: 90%; top: -3px; bottom: -3px; width: 2px; background: #B42318"></span></span><span class="mono">50 %</span><span style="font-size: 12px; color: #545A61">60 °C</span>
+</div>
+</div>
+
+<div class="card" style="gap: 8px; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between">
+<div style="display: flex; flex-direction: column; gap: 2px"><h2 class="h2">Стање контролне равни</h2><span style="font-size: 12px; color: #545A61">Резерва CMNODE01: 30 % CPU · 4,8 GB RAM · 20 Mbit/s по линку</span></div>
+<div style="display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px"><span>API <b class="mono">38 ms</b></span><span>Кашњење приказа <b class="mono">0,4 s</b></span><span style="color: #1E7B3A; font-weight: 600">● У реду</span></div>
+</div>
+
+<div class="card" style="gap: 8px">
+<h2 class="h2">Догађаји</h2>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; font-size: 13px">
+<li style="display: flex; gap: 12px; padding: 7px 0; border-bottom: 1px solid #ECEEEA"><span class="mono" style="color: #545A61">07:41.8</span><span style="color: #A15C07; font-weight: 600">УПОЗОРЕЊЕ</span><span>p99 кашњење изнад 250 ms при понуђених 1.000 ажур./s</span></li>
+<li style="display: flex; gap: 12px; padding: 7px 0; border-bottom: 1px solid #ECEEEA"><span class="mono" style="color: #545A61">07:30.0</span><span style="color: #545A61; font-weight: 600">ФАЗА</span><span>Корак промена рута → 1.000 ажур./s</span></li>
+<li style="display: flex; gap: 12px; padding: 7px 0; border-bottom: 1px solid #ECEEEA"><span class="mono" style="color: #545A61">05:12.4</span><span style="color: #A15C07; font-weight: 600">УПОЗОРЕЊЕ</span><span>DUT је прекинуо сесију R09 — NOTIFICATION 4/0 (истекао hold тајмер)</span></li>
+<li style="display: flex; gap: 12px; padding: 7px 0"><span class="mono" style="color: #545A61">02:41.2</span><span style="color: #1E7B3A; font-weight: 600">ИНФО</span><span>Почетно учитавање конвергирало: 590.245 рута код свих пријемника за 41,2 s</span></li>
+</ul>
+</div>
+
+</section>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1760}}'>
+var M50 = [[-300,42.4],[-270,44.7],[-240,44.7],[-209,47.1],[-179,47.1],[-149,49.4],[-118,51.8],[-88,51.8],[-58,54.1],[-28,56.5],[0,56.5]];
+var M99 = [[-300,70.6],[-270,72.9],[-240,75.3],[-209,77.6],[-179,82.4],[-149,89.4],[-118,117.6],[-88,160],[-58,216.5],[-28,301.2],[0,367.1]];
+function lerp(p, x) {
+  if (x <= p[0][0]) return p[0][1];
+  for (var i = 1; i < p.length; i++) {
+    if (x <= p[i][0]) { var a = p[i - 1], b = p[i]; return a[1] + (b[1] - a[1]) * (x - a[0]) / (b[0] - a[0]); }
+  }
+  return p[p.length - 1][1];
+}
+function offered(t) { return Math.min(1000, 100 * (Math.floor((t + 300) / 30) + 1)); }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+var PLATS = [
+  { id: "mikrotik", label: "MikroTik RouterOS 7", user: "admin", limit: "20000", host: "",
+    detected: "RouterOS 7.11 · CRS106‑1C‑5S",
+    note: "RouterOS нема транспарентни режим рут сервера: додаје сопствени AS број. Извештај то приказује као измењене руте.",
+    status: "Повезано · CRS106‑1C‑5S · RouterOS 7.11 · CPU 3 % · слободно 92 MiB · tgen суседа: 0",
+    preview: "/routing bgp connection remove [find where comment~\"tgen\"]\n/routing bgp connection add name=tgen-R01 comment=\"tgen run R01 node CMNODE01\" \\\n    as=64500 local.address=10.100.0.1 local.role=ebgp remote.address=10.100.0.20 \\\n    remote.as=4200000117 connect=no listen=yes hold-time=90s nexthop-choice=propagate\n# … још 59 веза" },
+  { id: "cisco", label: "Cisco IOS / IOS‑XE", user: "admin", limit: "", host: "192.168.100.1",
+    detected: "IOS‑XE 17.9.4a · ISR4331",
+    note: "Улога рут сервера користи route‑server‑client (IOS‑XE 3.3S и новији, IOS 15.2S и новији). Само текућа конфигурација — ништа се не уписује у почетну (startup) конфигурацију.",
+    status: "Повезано · ISR4331 · IOS‑XE 17.9.4a · CPU 4 % · слободно 1,36 GiB · tgen суседа: 0",
+    preview: "router bgp 64500\n neighbor 10.100.0.20 remote-as 4200000117\n neighbor 10.100.0.20 description tgen run R01 node CMNODE01\n neighbor 10.100.0.20 transport connection-mode passive\n neighbor 10.100.0.20 timers 30 90\n address-family ipv4\n  neighbor 10.100.0.20 activate\n  neighbor 10.100.0.20 route-server-client\n! … још 59 суседа" },
+  { id: "bird", label: "BIRD 2 / 3", user: "root", limit: "", host: "",
+    detected: "BIRD 2.15",
+    note: "Суседи се уписују у засебну include датотеку; у bird.conf се први пут додаје један ред include. Примењује се са birdc configure — остали протоколи раде без прекида.",
+    status: "Повезано · BIRD 2.15 на dut-bird · оптерећење 0,4 · слободно 7,4 GiB · tgen суседа: 60 · Established: 60",
+    preview: "template bgp tgen_tpl {\n  local 10.100.0.1 as 64500;\n  passive on; hold time 90; rs client;\n  ipv4 { import all; export all; };\n}\nprotocol bgp tgen_R01 from tgen_tpl { neighbor 10.100.0.20 as 4200000117; }\n# … још 59 протокола" },
+  { id: "frr", label: "Quagga / FRR", user: "root", limit: "", host: "",
+    detected: "FRRouting 8.4.4",
+    note: "Примењује се преко vtysh. Сваки сусед добија route‑map TGEN-ALL (permit) на улазу и излазу; глобална подешавања се не мењају. Quagga се више не одржава: користе се FRR команде, тестирано са FRR‑ом.",
+    status: "Повезано · FRRouting 8.4.4 на dut-frr · оптерећење 0,2 · bgpd 25 MiB · tgen суседа: 0",
+    preview: "configure terminal\nroute-map TGEN-ALL permit 10\nrouter bgp 64500\n neighbor 10.100.0.20 remote-as 4200000117\n neighbor 10.100.0.20 description tgen run R01 node CMNODE01\n neighbor 10.100.0.20 passive\n address-family ipv4 unicast\n  neighbor 10.100.0.20 route-server-client\n  neighbor 10.100.0.20 route-map TGEN-ALL in\n  neighbor 10.100.0.20 route-map TGEN-ALL out\n! … још 59 суседа" }
+];
+var SEG_ON = "display: flex; align-items: center; gap: 8px; min-height: 44px; box-sizing: border-box; padding: 0 16px; background: #0E6E66; color: #FFFFFF; font-weight: 600; cursor: pointer";
+var SEG_OFF = "display: flex; align-items: center; gap: 8px; min-height: 44px; box-sizing: border-box; padding: 0 16px; background: #FFFFFF; color: #16191D; cursor: pointer";
+function ago(t) { var s = Math.round(-t); return s === 0 ? "сада" : "−" + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+
+class Component extends DCLogic {
+  cfgVals() {
+    var self = this, st = this.state || {}, cur = st.plat || "bird", prev = !!st.prev;
+    var P = PLATS.filter(function (p) { return p.id === cur; })[0];
+    return {
+      plats: PLATS.map(function (p, i) {
+        return { label: p.label, on: p.id === cur,
+                 style: (p.id === cur ? SEG_ON : SEG_OFF) + (i ? "; border-left: 1px solid #C9CDC6" : ""),
+                 pick: function () { self.setState({ plat: p.id }); } };
+      }),
+      note: P.note, user: P.user, limit: P.limit, host: P.host, status: P.status, preview: P.preview,
+      detected: P.detected, platLabel: P.label,
+      isCisco: cur === "cisco", isLinux: cur === "bird" || cur === "frr", isBird: cur === "bird",
+      prevOpen: prev,
+      prevBtnStyle: "height: 36px" + (prev ? "; background: #EEF6F5; border-color: #0E6E66; color: #0A524C" : ""),
+      togglePrev: function () { self.setState({ prev: !prev }); }
+    };
+  }
+  langVals() {
+    var self = this, open = !!(this.state || {}).langOpen;
+    return { open: open, toggle: function (e) { if (e && e.preventDefault) e.preventDefault(); self.setState({ langOpen: !open }); } };
+  }
+  renderVals() {
+    var self = this;
+    var s = Object.assign({ span: 300, pan: -300, cur: -60 }, (this.state || {}).ch);
+    var put = function (patch) { self.setState({ ch: Object.assign({}, s, patch) }); };
+    var a = clamp(s.pan, -300, -s.span), b = a + s.span, L = 44, R = 520;
+    var px = function (t) { return L + (t - a) / (b - a) * (R - L); };
+    var pyL = function (ms) { return 190 - ms / 400 * 170; }, pyO = function (r) { return 190 - r / 1000 * 85; };
+    var line = function (p, fy) { return p.map(function (q) { return px(q[0]).toFixed(1) + "," + fy(q[1]).toFixed(1); }).join(" "); };
+    var off = [];
+    for (var t = -300; t < 0; t += 30) { off.push([t, offered(t)]); off.push([Math.min(0, t + 30), offered(t)]); }
+    var c = clamp(s.cur, a, b), v50 = lerp(M50, c), v99 = lerp(M99, c), cx = px(c), right = cx > R - 165;
+    var ticks = {};
+    for (var i = 0; i < 5; i++) { ticks["t" + i] = { x: ((L + (R - L) * i / 4) / 560 * 100).toFixed(2) + "%", l: ago(a + (b - a) * i / 4) }; }
+    var zoom = function (span) { return function () { put({ span: span, pan: clamp(c - span / 2, -300, -span) }); }; };
+    return { ch: Object.assign({
+      po: line(off, pyO), p50: line(M50, pyL), p99: line(M99, pyL),
+      cx: cx, y50: pyL(v50), y99: pyL(v99), tl: right ? "auto" : ((cx + 10) / 560 * 100).toFixed(2) + "%", tr: right ? ((560 - cx + 10) / 560 * 100).toFixed(2) + "%" : "auto",
+      l1: "t " + ago(c), l2: "p50 " + Math.round(v50) + " · p99 " + Math.round(v99) + " ms", l3: "понуђено " + offered(c) + "/s",
+      read: "t = " + ago(c) + " · p50 " + Math.round(v50) + " ms · p99 " + Math.round(v99) + " ms · понуђено " + offered(c) + " ажур./s",
+      d0: a, d1: b, cur: c, pan: a, panMax: -s.span, panDis: s.span === 300,
+      c5: s.span === 300 ? "zb zon" : "zb", c2: s.span === 120 ? "zb zon" : "zb", c1: s.span === 60 ? "zb zon" : "zb",
+      z5: zoom(300), z2: zoom(120), z1: zoom(60),
+      move: function (e) { var r = e.currentTarget.getBoundingClientRect(); if (!r.width) return; var vx = (e.clientX - r.left) / r.width * 560; if (vx < L || vx > R) return; put({ cur: a + (vx - L) / (R - L) * (b - a) }); },
+      slide: function (e) { put({ cur: parseFloat(e.target.value) }); },
+      panTo: function (e) { var p = parseFloat(e.target.value); put({ pan: p, cur: clamp(c, p, p + s.span) }); }
+    }, ticks), cfg: this.cfgVals(), lang: this.langVals() };
+  }
+}
+</script>
+</body>
+</html>

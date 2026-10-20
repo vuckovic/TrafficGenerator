@@ -138,7 +138,7 @@ OPTIONAL_PKGS=(
   libxdp-dev xdp-tools bpftool linux-perf tshark nload htop
   lldpd stress-ng libbenchmark-dev bird2
 )
-CONTROLLER_PKGS=( ansible sshpass )
+CONTROLLER_PKGS=( ansible sshpass python3-netmiko )   # netmiko: Cisco IOS DUT adapter
 
 step_packages() {
   log "--- packages"

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# simulation only: the DUT's FRR runs as pathspace instance in netns $SIM_DUT_NETNS
+exec /usr/bin/vtysh -N "$SIM_DUT_NETNS" "$@"

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 # already root in the simulation; drop "-u USER"
+[[ "$1" == -n ]] && shift
 [[ "$1" == -u ]] && shift 2
 exec "$@"

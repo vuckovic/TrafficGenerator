@@ -49,6 +49,8 @@ struct RouterStats {
   std::uint64_t routes_held = 0, routes_peak = 0;
   std::int64_t t_first_rx = 0, t_converged = 0, t_last_rx = 0, t_empty_after_withdraw = 0;
   std::uint64_t paths_with_dut_asn = 0, next_hop_is_dut = 0, paths_without_originator = 0;
+  std::uint64_t looped_rx = 0;  // own routes sent back (own AS in AS_PATH / own ORIGINATOR_ID): dropped, RFC 4271 9.1.2
+
   std::int64_t max_keepalive_gap_ns = 0;
   std::vector<std::pair<std::uint8_t, std::uint8_t>> notifications_rx, notifications_tx;
   std::vector<std::string> errors;
@@ -87,6 +89,7 @@ class Router : public std::enable_shared_from_this<Router> {
   void handle(const bgp::Message& m);
   void on_open(const bgp::OpenMsg& o);
   void on_update(const bgp::UpdateMsg& u);
+  void after_rx(std::int64_t t, bool keep);  // held/peak/convergence bookkeeping
   void established();
   void build_batches();
   void begin(bool withdraw);
