@@ -134,7 +134,7 @@ tools/tgen_series.py --rates 2,4,6,8,10,12 -- --dut mikrotik --routers 12 --pref
 - convergence: from the first announcement, and **after the last send** (the DUT's lag);
 - announce latency p50 / p99, our send lag p99, DUT CPU mid‑run, missing routes, resets, gate.
 
-**Pacing:** works per UPDATE message. Without `--per-update`, a paced run now sends about one UPDATE every 100 ms (rate ÷ 10 prefixes per UPDATE, at least 1). Before this fix, all of a router's prefixes went out in one UPDATE, so "paced" runs were not paced.
+**Pacing:** works per UPDATE message. Without `--per-update`, a paced run packs **10 prefixes per UPDATE** (user decision 2026‑10‑20; real routers pack many prefixes per message). Before the pacing fix, all of a router's prefixes went out in one UPDATE, so "paced" runs were not paced. Use `--per-update 1` for the hardest case.
 
 **Unexpected attributes:** the agent records every path‑attribute type it receives (`attrs_rx`) and every type our routers send (`attrs_sent`). The report flags types the DUT added beyond the role: a route server and a router may add nothing new; a reflector may add LOCAL_PREF, ORIGINATOR_ID and CLUSTER_LIST. This is PASS/FAIL for the BIRD stand‑in and INFO for a real DUT. Example: CRS106 reflector → `ATOMIC_AGGREGATE(6)` on every route. FRR 8.4 as reflector in our configuration advertises MED 0 to the clients (`Metric 0` in `advertised-routes`, none on the stored path); possibly caused by our outbound route‑map.
 

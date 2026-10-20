@@ -53,14 +53,17 @@ def split(total: int, nodes: list[NodeSpec]) -> list[int]:
     return out
 
 
+PACED_PER_UPDATE = 10   # user decision 2026-10-20: real routers pack many prefixes per UPDATE
+
+
 def effective_per_update(sc: Scenario) -> int:
     """Pacing works per UPDATE message. Without a limit all of a router's prefixes
     fit in one or a few UPDATEs (about 800 per 4 KB message), which are sent at
     once - a paced run would not be paced. With a rate and no explicit limit,
-    send about one UPDATE every 100 ms."""
+    pack 10 prefixes per UPDATE (one UPDATE every 10/rate seconds)."""
     if sc.per_update or sc.announce_rate <= 0:
         return sc.per_update
-    return max(1, int(sc.announce_rate / 10))
+    return PACED_PER_UPDATE
 
 
 def build(sc: Scenario, nodes: list[NodeSpec], now_ms: int | None = None) -> tuple[dict[str, dict], dict]:
