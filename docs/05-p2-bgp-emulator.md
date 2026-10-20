@@ -74,7 +74,7 @@ tools/tgen_dut.py --dut cisco --dut-ip 10.100.0.1 test|push|status|remove
 | `--dut-bird-include`, `--dut-bird-conf`, `--dut-bird-socket` | BIRD include file, main config file and control socket |
 | `--dut-max-routes` | route‑limit guard; default 20 000 for MikroTik, none for the others |
 | `--keep-dut-config` | leave the neighbours on the device after the run |
-| `--dut-poll N` | read the DUT's BGP session list every N s during the run into `dut-sessions.jsonl` (default 10, 0 = off). This is the DUT's own view of each session, for the event timeline; each poll is an SSH login on the DUT |
+| `--dut-poll N` | read the DUT's BGP session list every N s during the run into `dut-sessions.jsonl` (default 10, 0 = off). This is the DUT's own view of each session, for the event timeline; each poll is an SSH login on the DUT, cut off after 15 s, and polling stops after 2 failures in a row |
 | `--role` | default **router** for `mikrotik` (RouterOS cannot be a transparent route server), `route_server` otherwise |
 
 **What the tool does:**
