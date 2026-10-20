@@ -134,6 +134,7 @@ Not yet verified on real hardware:
 | 2026‑10‑20 | `p2-20261020-214235`: 12 × 100, **router** (new default), polling 10 s | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 12/12, setup p90 2.7 s | 14.7 s | 11.9 s / 14.3 s | 2.4 s | **966 prefixes/s** | PASS; AS + next‑hop‑self on 13 200/13 200 ✔ |
 | 2026‑10‑20 | `p2-20261020-214711`: 12 × 100, **route reflector** | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 12/12, setup p90 2.7 s | 14.9 s | 7.4 s / 14.8 s | 2.4 s | **957 prefixes/s** | PASS; **no ORIGINATOR_ID on 13 200/13 200** (INFO) |
 | 2026‑10‑20 | `p2-20261020-220302`: route reflector, repeat (DUT view: 18 polls, 0 failed; sessions up 22:03:32–35) | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 12/12, setup p90 2.7 s | 15.3 s | 11.9 s / 14.6 s | 2.6 s | **933 prefixes/s** | PASS; no ORIGINATOR_ID on 13 200/13 200 (INFO), repeatable |
+| 2026‑10‑20 | `p2-20261020-221105`: route reflector, with packet capture on CMNODE02 | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 12/12, setup p90 2.7 s | 15.0 s | 8.5 s / 14.9 s | 2.5 s | **970 prefixes/s** | PASS; capture confirms the missing ORIGINATOR_ID |
 
 **Reading:**
 - **The CRS106 is the bottleneck.** 13 200 route deliveries (1 200 prefixes × 11 receivers) at about 1 060/s matches the 13.5 s convergence.
@@ -151,9 +152,12 @@ Not yet verified on real hardware:
 - **BGP log on RouterOS 7.11:** only "Entering OpenConfirm" (topics `route,bgp,debug,state`); sample in `tests/fixtures/dut-logs/`. Up/down times come from `--dut-poll`.
 - **Decision (user, 2026‑10‑20):** the MikroTik is tested as a **router** by default. No idle wait before runs: the point is to load the router.
 - **Router role:** correct (AS added and next hop = DUT on every route). It is about 10 % slower than in the route‑server role (966 vs about 1 060 prefixes/s): rewriting the next hop costs work, and polling may add a little.
-- **Route‑reflector role:** every route was reflected (0 missing), but **none carried ORIGINATOR_ID** (RFC 4456 §8 requires it). Our decoder sees it on 100 % of routes from BIRD and FRR reflectors, so this points at RouterOS 7.11.2. To be confirmed with a packet capture.
+- **Route‑reflector role, confirmed by a packet capture:** every route was reflected (0 missing), but RouterOS 7.11.2 adds **neither ORIGINATOR_ID (type 9) nor CLUSTER_LIST (type 10)**, both of which RFC 4456 §8 requires. It also adds **ATOMIC_AGGREGATE (type 6)** to every reflected route, without aggregating.
+  - Capture: `tcpdump` on CMNODE02, all BGP traffic with 10.100.0.111.
+  - Attribute types counted in the 104 UPDATEs: 1, 2, 3, 5 on all of them; 6 on 102 (the 2 without it are our own announcements); 9 and 10 on none; 8 UPDATEs carried no attributes (withdrawals / End‑of‑RIB).
+  - Command: `tshark -r rr.pcap -Y "bgp.type == 2" -T fields -e bgp.update.path_attribute.type_code | tr "," "\n" | sort -n | uniq -c`.
 - **DUT view:** `dut-sessions.jsonl` gives per‑session `E` flag, `last-started` and `prefix-count` (format: `tests/fixtures/dut-sessions/`). Summarised as `dut_view` in `report.json` and in the summary.
-- **Next:** packet capture to confirm the ORIGINATOR_ID finding, then paced runs (`--rate 5`, `--rate 10`) to find the knee.
+- **Next:** paced runs (`--rate 5`, `--rate 10`, …) to find the knee.
 
 **Syncing the DUT clock with CMNODE01 (NTP):**
 ```bash
