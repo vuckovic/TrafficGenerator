@@ -48,9 +48,12 @@ if cmd.startswith("/system resource print"):
     print("        version: 7.11 (stable)\n     board-name: CRS106-1C-5S\n            cpu: MIPS 24Kc V7.4\n"
           "       cpu-load: 3%\n    free-memory: 92.1MiB\n   total-memory: 128.0MiB")
 elif cmd.startswith("/import file-name="):
+    if os.environ.get("SIM_IMPORT_FAIL"):          # test: RouterOS rejects the script
+        if "verbose=yes" in cmd:
+            print("/routing bgp connection add name=tgen-R01 ...\nexpected end of command (line 4 column 31)")
+        sys.exit(0)
     rsc = (home / "tgen-bgp.rsc").read_text()
     adds = [l[len("/routing bgp connection add "):] for l in rsc.splitlines() if l.startswith("/routing bgp connection add ")]
-    (home / "logging.txt").write_text("\n".join(l for l in rsc.splitlines() if l.startswith("/system logging add")))
     state.write_text("\n".join(adds) + "\n")
     start_bird(connections())
     print("\nScript file loaded and executed successfully")
@@ -63,6 +66,10 @@ elif "count-only" in cmd:
     print(len(connections()))
 elif cmd.startswith("/system logging remove"):
     (home / "logging.txt").write_text("")
+elif cmd.startswith("/system logging add"):
+    (home / "logging.txt").write_text(cmd)
+elif cmd.startswith("/system logging print count-only"):
+    print(1 if (home / "logging.txt").exists() and (home / "logging.txt").read_text() else 0)
 elif cmd.startswith("/routing bgp connection remove"):
     state.write_text("")
     start_bird([])

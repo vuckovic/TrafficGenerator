@@ -47,10 +47,6 @@ class MikroTik(Dut):
             f"# TrafficGenerator run {run_id}: {len(meta['routers'])} emulated routers, role {role}",
             f'# generated - do not edit; removed by: /routing bgp connection remove [find where comment~"{TAG}"]',
             f'/routing bgp connection remove [find where comment~"{TAG}"]',
-            # RouterOS 7 does not log BGP by default: log BGP events (no per-update
-            # debug lines) to memory for the run, so dut-bgp.log is not empty
-            f'/system logging remove [find where comment~"{TAG}"]',
-            f'/system logging add topics=bgp,!debug action=memory comment="{TAG} BGP events during the run"',
         ]
         for r in meta["routers"]:
             remote_as = dut_asn if role == "route_reflector" else r["asn"]
@@ -71,21 +67,41 @@ class MikroTik(Dut):
             self.upload(tmp, RSC_NAME)
         finally:
             tmp.unlink(missing_ok=True)
-        out = self.run(f"/import file-name={RSC_NAME} verbose=no", timeout=120)
+        out = self.run(f"/import file-name={RSC_NAME} verbose=no", timeout=120, check=False)
         if "executed successfully" not in out:
-            raise DutError(f"import did not succeed: {out.strip()[-400:]}")
+            # re-run verbosely: RouterOS then echoes each line and names the one that failed
+            detail = self.run(f"/import file-name={RSC_NAME} verbose=yes", timeout=180, check=False)
+            self.run(f'/file remove [find name="{RSC_NAME}"]', check=False)
+            raise DutError("RouterOS did not accept the script; last output:\n"
+                           + ((detail or out).strip()[-800:] or "(no output)"))
         self.run(f'/file remove [find name="{RSC_NAME}"]')
+        self._enable_bgp_log()
         n = self.count()
         if n != expected:
             raise DutError(f"router has {n} tgen BGP connections, expected {expected}")
         return n
+
+    def _enable_bgp_log(self) -> None:
+        """RouterOS 7 does not log BGP by default: log BGP events (no per-update
+        debug lines) to memory during the run, so dut-bgp.log is not empty. A
+        refused rule is a warning only - it must never block a benchmark."""
+        self.run(f'/system logging remove [find where comment~"{TAG}"]', check=False)
+        for topics in ('"bgp,!debug"', "bgp"):
+            out = self.run(f'/system logging add topics={topics} action=memory '
+                           f'comment="{TAG} BGP events during the run"', check=False)
+            if self.run(f'/system logging print count-only where comment~"{TAG}"', check=False).strip() not in ("", "0"):
+                self.notes.append(f"BGP logging enabled for the run (topics {topics.strip(chr(34))})")
+                return
+            last = out.strip()
+        self.notes.append(f"could not enable BGP logging on the DUT ({last[-200:] or 'no reason given'}); "
+                          "dut-bgp.log may be empty")
 
     def count(self) -> int:
         return int(self.run(f'/routing bgp connection print count-only where comment~"{TAG}"').strip() or 0)
 
     def remove(self) -> None:
         self.run(f'/routing bgp connection remove [find where comment~"{TAG}"]')
-        self.run(f'/system logging remove [find where comment~"{TAG}"]')
+        self.run(f'/system logging remove [find where comment~"{TAG}"]', check=False)
 
     def sessions(self) -> tuple[str, int]:
         out = self.run(f'/routing bgp session print terse where name~"{TAG}"')
