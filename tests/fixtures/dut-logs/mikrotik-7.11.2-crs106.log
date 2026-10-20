@@ -1,0 +1,12 @@
+ 06:29:28 route,bgp,debug,state tgen: Entering OpenConfirm state BgpStarter{ c=Connection{ ConnId{ 10.100.0.111:179 -> 10.100.0.21:40751 } Socket{ 4 ida } in } readsz=45 } cancel
+ 06:29:28 route,bgp,debug,state tgen: Entering OpenConfirm state BgpStarter{ c=Connection{ ConnId{ 10.100.0.111:179 -> 10.100.0.20:63229 } Socket{ 6 ida } in } readsz=45 } cancel
+ 06:29:28 route,bgp,debug,state tgen: Entering OpenConfirm state BgpStarter{ c=Connection{ ConnId{ 10.100.0.111:179 -> 10.100.0.23:14913 } Socket{ 7 ida } in } readsz=45 } cancel
+ 06:29:28 route,bgp,debug,state tgen: Entering OpenConfirm state BgpStarter{ c=Connection{ ConnId{ 10.100.0.111:179 -> 10.100.0.26:11051 } Socket{ 11 ida } in } readsz=45 } cancel
+ 06:29:28 route,bgp,debug,state tgen: Entering OpenConfirm state BgpStarter{ c=Connection{ ConnId{ 10.100.0.111:179 -> 10.100.0.30:11909 } Socket{ 14 ida } in } readsz=45 } cancel
+ 06:29:29 route,bgp,debug,state tgen: Entering OpenConfirm state BgpStarter{ c=Connection{ ConnId{ 10.100.0.111:179 -> 10.100.0.31:59095 } Socket{ 18 ida } in } readsz=45 } cancel
+ 06:29:29 route,bgp,debug,state tgen: Entering OpenConfirm state BgpStarter{ c=Connection{ ConnId{ 10.100.0.111:179 -> 10.100.0.24:62553 } Socket{ 23 ida } in } readsz=45 } cancel
+ 06:29:29 route,bgp,debug,state tgen: Entering OpenConfirm state BgpStarter{ c=Connection{ ConnId{ 10.100.0.111:179 -> 10.100.0.27:61351 } Socket{ 26 ida } in } readsz=45 } cancel
+ 06:29:29 route,bgp,debug,state tgen: Entering OpenConfirm state BgpStarter{ c=Connection{ ConnId{ 10.100.0.111:179 -> 10.100.0.25:57357 } Socket{ 27 ida } in } readsz=45 } cancel
+ 06:29:30 route,bgp,debug,state tgen: Entering OpenConfirm state BgpStarter{ c=Connection{ ConnId{ 10.100.0.111:179 -> 10.100.0.28:49907 } Socket{ 30 ida } in } readsz=45 } cancel
+ 06:29:30 route,bgp,debug,state tgen: Entering OpenConfirm state BgpStarter{ c=Connection{ ConnId{ 10.100.0.111:179 -> 10.100.0.29:64245 } Socket{ 33 ida } in } readsz=45 } cancel
+ 06:29:30 route,bgp,debug,state tgen: Entering OpenConfirm state BgpStarter{ c=Connection{ ConnId{ 10.100.0.111:179 -> 10.100.0.22:24545 } Socket{ 36 ida } in } readsz=45 } cancel
