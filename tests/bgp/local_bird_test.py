@@ -84,9 +84,9 @@ def main() -> int:
                                               "latency_withdraw_ms", "withdraw", "dut_output", "correctness")},
                      indent=1, default=str)[:4000])
     ok = True
-    for name, passed, detail in gate(report):
-        print(f"  {'PASS' if passed else 'FAIL'}  {name}: {detail}")
-        ok &= passed
+    for name, passed, detail in gate(report, role=args.role):
+        print(f"  {'INFO' if passed is None else 'PASS' if passed else 'FAIL'}  {name}: {detail}")
+        ok &= passed is not False
     print("work dir:", work)
     return 0 if ok else 1
 

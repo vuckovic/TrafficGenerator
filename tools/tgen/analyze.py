@@ -99,8 +99,27 @@ def analyze(meta: dict, results: list[dict]) -> dict:
             "dut_output": dut_out, "correctness": correctness, "generator": generator}
 
 
-def gate(report: dict, cpu: dict[str, float] | None = None, cpu_limit: float = 70.0) -> list[tuple[str, bool, str]]:
-    """P2 acceptance gate (spec §14): sessions, convergence, generator validity, CPU."""
+EXPECT = {"route_server": "route server adds no AS and keeps the next hop",
+          "route_reflector": "reflector adds ORIGINATOR_ID",
+          "router": "router (attributes not checked)"}
+
+
+def attribute_detail(report: dict, role: str) -> str:
+    c = report["correctness"]
+    if role == "route_server":
+        return (f'DUT AS in AS_PATH on {c.get("paths_with_dut_asn", 0):,} routes, '
+                f'next hop changed to the DUT on {c.get("next_hop_is_dut", 0):,}')
+    if role == "route_reflector":
+        return f'no ORIGINATOR_ID on {c.get("paths_without_originator", 0):,} routes'
+    return f'DUT AS in AS_PATH on {c.get("paths_with_dut_asn", 0):,}, next hop = DUT on {c.get("next_hop_is_dut", 0):,}'
+
+
+def gate(report: dict, cpu: dict[str, float] | None = None, cpu_limit: float = 70.0,
+         role: str = "route_server", reference_dut: bool = True) -> list[tuple[str, bool | None, str]]:
+    """P2 acceptance gate (spec §14): sessions, convergence, correctness, generator validity, CPU.
+    Attribute correctness is a PASS/FAIL check against the reference DUT (the BIRD
+    stand-in, transparent by construction: a violation means our bug); against a real
+    device it describes the device and is reported as INFO (passed = None)."""
     s, c, g = report["sessions"], report["convergence"], report["generator"]
     out = [
         ("all sessions Established", s["established"] == s["configured"], f'{s["established"]}/{s["configured"]}'),
@@ -110,6 +129,9 @@ def gate(report: dict, cpu: dict[str, float] | None = None, cpu_limit: float = 7
          and report["correctness"]["extra_routes"] == 0,
          f'missing {report["correctness"]["missing_routes"]}, extra {report["correctness"]["extra_routes"]}'),
         ("no unexpected session resets", s["resets"] == 0, str(s["resets"])),
+        (f"route attributes as expected ({EXPECT[role]})",
+         (report["correctness"]["attribute_violations"] == 0) if reference_dut else None,
+         attribute_detail(report, role)),
         ("generator send lag p99 < 10 ms", g["send_lag_p99_ms"] is None or g["send_lag_p99_ms"] < 10,
          "n/a (max-rate mode)" if g["send_lag_p99_ms"] is None else f'{g["send_lag_p99_ms"]:.2f} ms'),
     ]

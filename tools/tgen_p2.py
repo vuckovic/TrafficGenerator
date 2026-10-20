@@ -29,7 +29,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "tools"))
-from tgen.analyze import analyze, gate  # noqa: E402
+from tgen.analyze import analyze, attribute_detail, gate  # noqa: E402
 from tgen.dut import ADAPTERS, DutError, make as make_dut  # noqa: E402
 from tgen.planner import NodeSpec, Scenario, bird_config, build, set_timeline  # noqa: E402
 
@@ -364,15 +364,18 @@ def main() -> int:
         f"withdraw conv.: {report['withdraw']['convergence_s']:.1f} s" if report["withdraw"] and
         report["withdraw"]["convergence_s"] else "withdraw conv.: n/a",
         f"DUT output    : {(report['dut_output'] or {}).get('prefixes_per_s') or 0:,.0f} prefixes/s",
+        f"correctness   : missing {report['correctness']['missing_routes']:,}, extra "
+        f"{report['correctness']['extra_routes']:,}, attribute violations {report['correctness']['attribute_violations']:,} "
+        f"({attribute_detail(report, args.role)}), own routes sent back {report['correctness'].get('looped_rx', 0):,}",
         "CPU node-avg  : " + ", ".join(f"{n} avg {v['avg']:.0f} % p95 {v['p95']:.0f} %"
                                         for n, v in cpu.items() if v["avg"] is not None),
         "",
         "P2 gate:",
     ]
     ok = True
-    for name, passed, detail in gate(report, gen_cpu):
-        lines.append(f"  {'PASS' if passed else 'FAIL'}  {name}: {detail}")
-        ok &= passed
+    for name, passed, detail in gate(report, gen_cpu, role=args.role, reference_dut=not external):
+        lines.append(f"  {'INFO' if passed is None else 'PASS' if passed else 'FAIL'}  {name}: {detail}")
+        ok &= passed is not False
     text = "\n".join(lines)
     (out / "summary.txt").write_text(text + "\n")
     print("\n" + text + f"\n\nfiles: {out}")
