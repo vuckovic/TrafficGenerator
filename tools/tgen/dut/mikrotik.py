@@ -89,7 +89,9 @@ class MikroTik(Dut):
         our rule is tagged by its `prefix`, which also marks the lines it logs."""
         self.run(f'/system logging remove [find where prefix="{TAG}"]', check=False)
         last = ""
-        for topics in ('"bgp,!debug"', "bgp"):
+        # RouterOS 7.11 logs BGP session changes only at debug level (seen on the
+        # CRS106: nothing with bgp,!debug); keep debug, drop packet dumps
+        for topics in ('"bgp,!packet,!raw"', "bgp"):
             out = self.run(f'/system logging add topics={topics} action=memory prefix={TAG}', check=False)
             if self.run(f'/system logging print count-only where prefix="{TAG}"', check=False).strip() not in ("", "0"):
                 self.notes.append(f"BGP logging enabled for the run (topics {topics.strip(chr(34))})")
@@ -111,4 +113,9 @@ class MikroTik(Dut):
         return out, int(n.strip() or 0)
 
     def log(self) -> str:
-        return self.run('/log print where topics~"bgp"')
+        """BGP lines of the memory log ("time topics message", terse), filtered
+        here rather than with a RouterOS `where topics~` query."""
+        out = self.run("/log print terse", timeout=120)
+        keep = [l for l in out.splitlines()
+                if len(l.split()) > 1 and ("bgp" in l.split()[1].split(",") or f" {TAG}" in l)]
+        return "\n".join(keep) + "\n"

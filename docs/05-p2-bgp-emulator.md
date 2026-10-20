@@ -49,7 +49,7 @@ Options: `--role route_reflector|router`, `--rate N` (prefixes/s per router, pac
 
 | `--dut` | Platform | Transport | What is deployed | Default user |
 |---|---|---|---|---|
-| `mikrotik` | RouterOS 7 | ssh + scp + `/import` | one `/routing bgp connection` per router, comment `tgen`; plus a `/system logging` rule added by a separate command after the import (topics `"bgp,!debug"`, falling back to `bgp`; tagged with `prefix=tgen`, because logging rules have no `comment` in 7.11; a refused rule is only a warning), because RouterOS 7 does not log BGP by default | admin |
+| `mikrotik` | RouterOS 7 | ssh + scp + `/import` | one `/routing bgp connection` per router, comment `tgen`; plus a `/system logging` rule added by a separate command after the import (topics `"bgp,!packet,!raw"`, i.e. including debug, because RouterOS 7.11 logs BGP session changes only at debug level; falling back to `bgp`; tagged with `prefix=tgen`, because logging rules have no `comment` in 7.11; a refused rule is only a warning), because RouterOS 7 does not log BGP by default | admin |
 | `cisco` | IOS 15.x, IOS‑XE 16.x/17.x (2015 and later) | Netmiko (`python3-netmiko`) | `router bgp` neighbours with description `tgen …`, **running‑config only** | admin |
 | `bird-ssh` | BIRD 2/3 on any Linux host | ssh + scp, `birdc configure` | protocols `tgen_R..` in their own include file (default `/etc/bird/tgen.conf`) | root |
 | `frr` / `quagga` | FRRouting, Quagga | ssh, `vtysh -c …` | neighbours with description `tgen …` + route‑map `TGEN-ALL` (permit) in/out | root |

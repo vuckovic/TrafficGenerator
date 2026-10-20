@@ -81,8 +81,12 @@ elif cmd.startswith("/routing bgp session print"):
     for line in out.splitlines():
         if " BGP " in line:
             print(f'name="{line.split()[0]}" ' + ("established" if "Established" in line else "idle"))
-elif cmd.startswith("/log print"):
-    print((home / "bird.log").read_text() if (home / "bird.log").exists() else "")
+elif cmd.startswith("/log print terse"):
+    import time as _t
+    hhmmss = _t.strftime("%H:%M:%S")
+    print(f" {hhmmss} system,info,account user admin logged in from 10.100.0.11 via ssh")
+    for line in ((home / "bird.log").read_text().splitlines() if (home / "bird.log").exists() else []):
+        print(f" {hhmmss} route,bgp,debug tgen {line}")
 else:
     print(f"bad command name ({cmd})", file=sys.stderr)
     sys.exit(1)
