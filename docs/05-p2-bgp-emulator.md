@@ -190,10 +190,21 @@ tools/tgen_series.py --rates 2,4,6,8,10,12 -- --dut mikrotik --routers 12 --pref
   | 2 | 264 | 264 | 50.1 s | 0.6 s | 611 / 943 ms | 100 % |
   | 4 | 528 | 516 (98 %) | 25.7 s | 0.9 s | 1 430 / 1 967 ms | 100 % |
 
-  - **The CRS106's limit depends on messages, not prefixes.** With 1 prefix per UPDATE it is at 100 % CPU at only 264 deliveries/s. With max‑rate packing (about 100 prefixes per UPDATE) it reaches about 1 000/s. Each UPDATE costs it a fixed amount of work.
-  - **At 4/s it still kept up** (98 % delivered, no backlog: 0.9 s after the last send). The series stopped there only because of the old p99 rule.
+  - At 4/s it kept up (98 % delivered, 0.9 s after the last send). The series stopped there only because of the old p99 rule.
+  - *(Corrected below: 264/s was what we offered, not a limit. The router's CPU reads 100 % mid‑run in every run, so it does not show saturation.)*
   - Withdrawals at 2/s did not finish within `--withdraw-timeout 30` (100 prefixes take 50 s), so withdraw convergence was n/a. The series now raises the timeout itself.
-- **Next:** continue the 1‑prefix series above 4/s, and run the same rates with `--per-update 10` to measure the per‑message cost.
+- **Knee of the CRS106, router role, 12 routers** (`series-20261020-230313`, `series-20261020-231033`):
+
+  | prefixes per UPDATE | keeps up at | falls behind at | delivered when overloaded |
+  |---|---|---|---|
+  | 1 | 528 deliveries/s (4/s per router): 98 %, 1.0 s after the last send | 792/s (6/s): 87 %, backlog 2.9 s | **686/s** |
+  | 10 | 528/s (4/s): 100 %, 1.8 s | 1 056/s (8/s): 83 %, backlog 6.7 s | **872/s** |
+  | about 100 (max‑rate runs) | — | — | **about 1 060/s** |
+
+  - **Most of the cost is per route.** Packing more prefixes per UPDATE raises the ceiling by about 25 % (1 → 10) and 20 % more (10 → about 100).
+  - The earlier reading "the limit is per message" was wrong: 264/s at 2/s was what we offered, not a ceiling.
+  - **DUT CPU reads 100 % mid‑run in every run**, even when the router keeps up easily. RouterOS averages over the last second, measured inside our SSH login, so CPU does not show saturation; delivered rate and backlog do.
+- **Next:** narrow the knees (1 prefix: 4.5–5.5/s; 10 prefixes: 5–7/s).
 
 **Syncing the DUT clock with CMNODE01 (NTP):**
 ```bash

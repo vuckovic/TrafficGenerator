@@ -128,8 +128,12 @@ class MikroTik(Dut):
 
     def sessions(self) -> tuple[str, int]:
         out = self.run(f'/routing bgp session print terse where name~"{TAG}"')
-        n = self.run(f'/routing bgp session print count-only where name~"{TAG}" and established')
-        return out, int(n.strip() or 0)
+        # RouterOS may answer "0" with a non-zero exit code (seen on 7.11.2 at teardown)
+        n = self.run(f'/routing bgp session print count-only where name~"{TAG}" and established', check=False)
+        try:
+            return out, int(n.strip().splitlines()[-1]) if n.strip() else 0
+        except ValueError:
+            raise DutError(f"{self.host}: unexpected answer to the session count: {n.strip()[-120:]}") from None
 
     def _log_count(self) -> int:
         try:
