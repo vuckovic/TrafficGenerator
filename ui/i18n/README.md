@@ -24,3 +24,7 @@
 3. Translate the rows and run `python3 tools/tgen/i18n.py`. It lists missing translations and placeholder mismatches.
 
 The language selector (control G9) is the flag in the top‑right corner of every page. The choice is kept per browser. The first visit follows the browser language and falls back to English.
+
+**Flags:**
+- `gb.svg` is drawn here.
+- `rs.svg` is the state flag of Serbia with the coat of arms, at 3:2. It comes from [flag-icons](https://github.com/lipis/flag-icons) 7.2.3 (MIT, see `LICENSE-flag-icons`), un-cropped from 4:3 to 3:2 and optimised with svgo.

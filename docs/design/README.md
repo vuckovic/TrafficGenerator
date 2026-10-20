@@ -31,7 +31,7 @@ Sample values in the preview are illustrative, not measured.
 - host name under the product name;
 - tabs with 8 px side padding;
 - Log out as an icon button (user name in its tooltip) — **confirmed by the user 2026‑10‑20**;
-- language button = flag + caret;
+- language button = flag + caret (Serbian: state flag with coat of arms, `ui/i18n/flags/rs.svg`; in the canvas it is the uploaded asset `/_blob/5daebb85…`);
 - run controls never wrap internally; on narrower windows they move right‑aligned to a second row.
 
 Measured with IBM Plex at 1440 px: English 64 px high, Serbian 64 px; at 1280 px only Serbian wraps. |
