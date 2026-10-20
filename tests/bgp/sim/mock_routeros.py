@@ -67,7 +67,10 @@ elif "count-only" in cmd:
 elif cmd.startswith("/system logging remove"):
     (home / "logging.txt").write_text("")
 elif cmd.startswith("/system logging add"):
-    (home / "logging.txt").write_text(cmd)
+    if "comment=" in cmd:                          # as RouterOS 7.11: logging rules have no comment
+        print(f"expected end of command (line 1 column {cmd.index('comment=') + 1})")
+    else:
+        (home / "logging.txt").write_text(cmd)
 elif cmd.startswith("/system logging print count-only"):
     print(1 if (home / "logging.txt").exists() and (home / "logging.txt").read_text() else 0)
 elif cmd.startswith("/routing bgp connection remove"):

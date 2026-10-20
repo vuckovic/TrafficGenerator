@@ -84,12 +84,14 @@ class MikroTik(Dut):
     def _enable_bgp_log(self) -> None:
         """RouterOS 7 does not log BGP by default: log BGP events (no per-update
         debug lines) to memory during the run, so dut-bgp.log is not empty. A
-        refused rule is a warning only - it must never block a benchmark."""
-        self.run(f'/system logging remove [find where comment~"{TAG}"]', check=False)
+        refused rule is a warning only - it must never block a benchmark.
+        Logging rules have no `comment` in RouterOS 7.11 (the CLI rejects it), so
+        our rule is tagged by its `prefix`, which also marks the lines it logs."""
+        self.run(f'/system logging remove [find where prefix="{TAG}"]', check=False)
+        last = ""
         for topics in ('"bgp,!debug"', "bgp"):
-            out = self.run(f'/system logging add topics={topics} action=memory '
-                           f'comment="{TAG} BGP events during the run"', check=False)
-            if self.run(f'/system logging print count-only where comment~"{TAG}"', check=False).strip() not in ("", "0"):
+            out = self.run(f'/system logging add topics={topics} action=memory prefix={TAG}', check=False)
+            if self.run(f'/system logging print count-only where prefix="{TAG}"', check=False).strip() not in ("", "0"):
                 self.notes.append(f"BGP logging enabled for the run (topics {topics.strip(chr(34))})")
                 return
             last = out.strip()
@@ -101,7 +103,7 @@ class MikroTik(Dut):
 
     def remove(self) -> None:
         self.run(f'/routing bgp connection remove [find where comment~"{TAG}"]')
-        self.run(f'/system logging remove [find where comment~"{TAG}"]', check=False)
+        self.run(f'/system logging remove [find where prefix="{TAG}"]', check=False)
 
     def sessions(self) -> tuple[str, int]:
         out = self.run(f'/routing bgp session print terse where name~"{TAG}"')

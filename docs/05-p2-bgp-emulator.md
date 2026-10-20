@@ -49,7 +49,7 @@ Options: `--role route_reflector|router`, `--rate N` (prefixes/s per router, pac
 
 | `--dut` | Platform | Transport | What is deployed | Default user |
 |---|---|---|---|---|
-| `mikrotik` | RouterOS 7 | ssh + scp + `/import` | one `/routing bgp connection` per router, comment `tgen`; plus a `/system logging` rule added by a separate command after the import (topics `"bgp,!debug"`, falling back to `bgp`; a refused rule is only a warning), because RouterOS 7 does not log BGP by default | admin |
+| `mikrotik` | RouterOS 7 | ssh + scp + `/import` | one `/routing bgp connection` per router, comment `tgen`; plus a `/system logging` rule added by a separate command after the import (topics `"bgp,!debug"`, falling back to `bgp`; tagged with `prefix=tgen`, because logging rules have no `comment` in 7.11; a refused rule is only a warning), because RouterOS 7 does not log BGP by default | admin |
 | `cisco` | IOS 15.x, IOS‑XE 16.x/17.x (2015 and later) | Netmiko (`python3-netmiko`) | `router bgp` neighbours with description `tgen …`, **running‑config only** | admin |
 | `bird-ssh` | BIRD 2/3 on any Linux host | ssh + scp, `birdc configure` | protocols `tgen_R..` in their own include file (default `/etc/bird/tgen.conf`) | root |
 | `frr` / `quagga` | FRRouting, Quagga | ssh, `vtysh -c …` | neighbours with description `tgen …` + route‑map `TGEN-ALL` (permit) in/out | root |
@@ -126,6 +126,7 @@ Not yet verified on real hardware:
 | Date | Run | DUT | Sessions | Initial convergence | Announce latency p50 / p99 | Withdraw convergence | DUT output | Gate |
 |---|---|---|---|---|---|---|---|---|
 | 2026‑10‑20 | `p2-20261020-194352`: 12 × 100, route server, max rate | MikroTik CRS106‑1C‑5S, RouterOS 7.11 | 12/12, setup p90 2.4 s | 13.5 s | 6.8 s / 13.5 s | 2.4 s | **1 062 prefixes/s** | PASS |
+| 2026‑10‑20 | `p2-20261020-200115`: same, repeat (DUT CPU 100 % mid‑run) | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 12/12, setup p90 2.3 s | 13.4 s | 11.4 s / 13.4 s | 2.4 s | **1 070 prefixes/s** | PASS |
 
 **Reading:**
 - **The CRS106 is the bottleneck.** 13 200 route deliveries (1 200 prefixes × 11 receivers) at about 1 060/s matches the 13.5 s convergence.
