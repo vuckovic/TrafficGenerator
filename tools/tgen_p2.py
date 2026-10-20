@@ -68,8 +68,8 @@ class Cluster:
 
     def ssh(self, node: str, cmd: str, check: bool = True, timeout: float | None = 120) -> subprocess.CompletedProcess:
         try:
-            r = subprocess.run(["ssh", *SSH_OPTS, f"{self.user}@{self.mgmt[node]}", cmd],
-                               capture_output=True, text=True, timeout=timeout)
+            r = subprocess.run(["ssh", "-n", *SSH_OPTS, f"{self.user}@{self.mgmt[node]}", cmd],
+                               capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
         except subprocess.TimeoutExpired:
             r = subprocess.CompletedProcess([], 124, "", f"timed out after {timeout} s")
         if check and r.returncode != 0:
@@ -305,8 +305,9 @@ def main() -> int:
                        f"sudo -u {cl.user} {run}")
             elif n == controller:
                 run = f"taskset -c 1-3 {run}"
-            procs[n] = subprocess.Popen(["ssh", *SSH_OPTS, f"{cl.user}@{cl.mgmt[n]}",
-                                         f"cd ~ && {run} 2> {REMOTE_DIR}/agent.log"])
+            # -n / DEVNULL: background sessions must never read the user's terminal
+            procs[n] = subprocess.Popen(["ssh", "-n", *SSH_OPTS, f"{cl.user}@{cl.mgmt[n]}",
+                                         f"cd ~ && {run} 2> {REMOTE_DIR}/agent.log"], stdin=subprocess.DEVNULL)
         mid = tm["announce_at"] / 1000 + 5
         next_poll = tm["establish_at"] / 1000 if external and args.dut_poll > 0 else None
         polls = (out / "dut-sessions.jsonl").open("w") if next_poll else None
