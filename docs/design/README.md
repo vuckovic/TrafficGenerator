@@ -30,7 +30,7 @@ Sample values in the preview are illustrative, not measured.
 | Header (all screens) | One row in every language from 1440 px up:
 - host name under the product name;
 - tabs with 8 px side padding;
-- Log out as an icon button (user name in its tooltip);
+- Log out as an icon button (user name in its tooltip) — **confirmed by the user 2026‑10‑20**;
 - language button = flag + caret;
 - run controls never wrap internally; on narrower windows they move right‑aligned to a second row.
 
