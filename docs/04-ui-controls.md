@@ -1,6 +1,6 @@
 # 04 — Web interface controls (for confirmation)
 
-Status: **FROZEN v1.0 (2026‑10‑19)**, with **v1.1 additions proposed 2026‑10‑20 (G9, U2 change, U8–U16, marked 🆕): please confirm** · visual design LOCKED v1 (`docs/design/`) — Q1–Q6 answered (spec v0.4). **Every non‑obvious control gets a short help text (ⓘ tooltip); role and mode choices also show a visible explanation label; every metric (live tiles, tables, report verdict rows, figure values) shows a short explanation on hover and on keyboard focus.** **Every chart is interactive:** a cursor follows the mouse (or a slider, for keyboard use) and shows the exact value of each series at that point; time‑based charts have zoom levels and a window slider to move the time range left and right. Please mark each control: ✅ accept · ✏️ change (say how) · ❌ drop. A short reply is enough, e.g. *"all ✅ except C9 ❌, R3b ✏️ max 2 M"*.
+Status: **FROZEN v1.0 (2026‑10‑19)**, with **v1.1 additions 2026‑10‑20: G9 ✅ confirmed; U2 change and U8–U16 (marked 🆕) awaiting confirmation** · visual design LOCKED v1 (`docs/design/`) — Q1–Q6 answered (spec v0.4). **Every non‑obvious control gets a short help text (ⓘ tooltip); role and mode choices also show a visible explanation label; every metric (live tiles, tables, report verdict rows, figure values) shows a short explanation on hover and on keyboard focus.** **Every chart is interactive:** a cursor follows the mouse (or a slider, for keyboard use) and shows the exact value of each series at that point; time‑based charts have zoom levels and a window slider to move the time range left and right. Please mark each control: ✅ accept · ✏️ change (say how) · ❌ drop. A short reply is enough, e.g. *"all ✅ except C9 ❌, R3b ✏️ max 2 M"*.
 
 **Layout** (tabs):
 1. **Benchmark** — set up the DUT, routers and scenario on the left; live view on the right.
@@ -22,7 +22,7 @@ Status: **FROZEN v1.0 (2026‑10‑19)**, with **v1.1 additions proposed 2026‑
 | G6 | Run name / notes | text | auto `run‑YYYYMMDD‑HHMMSS` | stored with the run and printed on the report |
 | G7 | Profiles | dropdown + Save / Load / Delete | — | complete configurations (DUT, routers, scenario, traffic) |
 | G8 | Random seed | number | random, shown | same seed = same ASNs, prefixes and timings |
-| G9 🆕 | **Language** | flag button in the top‑right corner of every page → menu with flag + native name: 🇬🇧 English · 🇷🇸 Српски | browser language (sr* → Српски), else English | choice kept per browser; all texts from `ui/i18n/labels.csv` (one column per language, English fallback); adding a language = adding a column and a flag (see `ui/i18n/README.md`) |
+| G9 ✅ | **Language** | flag button in the top‑right corner of every page → menu with flag + native name: 🇬🇧 English · 🇷🇸 Српски | browser language (sr* → Српски), else English | choice kept per browser; all texts from `ui/i18n/labels.csv` (one column per language, English fallback); adding a language = adding a column and a flag (see `ui/i18n/README.md`) |
 
 ## U — Device under test (Benchmark tab)
 
