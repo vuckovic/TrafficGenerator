@@ -74,6 +74,8 @@ tools/tgen_dut.py --dut cisco --dut-ip 10.100.0.1 test|push|status|remove
 | `--dut-bird-include`, `--dut-bird-conf`, `--dut-bird-socket` | BIRD include file, main config file and control socket |
 | `--dut-max-routes` | route‑limit guard; default 20 000 for MikroTik, none for the others |
 | `--keep-dut-config` | leave the neighbours on the device after the run |
+| `--dut-poll N` | read the DUT's BGP session list every N s during the run into `dut-sessions.jsonl` (default 10, 0 = off). This is the DUT's own view of each session, for the event timeline; each poll is an SSH login on the DUT |
+| `--role` | default **router** for `mikrotik` (RouterOS cannot be a transparent route server), `route_server` otherwise |
 
 **What the tool does:**
 
@@ -137,7 +139,26 @@ Not yet verified on real hardware:
 - **Repeatable:** three runs within 1 % (1 062 / 1 070 / 1 075 prefixes/s; convergence 13.5 / 13.4 / 13.3 s). The DUT's CPU was still at 43–65 % a few minutes after the previous run.
 - **RouterOS is not a transparent route server.** In the `route_server` role it added its AS (64500) to **all 13 200** delivered routes and kept the next hop (0 changed). RouterOS 7 has no route‑server mode and no filter that removes its own AS, so this is a property of the device. The gate reports it as INFO for real DUTs.
 - **DUT clock:** it was not synchronised (its log showed `01-02 00:40` / `06:11` while CMNODE01 showed 20:26). The user set it by hand on 2026‑10‑20. For lasting accuracy, sync it from CMNODE01's chrony: on CMNODE01 add `allow 10.100.0.0/24` to chrony, then on the router `/system ntp client set enabled=yes servers=10.100.0.11`.
-- **Next:** paced runs (`--rate 5`, `--rate 10`) to find the knee.
+- **Where the delay is (all in the DUT):**
+  - session setup, about 2.5 s: connections are accepted one after another (its own log: 12 × OpenConfirm over 2 s);
+  - distribution, about 13 s: 13 200 deliveries at about 1 070/s on one core at 100 % CPU, so prefixes queue;
+  - withdrawals, 2.3 s: no attributes to process.
+
+  Generator send lag and node CPU were negligible.
+- **BGP log on RouterOS 7.11:** only "Entering OpenConfirm" (topics `route,bgp,debug,state`); sample in `tests/fixtures/dut-logs/`. Up/down times come from `--dut-poll`.
+- **Decision (user, 2026‑10‑20):** the MikroTik is tested as a **router** by default. No idle wait before runs: the point is to load the router.
+- **Next:** route reflector run (`--role route_reflector`), and paced runs (`--rate 5`, `--rate 10`) to find the knee.
+
+**Syncing the DUT clock with CMNODE01 (NTP):**
+```bash
+# on CMNODE01
+echo "allow 10.100.0.0/24" | sudo tee /etc/chrony/conf.d/tgen-dut.conf && sudo systemctl restart chrony
+# MikroTik (RouterOS 7)
+ssh admin@10.100.0.111 '/system clock set time-zone-name=Europe/Belgrade'
+ssh admin@10.100.0.111 '/system ntp client set enabled=yes mode=unicast servers=10.100.0.11'
+ssh admin@10.100.0.111 '/system ntp client print'      # status: synchronized
+sudo chronyc clients | grep 10.100.0.111               # on CMNODE01
+```
 
 ## Results so far (development machine, x86, 2 cores, BIRD 2.14 on loopback)
 

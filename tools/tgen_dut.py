@@ -42,6 +42,11 @@ def plan_meta(args) -> dict:
     return build(sc, nodes)[1]
 
 
+# default DUT role per platform: a device that cannot act as a transparent route
+# server is tested in the role it really has (MikroTik RouterOS 7 adds its own AS)
+DEFAULT_ROLE = {"mikrotik": "router"}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("action", choices=["test", "preview", "push", "remove", "status"])
@@ -57,11 +62,13 @@ def main() -> int:
     ap.add_argument("--dut-bird-conf", default=None)
     ap.add_argument("--dut-bird-socket", default=None)
     ap.add_argument("--dut-asn", type=int, default=64500)
-    ap.add_argument("--role", default="route_server", choices=["route_server", "route_reflector", "router"])
+    ap.add_argument("--role", default=None, choices=["route_server", "route_reflector", "router"],
+                    help="DUT role (default: router for mikrotik, route_server otherwise)")
     ap.add_argument("--routers", type=int, default=60)
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--json", action="store_true", help="machine-readable output (for the web UI)")
     args = ap.parse_args()
+    args.role = args.role or DEFAULT_ROLE.get(args.dut, "route_server")
 
     dut = make(args.dut, args.dut_ssh_host or args.dut_ip, args.dut_user, port=args.dut_port, key=args.dut_key,
                no_sudo=args.dut_no_sudo, bird_include=args.dut_bird_include, bird_conf=args.dut_bird_conf,

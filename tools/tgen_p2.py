@@ -122,6 +122,11 @@ def cpu_summary(mpstat_text: str, t_from: float, t_to: float) -> dict:
     return {"avg": sum(vals) / len(vals), "p95": s[int(0.95 * (len(s) - 1))], "max": s[-1], "n": len(vals)}
 
 
+# default DUT role per platform: a device that cannot act as a transparent route
+# server is tested in the role it really has (MikroTik RouterOS 7 adds its own AS)
+DEFAULT_ROLE = {"mikrotik": "router"}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", default=str(REPO / "deploy" / "cluster.env"))
@@ -144,11 +149,15 @@ def main() -> int:
     ap.add_argument("--dut-asn", type=int, default=64500)
     ap.add_argument("--dut-max-routes", type=int, default=None,
                     help="refuse larger runs (routes the DUT must hold); default 20 000 for mikrotik, none otherwise")
+    ap.add_argument("--dut-poll", type=float, default=10,
+                    help="external DUT: read its BGP session list every N s during the run (0 = off); "
+                         "each poll is an SSH login on the DUT")
     ap.add_argument("--keep-dut-config", action="store_true", help="leave the BGP neighbours on the DUT after the run")
     ap.add_argument("--nodes", default="", help="router nodes, comma list (default: all except the DUT node)")
     ap.add_argument("--routers", type=int, default=60)
     ap.add_argument("--prefixes", type=int, default=10_000)
-    ap.add_argument("--role", default="route_server", choices=["route_server", "route_reflector", "router"])
+    ap.add_argument("--role", default=None, choices=["route_server", "route_reflector", "router"],
+                    help="DUT role (default: router for mikrotik, route_server otherwise)")
     ap.add_argument("--rate", type=float, default=0, help="prefixes/s per router (0 = max)")
     ap.add_argument("--per-update", type=int, default=0)
     ap.add_argument("--converge-timeout", type=float, default=300)
@@ -157,6 +166,8 @@ def main() -> int:
     ap.add_argument("--no-build", action="store_true")
     ap.add_argument("--bird-multihop", action="store_true", help=argparse.SUPPRESS)  # loopback simulation only
     args = ap.parse_args()
+    role_defaulted = args.role is None
+    args.role = args.role or DEFAULT_ROLE.get(args.dut, "route_server")
 
     env = load_env(Path(args.config))
     cl = Cluster(env)
@@ -188,6 +199,8 @@ def main() -> int:
         except DutError as e:
             sys.exit(f"DUT check failed: {e}")
         log(f"DUT: {res['summary']}")
+        if role_defaulted:
+            log(f"role: {args.role} (default for --dut {args.dut})")
 
     out = Path.home() / "tgen-test-results" / time.strftime("p2-%Y%m%d-%H%M%S")
     out.mkdir(parents=True)
@@ -288,7 +301,19 @@ def main() -> int:
             procs[n] = subprocess.Popen(["ssh", *SSH_OPTS, f"{cl.user}@{cl.mgmt[n]}",
                                          f"cd ~ && {run} 2> {REMOTE_DIR}/agent.log"])
         mid = tm["announce_at"] / 1000 + 5
+        next_poll = tm["establish_at"] / 1000 if external and args.dut_poll > 0 else None
+        polls = (out / "dut-sessions.jsonl").open("w") if next_poll else None
         while time.time() < tm["end_at"] / 1000 + 20 and any(p.poll() is None for p in procs.values()):
+            if next_poll and time.time() >= next_poll and time.time() < tm["end_at"] / 1000:
+                # DUT's own view of the sessions, for the event timeline (F9)
+                t_poll = time.time()
+                try:
+                    sess, est = mt.sessions()
+                    polls.write(json.dumps({"t": round(t_poll, 3), "established": est, "raw": sess}) + "\n")
+                    polls.flush()
+                except DutError as e:
+                    polls.write(json.dumps({"t": round(t_poll, 3), "error": str(e)[:300]}) + "\n")
+                next_poll = t_poll + args.dut_poll
             if mid and time.time() > mid:
                 if external:
                     try:
@@ -305,7 +330,9 @@ def main() -> int:
                     (out / "bird-mid.txt").write_text(r.stdout)
                     log("BIRD mid-run: " + " | ".join(r.stdout.split("\n")[:2]).strip() + " sessions Established")
                 mid = 0
-            time.sleep(2)
+            time.sleep(1)
+        if polls:
+            polls.close()
         for n, p in procs.items():
             if p.poll() is None:
                 p.terminate()

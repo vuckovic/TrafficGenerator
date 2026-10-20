@@ -35,13 +35,13 @@ Status: **FROZEN v1.1 (2026‑10‑20)**: v1.0 of 2026‑10‑19 plus G9, the U2
 | U4 | DUT config export | button: download a neighbour config for the selected platform | — | BIRD, FRR, RouterOS 7, IOS‑XE |
 | U5 | SNMP polling (Q3: option) | checkbox + version (v2c / v3) + community or v3 user/auth/priv | off | read‑only; "Test" button |
 | U6 | SSH polling (Q3: option) | checkbox + host, user, password/key, platform command set | off | read‑only; "Test" button |
-| U7 | Polling interval | number (s) | 5 | 1–60 |
+| U7 | Polling interval | number (s) | 5 (SSH session list during a run: 10) | 1–60; on small DUTs every SSH poll costs CPU |
 
 **DUT configuration (new card under *Device under test*):** before each run the controller adds one passive BGP neighbour per emulated router (its IP and AS number, role settings) to the DUT over SSH, verifies the count, and removes exactly those neighbours afterwards. Only entries tagged `tgen` are touched.
 
 | ID | Control | Type | Default | Validation / notes |
 |---|---|---|---|---|
-| U8 | **Platform** | segmented: **MikroTik RouterOS 7** · **Cisco IOS / IOS‑XE** (IOS 15.x, IOS‑XE 16.x/17.x, 2015 and later) · **BIRD 2/3** · **Quagga / FRR** — plus a note label under it per platform; dropdown entries *BIRD stand‑in on a cluster node* and *Other (configure manually)* | BIRD stand‑in | note texts: RouterOS adds its own AS (no transparent RS); Cisco RS needs route‑server‑client (IOS‑XE 3.3S+/IOS 15.2S+) and writes running‑config only; BIRD uses its own include file; Quagga is EOL, FRR commands are used |
+| U8 | **Platform** | segmented: **MikroTik RouterOS 7** · **Cisco IOS / IOS‑XE** (IOS 15.x, IOS‑XE 16.x/17.x, 2015 and later) · **BIRD 2/3** · **Quagga / FRR** — plus a note label under it per platform; dropdown entries *BIRD stand‑in on a cluster node* and *Other (configure manually)* | BIRD stand‑in | note texts: RouterOS adds its own AS (no transparent RS); Cisco RS needs route‑server‑client (IOS‑XE 3.3S+/IOS 15.2S+) and writes running‑config only; BIRD uses its own include file; Quagga is EOL, FRR commands are used. Choosing **MikroTik pre‑selects U1 = Router** (it cannot be a transparent route server); the user can change it |
 | U9 | Configure the DUT before each run | checkbox | on | off = neighbours are configured by hand (U4 export still available) |
 | U10 | SSH address · port | IPv4/hostname · number | = DUT IP (U3) · 22 | management address may differ from the BGP peering address |
 | U11 | User | text | admin (MikroTik, Cisco) · root (BIRD, FRR) | |

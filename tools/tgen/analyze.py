@@ -79,12 +79,16 @@ def analyze(meta: dict, results: list[dict]) -> dict:
 
     role = meta["scenario"]["role"]
     checks = {k: sum(r["checks"][k] for r in routers) for k in routers[0]["checks"]} if routers else {}
+    rx_total = sum(r["nlri_rx"] for r in routers)
     correctness = {
         "missing_routes": sum(max(0, r["expected_rx"] - r["routes_peak"]) for r in routers),
         "extra_routes": sum(max(0, r["routes_peak"] - r["expected_rx"]) for r in routers),
         **checks,
+        # route server: must add nothing; reflector: must add ORIGINATOR_ID; router: must
+        # add its AS and set itself as next hop on every route it passes on
         "attribute_violations": (checks.get("paths_with_dut_asn", 0) + checks.get("next_hop_is_dut", 0))
-        if role == "route_server" else checks.get("paths_without_originator", 0) if role == "route_reflector" else 0,
+        if role == "route_server" else checks.get("paths_without_originator", 0) if role == "route_reflector" else
+        max(0, rx_total - checks.get("paths_with_dut_asn", 0)) + max(0, rx_total - checks.get("next_hop_is_dut", 0)),
     }
 
     lags = [r["send_lag_ms"]["p99"] for r in routers if r["send_lag_ms"]["n"]]
@@ -101,7 +105,7 @@ def analyze(meta: dict, results: list[dict]) -> dict:
 
 EXPECT = {"route_server": "route server adds no AS and keeps the next hop",
           "route_reflector": "reflector adds ORIGINATOR_ID",
-          "router": "router (attributes not checked)"}
+          "router": "router adds its AS and sets itself as next hop"}
 
 
 def attribute_detail(report: dict, role: str) -> str:
@@ -111,7 +115,8 @@ def attribute_detail(report: dict, role: str) -> str:
                 f'next hop changed to the DUT on {c.get("next_hop_is_dut", 0):,}')
     if role == "route_reflector":
         return f'no ORIGINATOR_ID on {c.get("paths_without_originator", 0):,} routes'
-    return f'DUT AS in AS_PATH on {c.get("paths_with_dut_asn", 0):,}, next hop = DUT on {c.get("next_hop_is_dut", 0):,}'
+    return (f'DUT AS in AS_PATH on {c.get("paths_with_dut_asn", 0):,} routes, next hop = DUT on '
+            f'{c.get("next_hop_is_dut", 0):,}; {c["attribute_violations"]:,} missing')
 
 
 def gate(report: dict, cpu: dict[str, float] | None = None, cpu_limit: float = 70.0,
