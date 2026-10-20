@@ -138,7 +138,7 @@ Not yet verified on real hardware:
 - **Generator CPU was about 0 %.** The cluster was not a factor.
 - **Repeatable:** three runs within 1 % (1 062 / 1 070 / 1 075 prefixes/s; convergence 13.5 / 13.4 / 13.3 s). The DUT's CPU was still at 43–65 % a few minutes after the previous run.
 - **RouterOS is not a transparent route server.** In the `route_server` role it added its AS (64500) to **all 13 200** delivered routes and kept the next hop (0 changed). RouterOS 7 has no route‑server mode and no filter that removes its own AS, so this is a property of the device. The gate reports it as INFO for real DUTs.
-- **DUT clock:** it was not synchronised (its log showed `01-02 00:40` / `06:11` while CMNODE01 showed 20:26). The user set it by hand on 2026‑10‑20. For lasting accuracy, sync it from CMNODE01's chrony: on CMNODE01 add `allow 10.100.0.0/24` to chrony, then on the router `/system ntp client set enabled=yes servers=10.100.0.11`.
+- **DUT clock:** synced by NTP from CMNODE01 since 2026‑10‑20 20:50: status `synchronized`, offset 23.5 ms at first sync. RouterOS logs with 1 s resolution. Before that the clock was unsynchronised (its log showed `01-02 00:40` / `06:11` while CMNODE01 showed 20:26).
 - **Where the delay is (all in the DUT):**
   - session setup, about 2.5 s: connections are accepted one after another (its own log: 12 × OpenConfirm over 2 s);
   - distribution, about 13 s: 13 200 deliveries at about 1 070/s on one core at 100 % CPU, so prefixes queue;
