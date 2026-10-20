@@ -134,6 +134,32 @@ def cpu_summary(mpstat_text: str, t_from: float, t_to: float) -> dict:
 DEFAULT_ROLE = {"mikrotik": "router"}
 
 
+def dut_view(jsonl: Path) -> dict | None:
+    """Summary of the DUT's own session list, polled during the run (MikroTik format)."""
+    from tgen.dut.mikrotik import parse_sessions
+    if not jsonl.exists():
+        return None
+    polls = [json.loads(l) for l in jsonl.read_text().splitlines() if l.strip()]
+    per: dict[str, dict] = {}
+    ok = [p for p in polls if "raw" in p]
+    for p in ok:
+        for x in parse_sessions(p["raw"]):
+            d = per.setdefault(x["remote"], {"starts": set(), "max_prefixes": 0, "seen_down": 0})
+            if x["last_started"]:
+                d["starts"].add(x["last_started"])
+            d["max_prefixes"] = max(d["max_prefixes"], x["prefix_count"])
+            d["seen_down"] += 0 if x["established"] else 1
+    if not per:
+        return {"polls": len(polls), "failed_polls": len(polls) - len(ok), "sessions": 0}
+    starts = sorted(t for d in per.values() for t in d["starts"])
+    return {"polls": len(polls), "failed_polls": len(polls) - len(ok), "sessions": len(per),
+            "first_start": starts[0] if starts else None, "last_start": starts[-1] if starts else None,
+            "restarts": sum(max(0, len(d["starts"]) - 1) for d in per.values()),
+            "polls_not_established": sum(d["seen_down"] for d in per.values()),
+            "max_prefixes_from_peers": sum(d["max_prefixes"] for d in per.values()),
+            "per_peer": {k: {"starts": sorted(v["starts"]), "max_prefixes": v["max_prefixes"]} for k, v in per.items()}}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", default=str(REPO / "deploy" / "cluster.env"))
@@ -406,6 +432,7 @@ def main() -> int:
     (out / "meta.json").write_text(json.dumps(meta))
     report = analyze(meta, results)
     report["cpu_node_avg"] = cpu
+    report["dut_view"] = dut_view(out / "dut-sessions.jsonl") if external and args.dut == "mikrotik" else None
     (out / "report.json").write_text(json.dumps(report, indent=2))
 
     gen_cpu = {n: v["p95"] for n, v in cpu.items() if n in router_nodes and v["p95"] is not None}
@@ -424,6 +451,10 @@ def main() -> int:
         f"correctness   : missing {report['correctness']['missing_routes']:,}, extra "
         f"{report['correctness']['extra_routes']:,}, attribute violations {report['correctness']['attribute_violations']:,} "
         f"({attribute_detail(report, args.role)}), own routes sent back {report['correctness'].get('looped_rx', 0):,}",
+        *([f"DUT view      : {dv['sessions']} sessions, started {(dv.get('first_start') or '?')[-8:]}–"
+            f"{(dv.get('last_start') or '?')[-8:]} (DUT clock), restarts {dv.get('restarts', 0)}, "
+            f"peak prefixes from our routers {dv.get('max_prefixes_from_peers', 0):,} "
+            f"({dv['polls']} polls, {dv['failed_polls']} failed)"] if (dv := report.get("dut_view")) else []),
         "CPU node-avg  : " + ", ".join(f"{n} avg {v['avg']:.0f} % p95 {v['p95']:.0f} %"
                                         for n, v in cpu.items() if v["avg"] is not None),
         "",

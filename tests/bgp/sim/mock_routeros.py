@@ -83,9 +83,22 @@ elif cmd.startswith("/routing bgp connection remove"):
     start_bird([])
 elif cmd.startswith("/routing bgp session print"):
     out = subprocess.run(["birdc", "-s", str(home / "bird.ctl"), "show", "protocols"], capture_output=True, text=True).stdout
-    for line in out.splitlines():
-        if " BGP " in line:
-            print(f'name="{line.split()[0]}" ' + ("established" if "Established" in line else "idle"))
+    # RouterOS 7.11.2 terse shape (see tests/fixtures/dut-sessions/)
+    import json as _j
+    import time as _t
+    conns = {c["name"].strip('"'): c for c in connections()}
+    sf = home / "session-starts.json"                 # keep each session's start time, like RouterOS
+    starts = _j.loads(sf.read_text()) if sf.exists() else {}
+    for i, line in enumerate(l for l in out.splitlines() if " BGP " in l):
+        name = line.split()[0]
+        c = conns.get(name.replace("_", "-"), {})
+        est = "Established" in line
+        if est and name not in starts:
+            starts[name] = _t.strftime("%Y-%m-%d %H:%M:%S")
+        sf.write_text(_j.dumps(starts))
+        print(f'{60 + i} {"E" if est else ""} name={name.replace("_", "-")}-1 remote.address={c.get("remote.address", "")} '
+              f'remote.as={c.get("remote.as", "")} uptime=10s last-started={starts.get(name, "")} '
+              f'prefix-count={100 if est else 0}')
 elif cmd.startswith("/log print terse"):
     print(" 01-02 00:40:28 system,info tgen-R01 added by admin\n 01-02 00:44:19 system,info tgen-R01 removed by admin")
     print(" 06:11:05 system,info,account user admin logged in from 10.100.0.11 via ssh")

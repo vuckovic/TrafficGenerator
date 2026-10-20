@@ -131,6 +131,8 @@ Not yet verified on real hardware:
 | 2026‑10‑20 | `p2-20261020-200115`: same, repeat (DUT CPU 100 % mid‑run) | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 12/12, setup p90 2.3 s | 13.4 s | 11.4 s / 13.4 s | 2.4 s | **1 070 prefixes/s** | PASS |
 | 2026‑10‑20 | `p2-20261020-200829`: same, with BGP logging on the DUT | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 12/12, setup p90 1.8 s | 13.3 s | 9.1 s / 13.3 s | 2.3 s | **1 075 prefixes/s** | PASS |
 | 2026‑10‑20 | `p2-20261020-202630`: same, BGP debug logging on the DUT | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 12/12, setup p90 2.5 s | 13.6 s | 8.9 s / 11.5 s | 2.4 s | **1 053 prefixes/s** (logging cost ≤ 2 %) | PASS |
+| 2026‑10‑20 | `p2-20261020-214235`: 12 × 100, **router** (new default), polling 10 s | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 12/12, setup p90 2.7 s | 14.7 s | 11.9 s / 14.3 s | 2.4 s | **966 prefixes/s** | PASS; AS + next‑hop‑self on 13 200/13 200 ✔ |
+| 2026‑10‑20 | `p2-20261020-214711`: 12 × 100, **route reflector** | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 12/12, setup p90 2.7 s | 14.9 s | 7.4 s / 14.8 s | 2.4 s | **957 prefixes/s** | PASS; **no ORIGINATOR_ID on 13 200/13 200** (INFO) |
 
 **Reading:**
 - **The CRS106 is the bottleneck.** 13 200 route deliveries (1 200 prefixes × 11 receivers) at about 1 060/s matches the 13.5 s convergence.
@@ -147,7 +149,10 @@ Not yet verified on real hardware:
   Generator send lag and node CPU were negligible.
 - **BGP log on RouterOS 7.11:** only "Entering OpenConfirm" (topics `route,bgp,debug,state`); sample in `tests/fixtures/dut-logs/`. Up/down times come from `--dut-poll`.
 - **Decision (user, 2026‑10‑20):** the MikroTik is tested as a **router** by default. No idle wait before runs: the point is to load the router.
-- **Next:** route reflector run (`--role route_reflector`), and paced runs (`--rate 5`, `--rate 10`) to find the knee.
+- **Router role:** correct (AS added and next hop = DUT on every route). It is about 10 % slower than in the route‑server role (966 vs about 1 060 prefixes/s): rewriting the next hop costs work, and polling may add a little.
+- **Route‑reflector role:** every route was reflected (0 missing), but **none carried ORIGINATOR_ID** (RFC 4456 §8 requires it). Our decoder sees it on 100 % of routes from BIRD and FRR reflectors, so this points at RouterOS 7.11.2. To be confirmed with a packet capture.
+- **DUT view:** `dut-sessions.jsonl` gives per‑session `E` flag, `last-started` and `prefix-count` (format: `tests/fixtures/dut-sessions/`). Summarised as `dut_view` in `report.json` and in the summary.
+- **Next:** packet capture to confirm the ORIGINATOR_ID finding, then paced runs (`--rate 5`, `--rate 10`) to find the knee.
 
 **Syncing the DUT clock with CMNODE01 (NTP):**
 ```bash

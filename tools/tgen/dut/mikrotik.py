@@ -22,6 +22,23 @@ ROLE_SETTINGS = {
 }
 
 
+def parse_sessions(raw: str) -> list[dict]:
+    """`/routing bgp session print terse` -> one dict per session. Line shape seen on
+    RouterOS 7.11.2: `60 E name=tgen-R10-1 remote.address=10.100.0.29 ... uptime=7s580ms
+    last-started=2026-10-20 21:43:05 prefix-count=0` (the E flag = established)."""
+    out = []
+    for line in raw.splitlines():
+        m = re.match(r"\s*\d+\s+([A-Z]*)\s*(name=.*)$", line)
+        if not m:
+            continue
+        flags, rest = m.groups()
+        kv = dict(re.findall(r'([\w.-]+)=("[^"]*"|\d{4}-\d\d-\d\d \d\d:\d\d:\d\d|\S*)', rest))
+        out.append({"name": kv.get("name", ""), "remote": kv.get("remote.address", ""),
+                    "established": "E" in flags, "last_started": kv.get("last-started", ""),
+                    "uptime": kv.get("uptime", ""), "prefix_count": int(kv.get("prefix-count") or 0)})
+    return out
+
+
 class MikroTik(Dut):
     platform = "MikroTik RouterOS 7"
     config_ext = "rsc"
