@@ -60,6 +60,8 @@ class MikroTik(Dut):
         return "\n".join(lines) + "\n"
 
     def push(self, config: str, expected: int) -> int:
+        # where this run's lines start in the memory log (it also holds earlier runs)
+        self._log_start = self._log_count()
         with tempfile.NamedTemporaryFile("w", suffix=".rsc", delete=False) as f:
             f.write(config)
             tmp = Path(f.name)
@@ -112,10 +114,21 @@ class MikroTik(Dut):
         n = self.run(f'/routing bgp session print count-only where name~"{TAG}" and established')
         return out, int(n.strip() or 0)
 
+    def _log_count(self) -> int:
+        try:
+            return int(self.run("/log print count-only", check=False).strip() or 0)
+        except ValueError:
+            return 0
+
     def log(self) -> str:
-        """BGP lines of the memory log ("time topics message", terse), filtered
-        here rather than with a RouterOS `where topics~` query."""
-        out = self.run("/log print terse", timeout=120)
-        keep = [l for l in out.splitlines()
-                if len(l.split()) > 1 and ("bgp" in l.split()[1].split(",") or f" {TAG}" in l)]
+        """This run's BGP lines from the memory log ("time topics message", terse),
+        plus the router's own records of our tgen neighbours being added/removed.
+        Lines from before push() are skipped (the memory log keeps earlier runs;
+        it holds 1 000 lines by default, so if it wrapped, everything is kept)."""
+        lines = self.run("/log print terse", timeout=120).splitlines()
+        start = getattr(self, "_log_start", 0)
+        if 0 < start <= len(lines) < 1000:
+            lines = lines[start:]
+        keep = [l for l in lines
+                if len(l.split()) > 1 and ("bgp" in l.split()[1].split(",") or f" {TAG}-" in l or f" {TAG} " in l)]
         return "\n".join(keep) + "\n"

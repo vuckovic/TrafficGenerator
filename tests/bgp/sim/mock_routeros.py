@@ -62,6 +62,8 @@ elif cmd.startswith("/file remove"):
 elif cmd.startswith("/routing bgp session print count-only"):
     out = subprocess.run(["birdc", "-s", str(home / "bird.ctl"), "show", "protocols"], capture_output=True, text=True).stdout
     print(sum(1 for line in out.splitlines() if " BGP " in line and "Established" in line))
+elif cmd.startswith("/log print count-only"):
+    print(3)
 elif "count-only" in cmd:
     print(len(connections()))
 elif cmd.startswith("/system logging remove"):
@@ -82,6 +84,8 @@ elif cmd.startswith("/routing bgp session print"):
         if " BGP " in line:
             print(f'name="{line.split()[0]}" ' + ("established" if "Established" in line else "idle"))
 elif cmd.startswith("/log print terse"):
+    print(" 01-02 00:40:28 system,info tgen-R01 added by admin\n 01-02 00:44:19 system,info tgen-R01 removed by admin")
+    print(" 06:11:05 system,info,account user admin logged in from 10.100.0.11 via ssh")
     import time as _t
     hhmmss = _t.strftime("%H:%M:%S")
     print(f" {hhmmss} system,info,account user admin logged in from 10.100.0.11 via ssh")

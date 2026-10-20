@@ -128,6 +128,7 @@ Not yet verified on real hardware:
 | 2026‑10‑20 | `p2-20261020-194352`: 12 × 100, route server, max rate | MikroTik CRS106‑1C‑5S, RouterOS 7.11 | 12/12, setup p90 2.4 s | 13.5 s | 6.8 s / 13.5 s | 2.4 s | **1 062 prefixes/s** | PASS |
 | 2026‑10‑20 | `p2-20261020-200115`: same, repeat (DUT CPU 100 % mid‑run) | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 12/12, setup p90 2.3 s | 13.4 s | 11.4 s / 13.4 s | 2.4 s | **1 070 prefixes/s** | PASS |
 | 2026‑10‑20 | `p2-20261020-200829`: same, with BGP logging on the DUT | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 12/12, setup p90 1.8 s | 13.3 s | 9.1 s / 13.3 s | 2.3 s | **1 075 prefixes/s** | PASS |
+| 2026‑10‑20 | `p2-20261020-202630`: same, BGP debug logging on the DUT | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 12/12, setup p90 2.5 s | 13.6 s | 8.9 s / 11.5 s | 2.4 s | **1 053 prefixes/s** (logging cost ≤ 2 %) | PASS |
 
 **Reading:**
 - **The CRS106 is the bottleneck.** 13 200 route deliveries (1 200 prefixes × 11 receivers) at about 1 060/s matches the 13.5 s convergence.
@@ -135,6 +136,7 @@ Not yet verified on real hardware:
 - **Generator CPU was about 0 %.** The cluster was not a factor.
 - **Repeatable:** three runs within 1 % (1 062 / 1 070 / 1 075 prefixes/s; convergence 13.5 / 13.4 / 13.3 s). The DUT's CPU was still at 43–65 % a few minutes after the previous run.
 - **RouterOS is not a transparent route server.** In the `route_server` role it added its AS (64500) to **all 13 200** delivered routes and kept the next hop (0 changed). RouterOS 7 has no route‑server mode and no filter that removes its own AS, so this is a property of the device. The gate reports it as INFO for real DUTs.
+- **The DUT's clock is not synchronised.** Its log showed `01-02 00:40` and `06:11` while CMNODE01 showed 20:26. Point it at CMNODE01's chrony: `/system ntp client set enabled=yes servers=192.168.100.11`.
 - **Next:** paced runs (`--rate 5`, `--rate 10`) to find the knee.
 
 ## Results so far (development machine, x86, 2 cores, BIRD 2.14 on loopback)
