@@ -123,8 +123,9 @@ tools/tgen_series.py --rates 2,4,6,8,10,12 -- --dut mikrotik --routers 12 --pref
 - Asks for the DUT password once, for the whole series.
 - Sets each run's convergence timeout to prefixes ÷ rate × 1.5 + 60 s, unless you give one.
 - Stops one run after the knee (`--stop-after-knee`).
+- Withdrawals are paced too, so it raises `--withdraw-timeout` when a rate needs more (prefixes ÷ rate × 1.3 + 20 s).
 
-**Knee rule:** announce p99 > 1 000 ms (`--knee-p99-ms`), or DUT output < 0.9 × offered deliveries (`--knee-ratio`). Offered deliveries = rate × routers × (routers − 1).
+**Knee rule:** the DUT falls behind, i.e. its output is below 0.9 × offered deliveries (`--knee-ratio`), or receivers are still incomplete more than 5 s after our last send (`--knee-backlog-s`). Offered deliveries = rate × routers × (routers − 1). Announce p99 above 1 s (`--slo-p99-ms`) is reported as "latency OK: no" but is **not** a knee: a high but stable latency is not falling behind. (The first version used the p99 limit as the knee and stopped too early on the CRS106.)
 
 **Output:** `~/tgen-test-results/series-<timestamp>/series.md|csv|json`. Each run keeps its own `p2-*` folder.
 
@@ -182,7 +183,17 @@ tools/tgen_series.py --rates 2,4,6,8,10,12 -- --dut mikrotik --routers 12 --pref
   - UPDATEs **sent by the DUT** (`ip.src == 10.100.0.111`): 102 with attributes, each carrying types 1, 2, 3, 5 **and 6**, none carrying 9 or 10; 6 without attributes (withdrawals / End‑of‑RIB). Our own 2 announcements carry 1, 2, 3, 5 only.
   - Command: `tshark -r rr.pcap -Y "bgp.type == 2" -T fields -e bgp.update.path_attribute.type_code | tr "," "\n" | sort -n | uniq -c`.
 - **DUT view:** `dut-sessions.jsonl` gives per‑session `E` flag, `last-started` and `prefix-count` (format: `tests/fixtures/dut-sessions/`). Summarised as `dut_view` in `report.json` and in the summary.
-- **Next:** paced runs (`--rate 5`, `--rate 10`, …) to find the knee.
+- **First rate series** (`series-20261020-224843`, router role, 12 × 100, **1 prefix per UPDATE**):
+
+  | rate /router | offered deliveries/s | DUT output /s | convergence | after last send | p50 / p99 | DUT CPU |
+  |---|---|---|---|---|---|---|
+  | 2 | 264 | 264 | 50.1 s | 0.6 s | 611 / 943 ms | 100 % |
+  | 4 | 528 | 516 (98 %) | 25.7 s | 0.9 s | 1 430 / 1 967 ms | 100 % |
+
+  - **The CRS106's limit depends on messages, not prefixes.** With 1 prefix per UPDATE it is at 100 % CPU at only 264 deliveries/s. With max‑rate packing (about 100 prefixes per UPDATE) it reaches about 1 000/s. Each UPDATE costs it a fixed amount of work.
+  - **At 4/s it still kept up** (98 % delivered, no backlog: 0.9 s after the last send). The series stopped there only because of the old p99 rule.
+  - Withdrawals at 2/s did not finish within `--withdraw-timeout 30` (100 prefixes take 50 s), so withdraw convergence was n/a. The series now raises the timeout itself.
+- **Next:** continue the 1‑prefix series above 4/s, and run the same rates with `--per-update 10` to measure the per‑message cost.
 
 **Syncing the DUT clock with CMNODE01 (NTP):**
 ```bash
