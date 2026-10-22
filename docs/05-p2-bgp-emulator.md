@@ -177,6 +177,8 @@ The devices are tested **one after another, never at the same time**: they share
 - **No Route Server feature** in IOS 15.1(4)M, so `--role route_server` is refused by the device. The tool removes the half‑applied neighbours and says to use `--role router`.
 - **Memory.** 128–384 MB DRAM for IOS, BGP table and RIB together: hence the 10 000‑route limit and the 15 % memory guard. Raise both only after the scale steps show headroom.
 
+**Verified in the simulation** (`tests/bgp/sim/run_suite.sh`, two mock Cisco devices: an IOS‑XE router at .111 and a "1841" at .100 with a 100 Mb/s port, 2026‑10‑22): all four steps on both, scale ladder stopped by `max_routes` on the 1841 as intended; memory guard stopped a run within one poll and every agent still wrote its result; `route_server` refused on the 1841 with the hint, half‑applied neighbours removed; a run whose output pipe closed and which then got SIGHUP still removed the addresses, agents and DUT neighbours. `tests/agent/test_serve.py`: ALL PASS with agent 0.3.1.
+
 **The ASR‑920:** the BGP table fits easily in its memory. The hardware forwarding table is smaller and depends on the SDM template (`show sdm prefer current`). In router role every best path is installed, so a scale step can overflow the hardware table before BGP struggles. That would be a finding, not a tool failure; check the log (`dut-bgp.log`) and `show platform hardware pp active feature cef …` if a scale step behaves oddly.
 
 ## P2 gate (spec §14)

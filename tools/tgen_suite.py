@@ -203,7 +203,9 @@ def main() -> int:
         for x in [sm, *sc]:
             for k, v in (x.get("port_errors") or {}).items():
                 errs[k] = errs.get(k, 0) + v
-        version = (t.get("resources") or {}).get("summary", t.get("error", "-"))[:60] if t else "-"
+        rs = (t.get("resources") or {}) if t else {}
+        version = (" ".join(x for x in (rs.get("model") or rs.get("board"), rs.get("train"), rs.get("version")) if x)
+                   or (t.get("error", "-")[:60] if t else "-"))
         md.append(" | ".join([
             f"| {n}", f"{port.get('speed_mbps') or r['link_mbps']} Mb/s {port.get('duplex') or ''}".strip(), version,
             f"{sm.get('size', '-')} {sm.get('gate') or sm.get('error', '') if sm else ''}".strip(),

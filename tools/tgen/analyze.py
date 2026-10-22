@@ -81,7 +81,7 @@ def analyze(meta: dict, results: list[dict]) -> dict:
                                            max(1, sum(r["updates_rx"] for r in routers))),
                    # BGP bytes the DUT sent until each receiver converged (agents >= 0.3.1)
                    "payload_mbps": (sum(r.get("bytes_rx_at_converged", 0) for r in routers) * 8 / span / 1e6
-                                    if span > 0 and any("bytes_rx_at_converged" in r for r in routers) else None)}
+                                    if span >= 1 and any("bytes_rx_at_converged" in r for r in routers) else None)}  # < 1 s: too short
 
     role = meta["scenario"]["role"]
     checks = {k: sum(r["checks"][k] for r in routers) for k in routers[0]["checks"]} if routers else {}
