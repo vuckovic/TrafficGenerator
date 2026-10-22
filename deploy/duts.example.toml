@@ -1,0 +1,73 @@
+# Devices under test (DUT) on the test network 10.100.0.0/24.
+#
+# Copy to deploy/duts.toml to change it (the tools read duts.toml if it exists,
+# otherwise this file). One [section] per device = one profile:
+#
+#   tools/tgen_dut.py   --dut-profile asr920 test
+#   tools/tgen_p2.py    --dut-profile c1841 --routers 6 --prefixes 200
+#   tools/tgen_series.py -- --dut-profile mikrotik
+#   tools/tgen_suite.py --duts mikrotik,asr920,c1841
+#
+# A profile only fills in defaults: any option given on the command line wins.
+# Every peer_ip below is kept out of the emulated routers' address pool.
+# No passwords here: TGEN_DUT_PASSWORD (or TGEN_DUT_PASSWORD_<PROFILE>, e.g.
+# TGEN_DUT_PASSWORD_ASR920), an SSH key, or a prompt.
+#
+# Fields
+#   label            name in logs and reports
+#   adapter          mikrotik | cisco | bird-ssh | frr | quagga
+#   peer_ip          BGP peering address on the test network
+#   ssh_host         management address for SSH (default: peer_ip)
+#   user             SSH user
+#   asn              DUT AS number (default 64500; must match an existing `router bgp`)
+#   role             default role: router | route_reflector | route_server
+#   link_mbps        speed of the DUT's port on the test switch
+#   max_routes       refuse runs where the DUT must hold more routes (routers x prefixes)
+#   min_free_mem_pct stop the run if the DUT's free memory falls below this (0 = off)
+#   ssh_legacy       true: also offer old SSH algorithms (IOS 15.1 and older)
+#   interface        DUT port carrying peer_ip (default: found from the running config)
+#   [x.smoke]        quick check: routers, prefixes
+#   [x.series]       rate series: routers, prefixes, rates (prefixes/s per router)
+#   [x.scale]        scale ladder at full speed: steps = [[routers, prefixes], ...]
+
+[mikrotik]
+label = "MikroTik CRS106-1C-5S (RouterOS 7.11.2)"
+adapter = "mikrotik"
+peer_ip = "10.100.0.111"
+ssh_host = "192.168.100.111"
+user = "admin"
+role = "router"                 # RouterOS 7 cannot act as a transparent route server
+link_mbps = 1000
+max_routes = 20000              # 1 core 400 MHz, 128 MB RAM
+min_free_mem_pct = 0            # the route limit protects it; extra SSH logins load its CPU
+smoke = { routers = 12, prefixes = 1000 }
+series = { routers = 12, prefixes = 100, rates = [2, 5, 8, 10, 15] }
+scale = { steps = [[12, 500], [12, 1000], [20, 1000]] }
+
+[asr920]
+label = "Cisco ASR-920-24SZ-M (IOS-XE)"
+adapter = "cisco"
+peer_ip = "10.100.0.200"        # secondary address on Gi0/0/23
+ssh_host = "192.168.100.200"
+user = "vuckovic"
+role = "router"                 # route_server needs the BGP Route Server feature: try it with --role
+link_mbps = 1000
+max_routes = 100000             # BGP table fits easily; the hardware FIB is smaller (SDM template)
+min_free_mem_pct = 10
+smoke = { routers = 12, prefixes = 1000 }
+series = { routers = 12, prefixes = 1000, rates = [5, 10, 20, 50, 100] }
+scale = { steps = [[12, 1000], [30, 1000], [60, 1000], [60, 1600]] }
+
+[c1841]
+label = "Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s)"
+adapter = "cisco"
+peer_ip = "10.100.0.100"
+user = "vuckovic"
+role = "router"                 # IOS 15.1(4)M has no BGP Route Server feature
+link_mbps = 100
+max_routes = 10000              # 128-384 MB DRAM shared by IOS, BGP table and RIB
+min_free_mem_pct = 15
+ssh_legacy = true
+smoke = { routers = 6, prefixes = 200 }
+series = { routers = 6, prefixes = 50, rates = [1, 2, 4, 8, 16] }
+scale = { steps = [[6, 500], [12, 500], [12, 800]] }

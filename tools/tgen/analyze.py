@@ -78,7 +78,10 @@ def analyze(meta: dict, results: list[dict]) -> dict:
         dut_out = {"prefixes_per_s": nlri_initial / span if span > 0 else None,
                    "updates_rx_total": sum(r["updates_rx"] for r in routers),
                    "prefixes_per_update": (sum(r["nlri_rx"] for r in routers) /
-                                           max(1, sum(r["updates_rx"] for r in routers)))}
+                                           max(1, sum(r["updates_rx"] for r in routers))),
+                   # BGP bytes the DUT sent until each receiver converged (agents >= 0.3.1)
+                   "payload_mbps": (sum(r.get("bytes_rx_at_converged", 0) for r in routers) * 8 / span / 1e6
+                                    if span > 0 and any("bytes_rx_at_converged" in r for r in routers) else None)}
 
     role = meta["scenario"]["role"]
     checks = {k: sum(r["checks"][k] for r in routers) for k in routers[0]["checks"]} if routers else {}

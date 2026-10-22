@@ -256,6 +256,7 @@ void Router::read_loop() {
       return;
     }
     self->rx_time_ = now_ns();
+    self->st_.bytes_rx += n;
     self->parser_.feed(std::span<const std::uint8_t>(self->rxbuf_.data(), n));
     try {
       while (auto m = self->parser_.next()) {
@@ -615,6 +616,7 @@ void Router::after_rx(std::int64_t t, bool keep) {
   st_.routes_peak = std::max(st_.routes_peak, st_.routes_held);
   if (rp_.expected_rx && st_.t_converged == 0 && st_.routes_held >= rp_.expected_rx) {
     st_.t_converged = t;
+    st_.bytes_rx_at_converged = st_.bytes_rx;
     log("converged: " + std::to_string(st_.routes_held) + " routes");
   }
   if (withdraw_due_ && st_.routes_held == 0 && st_.t_empty_after_withdraw == 0 && st_.routes_peak > 0)
@@ -724,6 +726,8 @@ LiveSnapshot Router::snapshot() {
   s.prefixes_withdrawn = st_.prefixes_withdrawn;
   s.updates_sent = st_.updates_sent + st_.withdraw_updates_sent;
   s.updates_rx = st_.updates_rx;
+  s.bytes_sent = st_.bytes_sent;
+  s.bytes_rx = st_.bytes_rx;
   s.looped_rx = st_.looped_rx;
   s.resets = st_.resets;
   s.planned_resets = st_.planned_resets;
@@ -772,6 +776,7 @@ json Router::result() const {
       {"send_lag_ms", {{"n", st_.send_lag_ns.size()}, {"p50", pct(st_.send_lag_ns, 0.5)},
                        {"p99", pct(st_.send_lag_ns, 0.99)}, {"max", pct(st_.send_lag_ns, 1.0)}}},
       {"updates_rx", st_.updates_rx}, {"nlri_rx", st_.nlri_rx}, {"withdrawn_rx", st_.withdrawn_rx},
+      {"bytes_rx", st_.bytes_rx}, {"bytes_rx_at_converged", st_.bytes_rx_at_converged},
       {"keepalives_rx", st_.keepalives_rx}, {"end_of_rib_rx", st_.end_of_rib_rx}, {"routes_held", st_.routes_held}, {"routes_peak", st_.routes_peak},
       {"t_first_rx", st_.t_first_rx}, {"t_converged", st_.t_converged}, {"t_last_rx", st_.t_last_rx},
       {"t_empty_after_withdraw", st_.t_empty_after_withdraw},

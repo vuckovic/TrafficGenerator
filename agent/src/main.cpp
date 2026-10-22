@@ -2,7 +2,9 @@
 // tgen-agent: runs the emulated BGP routers of one cluster node.
 //   tgen-agent --plan plan.json --out result.json        one run, timeline in the plan (CLI)
 //   tgen-agent serve --listen ADDR:PORT --token-file F    service driven by the controller
+#include <atomic>
 #include <chrono>
+#include <csignal>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -20,6 +22,11 @@ int serve_main(const std::string& listen, const std::string& token_file, const s
 }
 
 namespace {
+
+// CLI: SIGTERM/SIGINT stop the run early (Cease to the DUT) and still write the result,
+// e.g. when the benchmark tool aborts a run because the DUT runs out of memory
+volatile std::sig_atomic_t g_abort = 0;
+extern "C" void on_abort_signal(int) { g_abort = 1; }
 
 void usage() {
   std::fprintf(stderr,
@@ -45,10 +52,19 @@ int cli(const std::string& plan_path, const std::string& out_path) {
   tgen::Run run(std::move(plan), TGEN_VERSION);
   std::fprintf(stderr, "tgen-agent %s: node %s, %zu routers, run %s\n", TGEN_VERSION, run.plan().node.c_str(),
                run.routers(), run.plan().run_id.c_str());
+  std::signal(SIGTERM, on_abort_signal);
+  std::signal(SIGINT, on_abort_signal);
   run.start_cli();
+  bool aborted = false;
   // wait until every router has stopped at end_at; safety net: end_at + 15 s
   while (true) {
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    if (g_abort) {
+      std::fprintf(stderr, "aborted by signal: stopping all routers\n");
+      run.stop();
+      aborted = true;
+      break;
+    }
     if (tgen::now_ns() > end_ns && run.all_stopped()) break;
     if (tgen::now_ns() > end_ns + 15'000'000'000LL) {
       std::fprintf(stderr, "watchdog: forcing stop\n");
@@ -56,7 +72,8 @@ int cli(const std::string& plan_path, const std::string& out_path) {
       break;
     }
   }
-  const auto out = run.result();
+  auto out = run.result();
+  out["aborted"] = aborted;
   std::ofstream o(out_path);
   o << out.dump() << "\n";
   if (!o) {

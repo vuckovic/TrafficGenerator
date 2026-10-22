@@ -8,6 +8,7 @@ by deploy/controller-bootstrap.sh):
   tools/tgen_p2.py                         # 60 routers x 10 000 prefixes vs BIRD on CMNODE06
   tools/tgen_p2.py --routers 12 --prefixes 1000 --converge-timeout 60   # quick check
   tools/tgen_p2.py --role route_reflector
+  tools/tgen_p2.py --dut-profile c1841 --routers 6 --prefixes 200   # a device from deploy/duts.toml
 
 What it does: builds tgen-agent, plans the routers (CMNODE01 at 0.7 weight),
 starts BIRD 2 as route server on the DUT node, adds the router addresses,
@@ -22,6 +23,7 @@ import concurrent.futures as cf
 import json
 import os
 import shlex
+import signal
 import subprocess
 import sys
 import time
@@ -31,6 +33,8 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "tools"))
 from tgen.analyze import analyze, attribute_detail, gate  # noqa: E402
 from tgen.dut import ADAPTERS, DutError, make as make_dut  # noqa: E402
+from tgen.dut.cisco import interface_delta  # noqa: E402
+from tgen import inventory  # noqa: E402
 from tgen.planner import NodeSpec, Scenario, bird_config, build, set_timeline  # noqa: E402
 
 SSH_OPTS = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=5", "-o", "StrictHostKeyChecking=accept-new"]
@@ -40,7 +44,18 @@ CMNODE01_LIMITS = ["-p", "AllowedCPUs=1-3", "-p", "CPUQuota=280%", "-p", "Memory
 
 
 def log(msg: str) -> None:
-    print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
+    # never let a closed terminal or pipe (SSH session dropped, calling suite killed)
+    # break the run's cleanup: the message is lost, the cleanup goes on
+    try:
+        print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
+    except (BrokenPipeError, OSError):
+        pass
+
+
+def _stop_on_signal(signum, _frame):
+    # SIGTERM / SIGHUP (e.g. the SSH session to CMNODE01 dropped) end the run like Ctrl-C:
+    # the finally block removes the router addresses, the agents and the DUT neighbours
+    raise KeyboardInterrupt(f"signal {signum}")
 
 
 def load_env(path: Path) -> dict:
@@ -169,6 +184,9 @@ def main() -> int:
                     help="bird = BIRD 2 stand-in started on --dut-node; mikrotik (RouterOS 7), cisco (IOS 15 / "
                          "IOS-XE), bird-ssh (existing BIRD 2/3), frr, quagga = external device at --dut-ip, "
                          "configured over SSH before the run and cleaned up after it")
+    ap.add_argument("--dut-profile", default=None,
+                    help="device from deploy/duts.toml (fills in --dut, --dut-ip, --dut-ssh-host, --dut-user, "
+                         "--role, limits; options given here win)")
     ap.add_argument("--dut-node", default="CMNODE06", help="node running BIRD as stand-in DUT (--dut bird)")
     ap.add_argument("--dut-ip", default="10.100.0.111", help="DUT BGP peering address (external DUT)")
     ap.add_argument("--dut-ssh-host", default="", help="DUT SSH/management address if not --dut-ip")
@@ -187,6 +205,12 @@ def main() -> int:
     ap.add_argument("--dut-poll", type=float, default=10,
                     help="external DUT: read its BGP session list every N s during the run (0 = off); "
                          "each poll is an SSH login on the DUT")
+    ap.add_argument("--dut-min-free-mem-pct", type=float, default=0,
+                    help="stop the run if the DUT's free memory falls below this percentage (checked at every "
+                         "--dut-poll; 0 = off)")
+    ap.add_argument("--dut-link-mbps", type=int, default=1000, help="speed of the DUT's port (for link-use figures)")
+    ap.add_argument("--dut-ssh-legacy", action="store_true", help="old IOS (e.g. 1841, IOS 15.1): SHA-1 SSH")
+    ap.add_argument("--dut-interface", default=None, help="DUT port carrying --dut-ip (default: found automatically)")
     ap.add_argument("--keep-dut-config", action="store_true", help="leave the BGP neighbours on the DUT after the run")
     ap.add_argument("--nodes", default="", help="router nodes, comma list (default: all except the DUT node)")
     ap.add_argument("--routers", type=int, default=60)
@@ -200,6 +224,9 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=int(time.time()) % 100000)
     ap.add_argument("--no-build", action="store_true")
     ap.add_argument("--bird-multihop", action="store_true", help=argparse.SUPPRESS)  # loopback simulation only
+    signal.signal(signal.SIGTERM, _stop_on_signal)
+    signal.signal(signal.SIGHUP, _stop_on_signal)
+    profile = inventory.apply_profile(ap)
     args = ap.parse_args()
     role_defaulted = args.role is None
     args.role = args.role or DEFAULT_ROLE.get(args.dut, "route_server")
@@ -220,8 +247,9 @@ def main() -> int:
     if external:
         mt = make_dut(args.dut, args.dut_ssh_host or args.dut_ip, args.dut_user, port=args.dut_port, key=args.dut_key,
                       no_sudo=args.dut_no_sudo, bird_include=args.dut_bird_include, bird_conf=args.dut_bird_conf,
-                      bird_socket=args.dut_bird_socket, multihop=args.bird_multihop)
-    dut_label = f"{mt.platform} {args.dut_ip}" if external else f"BIRD on {args.dut_node}"
+                      bird_socket=args.dut_bird_socket, multihop=args.bird_multihop, ssh_legacy=args.dut_ssh_legacy)
+    dut_label = (f"{profile['label']} {args.dut_ip}" if profile else f"{mt.platform} {args.dut_ip}") if external \
+        else f"BIRD on {args.dut_node}"
     dut_routes = args.routers * args.prefixes
     max_routes = args.dut_max_routes if args.dut_max_routes is not None else (mt.default_max_routes if mt else None)
     if external and max_routes and dut_routes > max_routes:
@@ -236,6 +264,29 @@ def main() -> int:
         log(f"DUT: {res['summary']}")
         if role_defaulted:
             log(f"role: {args.role} (default for --dut {args.dut})")
+        elif profile:
+            log(f"profile {profile['name']}: role {args.role}, port {args.dut_link_mbps} Mb/s"
+                + (f", memory guard {args.dut_min_free_mem_pct:g} % free" if args.dut_min_free_mem_pct else ""))
+        if args.dut_min_free_mem_pct and res.get("free_pct") is not None and res["free_pct"] < args.dut_min_free_mem_pct:
+            sys.exit(f"DUT has only {res['free_pct']:g} % memory free before the run (guard "
+                     f"{args.dut_min_free_mem_pct:g} %); reload it or clear old BGP sessions first")
+        try:
+            port_before = mt.interface_info(args.dut_ip, args.dut_interface)
+        except DutError as e:
+            port_before = None
+            log(f"DUT port check skipped: {e}")
+        if port_before:
+            log(f"DUT port {port_before['interface']}: {port_before.get('speed_mbps') or '?'} Mb/s "
+                f"{port_before.get('duplex') or '?'}-duplex, {'up' if port_before['up'] else 'DOWN'}")
+            if port_before.get("speed_mbps") and port_before["speed_mbps"] != args.dut_link_mbps:
+                log(f"WARNING: the port runs at {port_before['speed_mbps']} Mb/s, the profile says "
+                    f"{args.dut_link_mbps} Mb/s; using the measured speed")
+                args.dut_link_mbps = port_before["speed_mbps"]
+            if port_before.get("duplex") == "half":
+                log("WARNING: half duplex - check the switch port (duplex mismatch causes CRC errors, "
+                    "late collisions and TCP retransmissions, which look like a slow DUT)")
+    else:
+        port_before = None
 
     out = Path.home() / "tgen-test-results" / time.strftime("p2-%Y%m%d-%H%M%S")
     out.mkdir(parents=True)
@@ -243,7 +294,7 @@ def main() -> int:
 
     agent = Path(REPO / "agent" / "build" / "tgen-agent") if args.no_build else build_agent()
     sc = Scenario(run_id=out.name, dut_ip=dut_ip, dut_asn=args.dut_asn, role=args.role,
-                  skip_ips=list(cl.traffic.values()) + env["TRAFFIC_RESERVED"],
+                  skip_ips=list(cl.traffic.values()) + env["TRAFFIC_RESERVED"] + inventory.reserved_ips(),
                   routers_total=args.routers, prefixes_per_router=args.prefixes, seed=args.seed,
                   announce_rate=args.rate, per_update=args.per_update,
                   establish_delay_s=15, establish_window_s=20,
@@ -252,6 +303,14 @@ def main() -> int:
     plans, meta = build(sc, nodes)
     log(f"plan: {args.routers} routers x {args.prefixes} prefixes = {meta['total_prefixes']} on "
         + ", ".join(f"{k} {v}" for k, v in meta["router_counts"].items()) + f" ({time.time() - t0:.0f} s)")
+    if external:
+        # the DUT sends every prefix to every other router through ONE port: estimate the time
+        # that port needs at line rate (about 8 bytes of BGP per packed prefix, 60 unpacked)
+        deliveries = meta["total_prefixes"] * (args.routers - 1)
+        floor_s = deliveries * 8 * 8 / (args.dut_link_mbps * 1e6 * 0.95)
+        if floor_s > 0.1 * args.converge_timeout:
+            log(f"note: the DUT must send about {deliveries:,} prefixes to the routers; through its "
+                f"{args.dut_link_mbps} Mb/s port that takes at least {floor_s:.0f} s even when well packed")
     if args.rate > 0:
         log(f"paced: {args.rate:g} prefixes/s per router, {plans[router_nodes[0]]['per_update']} prefixes per UPDATE")
 
@@ -260,6 +319,8 @@ def main() -> int:
     dut_configured = False
     results: list[dict] = []
     cpu: dict = {}
+    aborted: str | None = None
+    port_after = None
     try:
         if external:
             # --- external DUT: push the BGP neighbours of this run --------------------
@@ -349,7 +410,18 @@ def main() -> int:
                 mt.call_timeout = 15            # a poll must never stall the run
                 try:
                     sess, est = mt.sessions()
-                    polls.write(json.dumps({"t": round(t_poll, 3), "established": est, "raw": sess}) + "\n")
+                    rec = {"t": round(t_poll, 3), "established": est, "raw": sess}
+                    if args.dut_min_free_mem_pct:
+                        res = mt.resources()
+                        rec.update(free_pct=res.get("free_pct"), cpu_load=res.get("cpu_load"))
+                        if res.get("free_pct") is not None and res["free_pct"] < args.dut_min_free_mem_pct \
+                                and not aborted:
+                            aborted = (f"DUT memory guard: {res['free_pct']:g} % free < "
+                                       f"{args.dut_min_free_mem_pct:g} %")
+                            log(f"STOPPING THE RUN - {aborted}; all routers send Cease and close")
+                            parallel(lambda n: cl.ssh(n, "sudo pkill -TERM -x tgen-agent; true", check=False,
+                                                      timeout=30), router_nodes)
+                    polls.write(json.dumps(rec) + "\n")
                     poll_fail = 0
                 except DutError as e:
                     polls.write(json.dumps({"t": round(t_poll, 3), "error": str(e)[:300]}) + "\n")
@@ -409,6 +481,10 @@ def main() -> int:
                                      tm["end_at"] / 1000)
         if external:
             try:
+                port_after = mt.interface_info(args.dut_ip, port_before["interface"]) if port_before else None
+            except DutError as e:
+                log(f"DUT port counters after the run: {e}")
+            try:
                 (out / "dut-bgp.log").write_text(mt.log())
                 (out / "dut-resources-end.json").write_text(json.dumps(mt.resources()))
             except DutError as e:
@@ -436,6 +512,14 @@ def main() -> int:
     (out / "meta.json").write_text(json.dumps(meta))
     report = analyze(meta, results)
     report["cpu_node_avg"] = cpu
+    report["aborted"] = aborted
+    report["dut_profile"] = profile["name"] if profile else None
+    report["dut_port"] = ({"before": port_before, "after": port_after, "link_mbps": args.dut_link_mbps,
+                           "errors_during_run": interface_delta(port_before, port_after) if port_after else None}
+                          if external else None)
+    do = report.get("dut_output") or {}
+    if external and do.get("payload_mbps") is not None:
+        do["link_use_pct"] = round(100 * do["payload_mbps"] * 1.06 / args.dut_link_mbps, 1)  # + TCP/IP/Ethernet
     report["dut_view"] = dut_view(out / "dut-sessions.jsonl") if external and args.dut == "mikrotik" else None
     (out / "report.json").write_text(json.dumps(report, indent=2))
 
@@ -451,7 +535,15 @@ def main() -> int:
         f"latency wd.   : p50 {lw['p50'] or 0:.0f} ms, p99 {lw['p99'] or 0:.0f} ms (n={lw['n']})",
         f"withdraw conv.: {report['withdraw']['convergence_s']:.1f} s" if report["withdraw"] and
         report["withdraw"]["convergence_s"] else "withdraw conv.: n/a",
-        f"DUT output    : {(report['dut_output'] or {}).get('prefixes_per_s') or 0:,.0f} prefixes/s",
+        f"DUT output    : {(report['dut_output'] or {}).get('prefixes_per_s') or 0:,.0f} prefixes/s"
+        + (f", {do['payload_mbps']:.1f} Mb/s BGP (~{do['link_use_pct']:g} % of the {args.dut_link_mbps} Mb/s port)"
+           if do.get("link_use_pct") is not None else ""),
+        *([f"DUT port      : {pb['interface']} {pb.get('speed_mbps') or '?'} Mb/s {pb.get('duplex') or '?'}-duplex; "
+           f"errors/drops during the run: " + (", ".join(f"{k} +{v}" for k, v in
+                                                       (report['dut_port']['errors_during_run'] or {}).items())
+                                               or ("none" if port_after else "not read"))]
+          if (pb := port_before) else []),
+        *([f"ABORTED       : {aborted}"] if aborted else []),
         f"correctness   : missing {report['correctness']['missing_routes']:,}, extra "
         f"{report['correctness']['extra_routes']:,}, attribute violations {report['correctness']['attribute_violations']:,} "
         f"({attribute_detail(report, args.role)}), own routes sent back {report['correctness'].get('looped_rx', 0):,}",
@@ -468,13 +560,18 @@ def main() -> int:
         "",
         "P2 gate:",
     ]
-    ok = True
+    ok = not aborted
+    if aborted:
+        lines.append(f"  FAIL  run completed: {aborted}")
     for name, passed, detail in gate(report, gen_cpu, role=args.role, reference_dut=not external):
         lines.append(f"  {'INFO' if passed is None else 'PASS' if passed else 'FAIL'}  {name}: {detail}")
         ok &= passed is not False
     text = "\n".join(lines)
     (out / "summary.txt").write_text(text + "\n")
-    print("\n" + text + f"\n\nfiles: {out}")
+    try:
+        print("\n" + text + f"\n\nfiles: {out}", flush=True)
+    except (BrokenPipeError, OSError):
+        pass
     return 0 if ok else 1
 
 

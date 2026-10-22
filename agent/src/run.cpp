@@ -146,13 +146,14 @@ json Run::stats() {
   on_each_io([shared, order](Router& r) { (*shared)[order->at(&r)] = r.snapshot(); });
   auto& snaps = *shared;
   json by_state = json::object(), per_router = json::array(), tx = json::array(), rx = json::array();
-  std::uint64_t sent = 0, wd = 0, upd = 0, updrx = 0, nlri = 0, wdrx = 0, held = 0, looped = 0;
+  std::uint64_t sent = 0, wd = 0, upd = 0, updrx = 0, nlri = 0, wdrx = 0, held = 0, looped = 0, btx = 0, brx = 0;
   int conv = 0, resets = 0, planned = 0;
   double lag = 0;
   for (auto& s : snaps) {
     by_state[state_name(s.state)] = by_state.value(state_name(s.state), 0) + 1;
     sent += s.prefixes_sent; wd += s.prefixes_withdrawn; upd += s.updates_sent; updrx += s.updates_rx;
     nlri += s.nlri_rx; wdrx += s.withdrawn_rx; held += s.held; looped += s.looped_rx;
+    btx += s.bytes_sent; brx += s.bytes_rx;
     conv += s.converged ? 1 : 0; resets += s.resets; planned += s.planned_resets;
     lag = std::max(lag, s.send_lag_p99_ms);
     per_router.push_back({{"name", s.name}, {"state", state_name(s.state)}, {"held", s.held},
@@ -164,7 +165,7 @@ json Run::stats() {
   return {{"seq", ++seq_}, {"t_ms", now_ns() / 1'000'000}, {"by_state", by_state},
           {"totals", {{"prefixes_sent", sent}, {"prefixes_withdrawn", wd}, {"updates_sent", upd}, {"updates_rx", updrx},
                       {"nlri_rx", nlri}, {"withdrawn_rx", wdrx}, {"routes_held", held}, {"converged", conv},
-                      {"resets", resets}, {"planned_resets", planned}, {"looped_rx", looped},
+                      {"resets", resets}, {"planned_resets", planned}, {"looped_rx", looped}, {"bytes_sent", btx}, {"bytes_rx", brx},
                       {"send_lag_p99_ms", lag}}},
           {"per_router", per_router}, {"samples", {{"tx", tx}, {"rx", rx}}}};
 }

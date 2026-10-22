@@ -60,12 +60,13 @@ Each phase starts at `at_ms` on every router of the node. A new announce, churn 
  "by_state": {"Established": 10},
  "totals": {"prefixes_sent": 100000, "prefixes_withdrawn": 0, "updates_sent": 1000, "nlri_rx": 590000,
             "withdrawn_rx": 0, "routes_held": 590000, "converged": 10, "resets": 0, "planned_resets": 0,
-            "looped_rx": 0, "send_lag_p99_ms": 0.4},
+            "looped_rx": 0, "bytes_sent": 2400000, "bytes_rx": 9100000, "send_lag_p99_ms": 0.4},
  "per_router": [{"name": "R01", "state": "Established", "held": 59000, "sent": 10000, "rx": 59000, "resets": 0}],
  "samples": {"tx": [[key, gen, kind, t_ns]], "rx": [[key, gen, kind, t_ns]]}}
 ```
 
 - Counters are cumulative; the controller derives rates from the difference between polls.
+- `bytes_sent` / `bytes_rx` are BGP bytes (TCP payload) to and from the DUT (agent 0.3.1). The controller turns `bytes_rx` into the DUT's output in Mb/s and compares it with the DUT port's speed (`link_mbps` in the DUT inventory), so a full 100 Mb/s port is not mistaken for a slow DUT. The result also has `bytes_rx_at_converged` per router.
 - `samples` are the latency samples recorded since the previous `stats` call (each call hands them over once), for prefixes with `hash % live_sample_mod == 0`. `kind`: 1 announce, 2 withdraw, 3 attribute change; `gen` 0 = initial load. The default is `live_sample_mod` = 1 000, about 0.1 % of prefixes, a few kB/s per node.
 - The full sample set (`sample_mod`, default 100) is in the final result.
 

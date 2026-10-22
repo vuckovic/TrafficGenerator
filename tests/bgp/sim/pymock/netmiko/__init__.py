@@ -6,6 +6,11 @@ accepts exactly the commands tools/tgen/dut/cisco.py may send (anything else
 gets "% Invalid input detected at '^' marker.", as on IOS) and turns the
 configuration into BIRD on the DUT address - so a Cisco run only passes when
 the generated IOS configuration is complete and consistent (roles included).
+
+SIM_IOS_MODEL=1841 answers as a Cisco 1841 with IOS 15.1 and a 100 Mb/s
+FastEthernet port (no route-server-client, like the real one).
+SIM_IOS_MEM_LOW_AFTER=N: from the N-th memory query on, report 5 % free
+(tests the memory guard). SIM_DUT_IP: the DUT's peering address.
 """
 from __future__ import annotations
 
@@ -16,6 +21,8 @@ import subprocess
 from pathlib import Path
 
 INVALID = "% Invalid input detected at '^' marker."
+C1841 = os.environ.get("SIM_IOS_MODEL") == "1841"
+DUT_IP = os.environ.get("SIM_DUT_IP", "10.100.0.111")
 
 
 class ConnectHandler:
@@ -31,6 +38,9 @@ class ConnectHandler:
         self.alive = True
         self.secret = secret
         self.privileged = username != "lowpriv"
+        # the sim's DUT address is its SSH host; 10.100.0.100 is always the 1841
+        self.dut_ip = host if host.startswith("10.100.0.") else DUT_IP
+        self.c1841 = C1841 or host == "10.100.0.100"
 
     # --- netmiko API used by the adapter ------------------------------------
     def is_alive(self) -> bool:
@@ -49,6 +59,11 @@ class ConnectHandler:
 
     def send_command(self, cmd: str, read_timeout: float = 10, **_) -> str:
         st = self._state()
+        if cmd == "show version" and self.c1841:
+            return ("Cisco IOS Software, 1841 Software (C1841-ADVIPSERVICESK9-M), Version 15.1(4)M12a, RELEASE "
+                    "SOFTWARE (fc1)\nROM: System Bootstrap, Version 12.4(13r)T, RELEASE SOFTWARE (fc1)\n"
+                    "Cisco 1841 (revision 7.0) with 236544K/25600K bytes of memory.\n"
+                    "Processor board ID FTX1234A5BC\n2 FastEthernet interfaces\n")
         if cmd == "show version":
             return ("Cisco IOS XE Software, Version 17.09.04a\nCisco IOS Software [Cupertino], ISR Software "
                     "(X86_64_LINUX_IOSD-UNIVERSALK9-M), Version 17.9.4a, RELEASE SOFTWARE (fc3)\n"
@@ -56,7 +71,28 @@ class ConnectHandler:
         if cmd == "show processes cpu | include CPU utilization":
             return "CPU utilization for five seconds: 4%/1%; one minute: 3%; five minutes: 3%\n"
         if cmd == "show processes memory | include Processor":
+            st["mem_reads"] = st.get("mem_reads", 0) + 1
+            self._save(st)
+            low = int(os.environ.get("SIM_IOS_MEM_LOW_AFTER", "0") or 0)
+            if low and st["mem_reads"] >= low:
+                return "Processor Pool Total:  176312816 Used:  167497175 Free:    8815641\n"
+            if self.c1841:
+                return "Processor Pool Total:  176312816 Used:   45459032 Free:  130853784\n"
             return "Processor Pool Total: 1838842064 Used:  412346120 Free: 1426495944\n"
+        if cmd == "show running-config | include ^interface|^ ip address":
+            port = "FastEthernet0/0" if self.c1841 else "GigabitEthernet0/0/23"
+            return (f"interface {port}\n ip address 192.168.100.200 255.255.255.0\n ip address {self.dut_ip} "
+                    f"255.255.255.0 secondary\ninterface Null0\n")
+        if cmd.startswith("show interfaces "):
+            st["if_reads"] = st.get("if_reads", 0) + 1
+            self._save(st)
+            speed = "Full-duplex, 100Mb/s, 100BaseTX/FX" if self.c1841 else "Full Duplex, 1000Mbps, link type is auto"
+            crc = 3 * (st["if_reads"] - 1)          # grows by 3 per read: shows up as an error delta
+            return (f"{cmd.split()[-1]} is up, line protocol is up\n  {speed}\n"
+                    "  Input queue: 0/75/0/0 (size/max/drops/flushes); Total output drops: 0\n"
+                    f"     1000 packets input, 100000 bytes\n     {crc} input errors, {crc} CRC, 0 frame, 0 overrun, "
+                    "0 ignored\n     900 packets output, 90000 bytes, 0 underruns\n"
+                    "     0 output errors, 0 collisions, 0 interface resets\n     0 late collision, 0 deferred\n")
         if cmd == "show running-config | section router bgp":
             return self._running(st)
         if cmd == "show ip bgp summary":
@@ -113,7 +149,8 @@ class ConnectHandler:
                     if (mm := re.fullmatch(r"timers (\d+) (\d+)", rest)):
                         nb["hold"] = int(mm.group(2))
                         continue
-                elif rest in ("activate", "route-server-client", "route-reflector-client", "next-hop-self"):
+                elif rest in ("activate", "route-reflector-client", "next-hop-self") or \
+                        (rest == "route-server-client" and not self.c1841):
                     nb[rest] = True
                     continue
             out.append(INVALID)
@@ -163,7 +200,7 @@ class ConnectHandler:
         route-reflector-client = rr client, next-hop-self = next hop self.
         A neighbour without activate gets no IPv4 channel (as on IOS)."""
         subprocess.run(["pkill", "-f", f"bird -c {self.home}/"], capture_output=True)
-        ip_dut = "10.100.0.111"
+        ip_dut = self.dut_ip
         subprocess.run(["ip", "addr", "replace", f"{ip_dut}/32", "dev", "lo"], check=True)
         conf = [f'log "{self.home}/bird.log" all;', f"router id {ip_dut};", "protocol device {}"]
         for ip, n in st["nb"].items():

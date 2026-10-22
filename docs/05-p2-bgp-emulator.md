@@ -108,9 +108,7 @@ tools/tgen_dut.py --dut cisco --dut-ip 10.100.0.1 test|push|status|remove
 
 Commands: `tests/bgp/sim/run_sim.sh --dut mikrotik …` and `tests/bgp/sim/run_dut.sh bird-ssh|frr|cisco …`.
 
-Not yet verified on real hardware:
-- the CRS106 at 10.100.0.111;
-- any Cisco device. The Cisco test runs against a mock; real IOS prompts and timing are handled by Netmiko.
+Not yet verified on real hardware: any Cisco device (ASR‑920, 1841). The Cisco tests run against a mock; real IOS prompts and timing are handled by Netmiko.
 
 ## Rate series: finding the knee (`tools/tgen_series.py`)
 
@@ -137,6 +135,49 @@ tools/tgen_series.py --rates 2,4,6,8,10,12 -- --dut mikrotik --routers 12 --pref
 **Pacing:** works per UPDATE message. Without `--per-update`, a paced run packs **10 prefixes per UPDATE** (user decision 2026‑10‑20; real routers pack many prefixes per message). Before the pacing fix, all of a router's prefixes went out in one UPDATE, so "paced" runs were not paced. Use `--per-update 1` for the hardest case.
 
 **Unexpected attributes:** the agent records every path‑attribute type it receives (`attrs_rx`) and every type our routers send (`attrs_sent`). The report flags types the DUT added beyond the role: a route server and a router may add nothing new; a reflector may add LOCAL_PREF, ORIGINATOR_ID and CLUSTER_LIST. This is PASS/FAIL for the BIRD stand‑in and INFO for a real DUT. Example: CRS106 reflector → `ATOMIC_AGGREGATE(6)` on every route. FRR 8.4 as reflector in our configuration advertises MED 0 to the clients (`Metric 0` in `advertised-routes`, none on the stored path); possibly caused by our outbound route‑map.
+
+## Test devices and the test scheme (`deploy/duts.toml`, `tools/tgen_suite.py`)
+
+Three real devices sit on the test network next to the BIRD stand‑in. Each has a **profile** in the DUT inventory, `deploy/duts.toml` (the tools fall back to `deploy/duts.example.toml`, which already describes the three devices). A profile fills in the command‑line defaults; any option given explicitly wins. Every `peer_ip` in the inventory is kept out of the emulated routers' address pool.
+
+| Profile | Device | Peering / SSH | Port | Role | Route limit | Memory guard | Notes |
+|---|---|---|---|---|---|---|---|
+| `mikrotik` | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 10.100.0.111 / 192.168.100.111 | 1 Gb/s | router | 20 000 | off | knees measured: ~690–1 060 deliveries/s |
+| `asr920` | Cisco ASR‑920‑24SZ‑M, IOS‑XE | 10.100.0.200 (secondary on Gi0/0/23) / 192.168.100.200 | 1 Gb/s | router | 100 000 | 10 % | route‑server role may work: try `--role route_server` |
+| `c1841` | Cisco 1841, IOS 15.1 | 10.100.0.100 / same | **100 Mb/s** | router | 10 000 | 15 % | old SSH (SHA‑1), no Route Server feature |
+
+```bash
+tools/tgen_dut.py   --dut-profile c1841 test                          # login, version, memory, port speed/duplex/errors
+tools/tgen_p2.py    --dut-profile asr920 --routers 12 --prefixes 1000  # one run
+tools/tgen_series.py -- --dut-profile c1841                            # rate series with the profile's rates and size
+tools/tgen_suite.py --duts mikrotik,asr920,c1841                       # the whole scheme on all three, one after another
+```
+
+**Passwords:** `TGEN_DUT_PASSWORD_<PROFILE>` (e.g. `TGEN_DUT_PASSWORD_ASR920`), else `TGEN_DUT_PASSWORD`, else a prompt (the suite asks once per device, at the start). SSH keys work too. Nothing is stored.
+
+**The scheme** (`tgen_suite.py`; sizes and rates per device from the profile):
+
+| Step | What | Stops the device's scheme when |
+|---|---|---|
+| `test` | SSH login, version, memory, existing `router bgp` AS, the port carrying `peer_ip`: speed, duplex, error counters. Changes nothing | login or version check fails |
+| `smoke` | one small run at full speed (`smoke.routers × smoke.prefixes`) | — |
+| `series` | rate series up to the knee (`series.rates`, `series.routers × series.prefixes`) | — |
+| `scale` | full‑speed runs of growing size (`scale.steps`) | a gate fails, the memory guard stops a run, or a step exceeds `max_routes` |
+
+The devices are tested **one after another, never at the same time**: they share the cluster's routers, and each result must belong to one device. The suite writes `suite.md` / `suite.json`, one comparison row per device (port, version, smoke convergence and output, Mb/s and port use, sustainable rate and knee, largest scale step passed, lowest free memory, port errors during the runs). Every run keeps its own `p2-*` / `series-*` folder.
+
+**New in every external‑DUT run** (`tgen_p2.py`):
+- **Port check.** Before and after the run the tool reads the DUT port that carries `peer_ip` (Cisco: found in the running config, or `interface` in the profile): speed, duplex and error counters. A measured speed different from the profile wins and is logged. Half duplex is flagged. Errors and drops that grew during the run are in the summary (`DUT port` line) and in `report.json` → `dut_port`.
+- **Link use.** The agent now counts the BGP bytes it receives (agent 0.3.1). The summary shows the DUT's output in Mb/s and as a share of its port (TCP/IP/Ethernet overhead estimated at 6 %). If the port is close to full, the DUT's output is limited by the link, not by its CPU. Before the run the tool also estimates how long the port needs for the whole fan‑out, and notes it if that is more than 10 % of the convergence timeout.
+- **Memory guard** (`min_free_mem_pct`, or `--dut-min-free-mem-pct`). At every `--dut-poll` the tool reads the DUT's free memory; below the limit it **stops the run**: every agent receives SIGTERM, sends Cease, closes, and still writes its result (marked `aborted`). The gate then fails with the reason. The run also refuses to start if the DUT is already below the limit.
+
+**The Cisco 1841 in particular:**
+- **100 Mb/s port.** BGP alone will not fill it in our sizes: 12 × 800 routes fanned out to 11 routers is about 1 MB of BGP. The port matters (1) for the link‑use figure, (2) for duplex problems, which the port check shows (late collisions, CRC), and (3) later for data‑plane traffic, which must be capped at `link_mbps`.
+- **Old SSH.** IOS 15.1 offers only SHA‑1 key exchange and `ssh-rsa` host keys. `ssh_legacy = true` makes the adapter check that the controller's paramiko still supports them (Debian's `python3-paramiko` 3.x does; paramiko 4+ does not, and the tool says so). It also keeps key authentication on `ssh-rsa` and allows twice the time per command.
+- **No Route Server feature** in IOS 15.1(4)M, so `--role route_server` is refused by the device. The tool removes the half‑applied neighbours and says to use `--role router`.
+- **Memory.** 128–384 MB DRAM for IOS, BGP table and RIB together: hence the 10 000‑route limit and the 15 % memory guard. Raise both only after the scale steps show headroom.
+
+**The ASR‑920:** the BGP table fits easily in its memory. The hardware forwarding table is smaller and depends on the SDM template (`show sdm prefer current`). In router role every best path is installed, so a scale step can overflow the hardware table before BGP struggles. That would be a finding, not a tool failure; check the log (`dut-bgp.log`) and `show platform hardware pp active feature cef …` if a scale step behaves oddly.
 
 ## P2 gate (spec §14)
 

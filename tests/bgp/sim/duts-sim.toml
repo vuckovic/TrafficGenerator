@@ -1,0 +1,27 @@
+# DUT inventory for the loopback simulation (tests/bgp/sim/run_suite.sh)
+[sim-asr]
+label = "simulated IOS-XE router"
+adapter = "cisco"
+peer_ip = "10.100.0.111"
+user = "admin"
+role = "router"
+link_mbps = 1000
+max_routes = 100000
+min_free_mem_pct = 10
+smoke = { routers = 12, prefixes = 500 }
+series = { routers = 12, prefixes = 100, rates = [20, 50] }
+scale = { steps = [[12, 500], [24, 500]] }
+
+[sim-1841]
+label = "simulated Cisco 1841 (100 Mb/s)"
+adapter = "cisco"
+peer_ip = "10.100.0.100"
+user = "admin"
+role = "router"
+link_mbps = 100
+max_routes = 10000
+min_free_mem_pct = 15
+ssh_legacy = false   # this container's paramiko has no SHA-1 (checked separately)
+smoke = { routers = 6, prefixes = 200 }
+series = { routers = 6, prefixes = 50, rates = [10, 25] }
+scale = { steps = [[6, 500], [12, 500], [12, 900]] }

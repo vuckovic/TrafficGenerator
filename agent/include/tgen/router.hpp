@@ -56,7 +56,8 @@ struct LiveSnapshot {
   std::string name;
   State state = State::Idle;
   std::uint64_t held = 0, nlri_rx = 0, withdrawn_rx = 0, prefixes_sent = 0, prefixes_withdrawn = 0,
-                updates_sent = 0, updates_rx = 0, looped_rx = 0;
+                updates_sent = 0, updates_rx = 0, looped_rx = 0,
+                bytes_sent = 0, bytes_rx = 0;
   int resets = 0, planned_resets = 0;
   bool converged = false;
   double send_lag_p99_ms = 0;                         // over the sends since the previous snapshot
@@ -83,6 +84,7 @@ struct RouterStats {
   // receive
   std::uint64_t updates_rx = 0, nlri_rx = 0, withdrawn_rx = 0, keepalives_rx = 0, end_of_rib_rx = 0;
   std::uint64_t routes_held = 0, routes_peak = 0;
+  std::uint64_t bytes_rx = 0, bytes_rx_at_converged = 0;  // BGP bytes from the DUT (TCP payload)
   std::int64_t t_first_rx = 0, t_converged = 0, t_last_rx = 0, t_empty_after_withdraw = 0;
   std::uint64_t paths_with_dut_asn = 0, next_hop_is_dut = 0, paths_without_originator = 0;
   std::map<int, std::uint64_t> attr_rx;  // attribute type code -> NLRI received with it

@@ -53,6 +53,7 @@ class MikroTik(Dut):
             raise DutError("could not read RouterOS version (is this a MikroTik?)")
         if int(r["version"].split(".")[0]) < 7:
             raise DutError(f"RouterOS {r['version']}: version 7 required (BGP syntax differs in v6)")
+        r["free_pct"] = mib_pct(r["free_memory"], r["total_memory"])
         r["summary"] = (f"{r['board']} RouterOS {r['version']}, CPU {r['cpu']} load {r['cpu_load']}, "
                         f"memory free {r['free_memory']} of {r['total_memory']}")
         return r
@@ -153,3 +154,13 @@ class MikroTik(Dut):
         keep = [l for l in lines
                 if len(l.split()) > 1 and ("bgp" in l.split()[1].split(",") or f" {TAG}-" in l or f" {TAG} " in l)]
         return "\n".join(keep) + "\n"
+
+
+def mib_pct(free: str, total: str) -> float | None:
+    """'30.2MiB', '128.0MiB' -> 23.6"""
+    unit = {"KiB": 1 / 1024, "MiB": 1, "GiB": 1024}
+    def mib(x: str) -> float | None:
+        m = re.match(r"([\d.]+)\s*([KMG]iB)", x or "")
+        return float(m.group(1)) * unit[m.group(2)] if m else None
+    f, t = mib(free), mib(total)
+    return round(100 * f / t, 1) if f is not None and t else None

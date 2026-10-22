@@ -103,6 +103,10 @@ class Dut:
     def resources(self) -> dict:
         raise NotImplementedError
 
+    def interface_info(self, peer_ip: str, name: str | None = None) -> dict | None:
+        """Port carrying peer_ip: speed_mbps, duplex, error counters. None = not supported."""
+        return None
+
     def render(self, meta: dict, dut_ip: str, dut_asn: int, role: str, hold_time: int = 90) -> str:
         raise NotImplementedError
 

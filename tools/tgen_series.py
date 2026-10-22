@@ -4,6 +4,7 @@
 in one table, with an estimate of the DUT's knee.
 
   tools/tgen_series.py --rates 2,5,8,10,15 -- --dut mikrotik --routers 12 --prefixes 100
+  tools/tgen_series.py -- --dut-profile c1841     # rates, routers, prefixes from deploy/duts.toml
 
 Everything after `--` is passed to every tgen_p2.py run (--rate is set per run).
 Per run: offered rate, prefixes per UPDATE, DUT output, convergence (from the first
@@ -32,6 +33,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 P2 = REPO / "tools" / "tgen_p2.py"
+sys.path.insert(0, str(REPO / "tools"))
+from tgen import inventory  # noqa: E402
 
 
 def arg_value(args: list[str], name: str, default: str | None = None) -> str | None:
@@ -86,7 +89,8 @@ def main() -> int:
     passthrough = argv[argv.index("--") + 1:] if "--" in argv else []
     own = argv[:argv.index("--")] if "--" in argv else argv
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--rates", default="2,5,8,10,15", help="prefixes/s per router, comma list")
+    ap.add_argument("--rates", default=None,
+                    help="prefixes/s per router, comma list (default: the profile's series.rates, else 2,5,8,10,15)")
     ap.add_argument("--knee-ratio", type=float, default=0.9, help="delivered/offered below this = past the knee")
     ap.add_argument("--knee-backlog-s", type=float, default=5,
                     help="receivers still incomplete this long after our last send = past the knee")
@@ -94,12 +98,23 @@ def main() -> int:
     ap.add_argument("--stop-after-knee", type=int, default=1, help="runs to do past the knee before stopping")
     ap.add_argument("--pause", type=float, default=0, help="seconds between runs")
     a = ap.parse_args(own)
-    rates = [float(x) for x in a.rates.split(",") if x.strip()]
+    prof_name = arg_value(passthrough, "--dut-profile")
+    prof = inventory.load().get(prof_name) if prof_name else None
+    if prof_name and not prof:
+        sys.exit(f"unknown --dut-profile {prof_name}")
+    ser = (prof or {}).get("series", {})
+    for opt, key in (("--routers", "routers"), ("--prefixes", "prefixes")):
+        if key in ser and arg_value(passthrough, opt) is None:
+            passthrough += [opt, str(ser[key])]
+    rates = [float(x) for x in a.rates.split(",") if x.strip()] if a.rates else \
+        [float(x) for x in ser.get("rates", [2, 5, 8, 10, 15])]
     if any(x in passthrough for x in ("--rate",)):
         sys.exit("do not pass --rate after --; use --rates")
 
     # one password prompt for the whole series (never stored; passed via the environment)
-    dut = arg_value(passthrough, "--dut", "bird")
+    dut = arg_value(passthrough, "--dut", prof["adapter"] if prof else "bird")
+    if prof and os.environ.get(inventory.password_env(prof_name)) and not os.environ.get("TGEN_DUT_PASSWORD"):
+        os.environ["TGEN_DUT_PASSWORD"] = os.environ[inventory.password_env(prof_name)]
     if dut != "bird" and not os.environ.get("TGEN_DUT_PASSWORD") and not arg_value(passthrough, "--dut-key") \
             and os.isatty(0):
         pw = getpass.getpass("DUT password for the whole series (not stored; empty = SSH key): ")
