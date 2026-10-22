@@ -38,7 +38,8 @@ def plan_meta(args) -> dict:
     node_ips = [f"{prefix}.{11 + i}" for i in range(len(names))]
     nodes = [NodeSpec(n, 0.7 if i == 0 else 1.0) for i, n in enumerate(names)]
     sc = Scenario(run_id="tgen-dut-preview", dut_ip=args.dut_ip, dut_asn=args.dut_asn, role=args.role,
-                  routers_total=args.routers, prefixes_per_router=1, seed=args.seed, skip_ips=node_ips)
+                  routers_total=args.routers, prefixes_per_router=1, seed=args.seed,
+                  skip_ips=node_ips + env["TRAFFIC_RESERVED"])
     return build(sc, nodes)[1]
 
 

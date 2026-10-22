@@ -49,10 +49,12 @@ for v in NODE_COUNT MGMT_PREFIX MGMT_HOST_BASE MGMT_IFACE TRAFFIC_PREFIX TRAFFIC
   printf '%s=%s\\n' "$v" "${{!v}}"; done
 printf 'NODE_HOSTNAMES=%s\\n' "${{NODE_HOSTNAMES[*]}}"
 printf 'NODE_RAM_GB=%s\\n' "${{NODE_RAM_GB[*]}}"
+printf 'TRAFFIC_RESERVED=%s\\n' "${{TRAFFIC_RESERVED[*]}}"
 """
     out = subprocess.run(["bash", "-c", script], check=True, capture_output=True, text=True).stdout
     env = dict(line.split("=", 1) for line in out.splitlines() if "=" in line)
     env["NODE_HOSTNAMES"] = env["NODE_HOSTNAMES"].split()
+    env["TRAFFIC_RESERVED"] = env.get("TRAFFIC_RESERVED", "").split()   # devices on the test network
     return env
 
 
@@ -241,7 +243,7 @@ def main() -> int:
 
     agent = Path(REPO / "agent" / "build" / "tgen-agent") if args.no_build else build_agent()
     sc = Scenario(run_id=out.name, dut_ip=dut_ip, dut_asn=args.dut_asn, role=args.role,
-                  skip_ips=list(cl.traffic.values()),
+                  skip_ips=list(cl.traffic.values()) + env["TRAFFIC_RESERVED"],
                   routers_total=args.routers, prefixes_per_router=args.prefixes, seed=args.seed,
                   announce_rate=args.rate, per_update=args.per_update,
                   establish_delay_s=15, establish_window_s=20,
