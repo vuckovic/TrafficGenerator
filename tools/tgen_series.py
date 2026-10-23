@@ -76,6 +76,7 @@ def run_one(rate: float, passthrough: list[str], converge: float, log) -> dict:
         offered_deliveries_s=rate * n * (n - 1),         # every prefix goes to every other router
         dut_output_s=(rep.get("dut_output") or {}).get("prefixes_per_s"),
         convergence_s=c.get("initial_s"), after_last_send_s=c.get("after_last_send_s"),
+        send_window_s=c.get("send_window_s"),
         p50_ms=la.get("p50"), p99_ms=la.get("p99"), n_samples=la.get("n"),
         send_lag_p99_ms=rep["generator"].get("send_lag_p99_ms"),
         dut_cpu_mid=json.loads(mid.read_text()).get("cpu_load") if mid.exists() else None,
@@ -154,7 +155,11 @@ def main() -> int:
         row = run_one(r, passthrough + ["--withdraw-timeout", f"{withdraw:.0f}"], converge, log)
         rows.append(row)
         if "error" not in row:
-            behind = row["dut_output_s"] is not None and row["dut_output_s"] < a.knee_ratio * row["offered_deliveries_s"]
+            # output is measured from the first to the last delivery; a DUT that batches for MRAI
+            # seconds stretches that span by up to MRAI without being behind
+            sw = row.get("send_window_s") or 0
+            expect = row["offered_deliveries_s"] * (sw / (sw + mrai) if sw > 0 and mrai else 1)
+            behind = row["dut_output_s"] is not None and row["dut_output_s"] < a.knee_ratio * expect
             backlog = row["after_last_send_s"] is None or row["after_last_send_s"] > a.knee_backlog_s
             over = behind or backlog
             row["past_knee"] = over
