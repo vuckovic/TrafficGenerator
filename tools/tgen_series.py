@@ -119,7 +119,7 @@ def main() -> int:
 
     # one password prompt for the whole series (never stored; passed via the environment)
     dut = arg_value(passthrough, "--dut", prof["adapter"] if prof else "bird")
-    if prof and os.environ.get(inventory.password_env(prof_name)) and not os.environ.get("TGEN_DUT_PASSWORD"):
+    if prof and os.environ.get(inventory.password_env(prof_name)):
         os.environ["TGEN_DUT_PASSWORD"] = os.environ[inventory.password_env(prof_name)]
     if dut != "bird" and not os.environ.get("TGEN_DUT_PASSWORD") and not arg_value(passthrough, "--dut-key") \
             and os.isatty(0):

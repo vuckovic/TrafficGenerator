@@ -85,7 +85,7 @@ def password_env(name: str) -> str:
 def apply_profile(ap: argparse.ArgumentParser, argv: list[str] | None = None) -> dict | None:
     """If --dut-profile NAME is given, set the parser's defaults from that profile
     (call before ap.parse_args). Also maps TGEN_DUT_PASSWORD_<NAME> to
-    TGEN_DUT_PASSWORD when the latter is not set. Returns the profile or None."""
+    TGEN_DUT_PASSWORD (the device's own password wins). Returns the profile or None."""
     pre = argparse.ArgumentParser(add_help=False)
     pre.add_argument("--dut-profile", default=None)
     known, _ = pre.parse_known_args(argv)
@@ -98,6 +98,6 @@ def apply_profile(ap: argparse.ArgumentParser, argv: list[str] | None = None) ->
     dests = {a.dest for a in ap._actions}
     ap.set_defaults(**{dest: prof[k] for k, dest in ARG_MAP.items() if k in prof and dest in dests})
     pw = os.environ.get(password_env(prof["name"]))
-    if pw and not os.environ.get("TGEN_DUT_PASSWORD"):
+    if pw:      # the device's own password wins over a general TGEN_DUT_PASSWORD left in the shell
         os.environ["TGEN_DUT_PASSWORD"] = pw
     return prof
