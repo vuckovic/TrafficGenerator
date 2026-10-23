@@ -73,10 +73,10 @@ ssh_host = "192.168.100.100"
 user = "vuckovic"
 role = "router"                 # IOS 15.1(4)M has no BGP Route Server feature
 link_mbps = 100
-max_routes = 10000              # 128-384 MB DRAM shared by IOS, BGP table and RIB
+max_routes = 30000              # ~1.5 KB per route measured (137 MiB pool); memory guard backs it up
 min_free_mem_pct = 15
 ssh_legacy = true
 device_mrai_s = 30              # IOS default for eBGP
 smoke = { routers = 6, prefixes = 200 }
 series = { routers = 6, prefixes = 50, rates = [1, 2, 4, 8, 16], mrai = ["default", 0] }
-scale = { steps = [[6, 500], [12, 500], [12, 800]] }
+scale = { steps = [[6, 500], [12, 500], [12, 800], [20, 1000], [30, 1000]] }
