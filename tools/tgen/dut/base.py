@@ -103,6 +103,10 @@ class Dut:
     def resources(self) -> dict:
         raise NotImplementedError
 
+    def load(self) -> dict:
+        """CPU / memory for polling during a run (at least free_pct, cpu_load). Default: resources()."""
+        return self.resources()
+
     def interface_info(self, peer_ip: str, name: str | None = None) -> dict | None:
         """Port carrying peer_ip: speed_mbps, duplex, error counters. None = not supported."""
         return None

@@ -148,7 +148,8 @@ def main() -> int:
             rc, rd, text = run_tool(p2 + ["--routers", str(sm["routers"]), "--prefixes", str(sm["prefixes"]),
                                           *(["--no-build"] if built else [])], env)
             built = True
-            res["smoke"] = {"size": f"{sm['routers']} x {sm['prefixes']}", **p2_row(rc, rd, text)}
+            res["smoke"] = {"size": f"{sm['routers']} x {sm['prefixes']}",
+                            "deliveries": sm["routers"] * sm["prefixes"] * (sm["routers"] - 1), **p2_row(rc, rd, text)}
             save()
             time.sleep(a.pause)
 
@@ -171,14 +172,28 @@ def main() -> int:
 
         if "scale" in steps:
             res["scale"] = []
+            # the DUT's measured delivery rate (smoke, or the previous step) sets each step's timeout:
+            # a slow DUT that is still working must not fail on a fixed 300 s timeout
+            sm = res.get("smoke", {})
+            rate = (sm["deliveries"] / sm["convergence_s"]) if sm.get("convergence_s") else None
+            mrai = inventory.effective_mrai(d)
             for routers, prefixes in d.get("scale", {}).get("steps", []):
                 if d.get("max_routes") and routers * prefixes > d["max_routes"]:
                     log(f"{n}: scale step {routers} x {prefixes} is above max_routes {d['max_routes']}; stopping")
                     break
+                deliveries = routers * prefixes * (routers - 1)
+                conv = max(300.0, deliveries / rate * 1.5 + 60 + mrai) if rate else 300.0
+                log(f"{n}: scale {routers} x {prefixes} = {deliveries:,} deliveries; convergence timeout {conv:.0f} s"
+                    + (f" (measured {rate:,.0f} deliveries/s)" if rate else ""))
                 rc, rd, text = run_tool(p2 + ["--routers", str(routers), "--prefixes", str(prefixes),
+                                              "--converge-timeout", f"{conv:.0f}",
+                                              "--withdraw-timeout", f"{max(120.0, conv / 2):.0f}",
                                               *(["--no-build"] if built else [])], env)
                 built = True
-                row = {"size": f"{routers} x {prefixes}", "routes": routers * prefixes, **p2_row(rc, rd, text)}
+                row = {"size": f"{routers} x {prefixes}", "routes": routers * prefixes, "deliveries": deliveries,
+                       **p2_row(rc, rd, text)}
+                if row.get("convergence_s"):
+                    rate = deliveries / row["convergence_s"]
                 res["scale"].append(row)
                 save()
                 if row.get("gate") != "PASS":
@@ -210,7 +225,8 @@ def main() -> int:
             f"| {n}", f"{port.get('speed_mbps') or r['link_mbps']} Mb/s {port.get('duplex') or ''}".strip(), version,
             f"{sm.get('size', '-')} {sm.get('gate') or sm.get('error', '') if sm else ''}".strip(),
             f(sm.get("convergence_s"), 1), f(sm.get("prefixes_s")),
-            f"{f(sm.get('mbps'), 1)} ({f(sm.get('link_use_pct'), 1)} %)" if sm.get("mbps") is not None else "-",
+            (f"{sm['mbps']:.1f} Mb/s" if sm["mbps"] >= 1 else f"{sm['mbps'] * 1000:.0f} kb/s")
+            + f" ({f(sm.get('link_use_pct'), 2)} %)" if sm.get("mbps") is not None else "-",
             f(se.get("sustainable_rate"), 1), f(se.get("knee_rate"), 1), f(se.get("sustainable_deliveries_s")),
             passed[-1]["size"] if passed else "-", f(min(mems), 0) if mems else "-",
             ", ".join(f"{k} +{v}" for k, v in errs.items()) or ("none" if sm or sc else "-")]) + " |")

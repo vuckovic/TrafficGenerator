@@ -26,6 +26,11 @@
 #   min_free_mem_pct stop the run if the DUT's free memory falls below this (0 = off)
 #   ssh_legacy       true: also offer old SSH algorithms (IOS 15.1 and older)
 #   interface        DUT port carrying peer_ip (default: found from the running config)
+#   mrai_s           Cisco: push this advertisement interval (MRAI) to every tgen neighbour
+#                    (unset = leave the device default)
+#   device_mrai_s    the device's own MRAI when mrai_s is unset (IOS: 30 s for eBGP). The
+#                    knee rule and timeouts allow for it: a DUT that holds updates back for
+#                    MRAI seconds is batching, not falling behind
 #   [x.smoke]        quick check: routers, prefixes
 #   [x.series]       rate series: routers, prefixes, rates (prefixes/s per router)
 #   [x.scale]        scale ladder at full speed: steps = [[routers, prefixes], ...]
@@ -54,6 +59,7 @@ role = "router"                 # route_server needs the BGP Route Server featur
 link_mbps = 1000
 max_routes = 100000             # BGP table fits easily; the hardware FIB is smaller (SDM template)
 min_free_mem_pct = 10
+device_mrai_s = 30              # measured 2026-10-23: announce and withdraw latency 15-31 s
 smoke = { routers = 12, prefixes = 1000 }
 series = { routers = 12, prefixes = 1000, rates = [5, 10, 20, 50, 100] }
 scale = { steps = [[12, 1000], [30, 1000], [60, 1000], [60, 1600]] }
@@ -68,6 +74,7 @@ link_mbps = 100
 max_routes = 10000              # 128-384 MB DRAM shared by IOS, BGP table and RIB
 min_free_mem_pct = 15
 ssh_legacy = true
+device_mrai_s = 30              # IOS default for eBGP
 smoke = { routers = 6, prefixes = 200 }
 series = { routers = 6, prefixes = 50, rates = [1, 2, 4, 8, 16] }
 scale = { steps = [[6, 500], [12, 500], [12, 800]] }

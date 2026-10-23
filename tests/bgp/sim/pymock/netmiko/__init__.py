@@ -70,6 +70,13 @@ class ConnectHandler:
                     "cisco ISR4331/K9 (1RU) processor with 1795999K/6147K bytes of memory.\n")
         if cmd == "show processes cpu | include CPU utilization":
             return "CPU utilization for five seconds: 4%/1%; one minute: 3%; five minutes: 3%\n"
+        if cmd == "show memory statistics | include ^Processor" and not self.c1841:
+            # IOS-XE: one line per pool (the 1841 mock answers "invalid" -> adapter falls back)
+            st["mem_reads"] = st.get("mem_reads", 0) + 1
+            self._save(st)
+            low = int(os.environ.get("SIM_IOS_MEM_LOW_AFTER", "0") or 0)
+            free = 91942540 if low and st["mem_reads"] >= low else 1426495944
+            return f"Processor  7F3C2A1010   1838842064   {1838842064 - free}   {free}   {free - 5000}   {free - 9000}\n"
         if cmd == "show processes memory | include Processor":
             st["mem_reads"] = st.get("mem_reads", 0) + 1
             self._save(st)

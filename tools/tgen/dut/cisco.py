@@ -117,18 +117,35 @@ class Cisco(Dut):
             raise DutError(f"IOS {ver}: releases from 2015 on (IOS 15.x, IOS-XE) are supported")
         # "cisco ASR-920-24SZ-M (Freescale P2020) processor ..." / "Cisco 1841 (revision 7.0) with ..."
         model = re.search(r"^[Cc]isco (\S+) \(.*\) (?:processor|with)", v, re.M)
-        cpu = self.cmd("show processes cpu | include CPU utilization")
-        cpu5 = re.search(r"five seconds:\s*(\d+)%", cpu)
-        mem = self.cmd("show processes memory | include Processor")
-        mm = re.search(r"Total:\s*(\d+)\s+Used:\s*(\d+)\s+Free:\s*(\d+)", mem)
         r = {"version": ver, "train": "IOS-XE" if xe else "IOS", "model": model.group(1) if model else "",
-             "cpu_load": f"{cpu5.group(1)}%" if cpu5 else "",
-             "total_memory": f"{int(mm.group(1)) // 1048576}MiB" if mm else "",
-             "free_memory": f"{int(mm.group(3)) // 1048576}MiB" if mm else "",
-             "free_pct": round(100 * int(mm.group(3)) / max(1, int(mm.group(1))), 1) if mm else None}
+             **self.load()}
         r["summary"] = (f"Cisco {r['model']} {r['train']} {ver}, CPU {r['cpu_load']}, "
                         f"processor memory free {r['free_memory']} of {r['total_memory']}")
         return r
+
+    def load(self) -> dict:
+        """CPU and memory only: cheap enough to read at every poll during a run. `show memory
+        statistics` prints one line per pool; `show processes memory` (the fallback) lists every
+        process first and timed out on the ASR-920 under BGP load."""
+        cpu = self.cmd("show processes cpu | include CPU utilization")
+        cpu5 = re.search(r"five seconds:\s*(\d+)%", cpu)
+        total = free = None
+        try:
+            mem = self.cmd("show memory statistics | include ^Processor")
+            m = re.search(r"^Processor\s+\S+\s+(\d+)\s+(\d+)\s+(\d+)", mem, re.M)
+            if m:
+                total, free = int(m.group(1)), int(m.group(3))
+        except DutError:
+            pass
+        if total is None:
+            mem = self.cmd("show processes memory | include Processor")
+            m = re.search(r"Total:\s*(\d+)\s+Used:\s*(\d+)\s+Free:\s*(\d+)", mem)
+            if m:
+                total, free = int(m.group(1)), int(m.group(3))
+        return {"cpu_load": f"{cpu5.group(1)}%" if cpu5 else "",
+                "total_memory": f"{total // 1048576}MiB" if total else "",
+                "free_memory": f"{free // 1048576}MiB" if total else "",
+                "free_pct": round(100 * free / max(1, total), 1) if total else None}
 
     def interface_info(self, peer_ip: str, name: str | None = None) -> dict:
         """The port carrying peer_ip: speed, duplex and error counters (read before and
@@ -160,6 +177,9 @@ class Cisco(Dut):
                     f" neighbor {ip} description {TAG} {meta['run_id']} {r['name']} node {r['node']}",
                     f" neighbor {ip} transport connection-mode passive",
                     f" neighbor {ip} timers {ka} {hold_time}"]
+            if self.opts.get("mrai") is not None:
+                # IOS default: 30 s for eBGP, 0 for iBGP; it batches announcements AND withdrawals
+                out.append(f" neighbor {ip} advertisement-interval {int(self.opts['mrai'])}")
         out.append(" address-family ipv4")
         for r in meta["routers"]:
             out += [f"  neighbor {r['ip']} activate", f"  neighbor {r['ip']} {ROLE_AF[role]}"]
@@ -204,7 +224,8 @@ class Cisco(Dut):
         return n
 
     def count(self) -> int:
-        return len(self._bgp()[1])
+        self._ips = self._bgp()[1]
+        return len(self._ips)
 
     def remove(self) -> None:
         asn, ips = self._bgp()
@@ -215,7 +236,9 @@ class Cisco(Dut):
             raise DutError(f"{left} tgen neighbours still configured after removal")
 
     def sessions(self) -> tuple[str, int]:
-        _, ips = self._bgp()
+        # the neighbour list is cached after push/count: re-reading the running config at every
+        # poll is slow on a busy router
+        ips = getattr(self, "_ips", None) or self._bgp()[1]
         out = self.cmd("show ip bgp summary", timeout=120)
         mine, est = set(ips), 0
         for line in out.splitlines():

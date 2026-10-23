@@ -92,8 +92,9 @@ def main() -> int:
     ap.add_argument("--rates", default=None,
                     help="prefixes/s per router, comma list (default: the profile's series.rates, else 2,5,8,10,15)")
     ap.add_argument("--knee-ratio", type=float, default=0.9, help="delivered/offered below this = past the knee")
-    ap.add_argument("--knee-backlog-s", type=float, default=5,
-                    help="receivers still incomplete this long after our last send = past the knee")
+    ap.add_argument("--knee-backlog-s", type=float, default=None,
+                    help="receivers still incomplete this long after our last send = past the knee "
+                         "(default 5 s plus the DUT's advertisement interval, MRAI, from its profile)")
     ap.add_argument("--slo-p99-ms", type=float, default=1000, help="latency target, reported only")
     ap.add_argument("--stop-after-knee", type=int, default=1, help="runs to do past the knee before stopping")
     ap.add_argument("--pause", type=float, default=0, help="seconds between runs")
@@ -108,6 +109,11 @@ def main() -> int:
             passthrough += [opt, str(ser[key])]
     rates = [float(x) for x in a.rates.split(",") if x.strip()] if a.rates else \
         [float(x) for x in ser.get("rates", [2, 5, 8, 10, 15])]
+    # a DUT that batches updates for MRAI seconds is not "behind" during that time
+    mrai_arg = arg_value(passthrough, "--dut-mrai")
+    mrai = inventory.effective_mrai(prof, float(mrai_arg) if mrai_arg is not None else None)
+    if a.knee_backlog_s is None:
+        a.knee_backlog_s = 5 + mrai
     if any(x in passthrough for x in ("--rate",)):
         sys.exit("do not pass --rate after --; use --rates")
 
@@ -135,11 +141,12 @@ def main() -> int:
     def log(msg: str) -> None:
         print(f"[{time.strftime('%H:%M:%S')}] series: {msg}", flush=True)
 
-    log(f"rates {rates} prefixes/s per router; results -> {out}")
+    log(f"rates {rates} prefixes/s per router; knee backlog {a.knee_backlog_s:g} s"
+        + (f" (5 s + MRAI {mrai:g} s)" if mrai else "") + f"; results -> {out}")
     rows, past_knee, knee = [], 0, None
     for i, r in enumerate(rates):
         # paced: sending takes prefixes/rate seconds; leave room for the DUT to catch up
-        converge = float(user_converge) if user_converge else prefixes / r * 1.5 + 60
+        converge = float(user_converge) if user_converge else prefixes / r * 1.5 + 60 + mrai
         need_wd = prefixes / r * 1.3 + 20                  # withdrawals are paced too
         withdraw = max(float(user_withdraw), need_wd) if user_withdraw else need_wd
         if user_withdraw and withdraw > float(user_withdraw):

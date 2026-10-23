@@ -52,6 +52,10 @@ def log(msg: str) -> None:
         pass
 
 
+def mbit(mbps: float) -> str:
+    return f"{mbps:.1f} Mb/s" if mbps >= 1 else f"{mbps * 1000:.0f} kb/s"
+
+
 def _stop_on_signal(signum, _frame):
     # SIGTERM / SIGHUP (e.g. the SSH session to CMNODE01 dropped) end the run like Ctrl-C:
     # the finally block removes the router addresses, the agents and the DUT neighbours
@@ -210,6 +214,9 @@ def main() -> int:
                          "--dut-poll; 0 = off)")
     ap.add_argument("--dut-link-mbps", type=int, default=1000, help="speed of the DUT's port (for link-use figures)")
     ap.add_argument("--dut-ssh-legacy", action="store_true", help="old IOS (e.g. 1841, IOS 15.1): SHA-1 SSH")
+    ap.add_argument("--dut-mrai", type=float, default=None,
+                    help="Cisco: set the advertisement interval (MRAI) of every tgen neighbour, in s "
+                         "(default: leave the device default, 30 s for eBGP on IOS)")
     ap.add_argument("--dut-interface", default=None, help="DUT port carrying --dut-ip (default: found automatically)")
     ap.add_argument("--keep-dut-config", action="store_true", help="leave the BGP neighbours on the DUT after the run")
     ap.add_argument("--nodes", default="", help="router nodes, comma list (default: all except the DUT node)")
@@ -247,7 +254,7 @@ def main() -> int:
     if external:
         mt = make_dut(args.dut, args.dut_ssh_host or args.dut_ip, args.dut_user, port=args.dut_port, key=args.dut_key,
                       no_sudo=args.dut_no_sudo, bird_include=args.dut_bird_include, bird_conf=args.dut_bird_conf,
-                      bird_socket=args.dut_bird_socket, multihop=args.bird_multihop, ssh_legacy=args.dut_ssh_legacy)
+                      bird_socket=args.dut_bird_socket, multihop=args.bird_multihop, ssh_legacy=args.dut_ssh_legacy, mrai=args.dut_mrai)
     dut_label = (f"{profile['label']} {args.dut_ip}" if profile else f"{mt.platform} {args.dut_ip}") if external \
         else f"BIRD on {args.dut_node}"
     dut_routes = args.routers * args.prefixes
@@ -412,7 +419,7 @@ def main() -> int:
                     sess, est = mt.sessions()
                     rec = {"t": round(t_poll, 3), "established": est, "raw": sess}
                     if args.dut_min_free_mem_pct:
-                        res = mt.resources()
+                        res = mt.load()
                         rec.update(free_pct=res.get("free_pct"), cpu_load=res.get("cpu_load"))
                         if res.get("free_pct") is not None and res["free_pct"] < args.dut_min_free_mem_pct \
                                 and not aborted:
@@ -519,7 +526,7 @@ def main() -> int:
                           if external else None)
     do = report.get("dut_output") or {}
     if external and do.get("payload_mbps") is not None:
-        do["link_use_pct"] = round(100 * do["payload_mbps"] * 1.06 / args.dut_link_mbps, 1)  # + TCP/IP/Ethernet
+        do["link_use_pct"] = round(100 * do["payload_mbps"] * 1.06 / args.dut_link_mbps, 2)  # + TCP/IP/Ethernet
     report["dut_view"] = dut_view(out / "dut-sessions.jsonl") if external and args.dut == "mikrotik" else None
     (out / "report.json").write_text(json.dumps(report, indent=2))
 
@@ -536,7 +543,7 @@ def main() -> int:
         f"withdraw conv.: {report['withdraw']['convergence_s']:.1f} s" if report["withdraw"] and
         report["withdraw"]["convergence_s"] else "withdraw conv.: n/a",
         f"DUT output    : {(report['dut_output'] or {}).get('prefixes_per_s') or 0:,.0f} prefixes/s"
-        + (f", {do['payload_mbps']:.1f} Mb/s BGP (~{do['link_use_pct']:g} % of the {args.dut_link_mbps} Mb/s port)"
+        + (f", {mbit(do['payload_mbps'])} BGP (~{do['link_use_pct']:g} % of the {args.dut_link_mbps} Mb/s port)"
            if do.get("link_use_pct") is not None else ""),
         *([f"DUT port      : {pb['interface']} {pb.get('speed_mbps') or '?'} Mb/s {pb.get('duplex') or '?'}-duplex; "
            f"errors/drops during the run: " + (", ".join(f"{k} +{v}" for k, v in

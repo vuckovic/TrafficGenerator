@@ -67,6 +67,9 @@ def main() -> int:
     ap.add_argument("--dut-bird-socket", default=None)
     ap.add_argument("--dut-asn", type=int, default=64500)
     ap.add_argument("--dut-ssh-legacy", action="store_true", help="old IOS (e.g. 1841, IOS 15.1): SHA-1 SSH")
+    ap.add_argument("--dut-mrai", type=float, default=None,
+                    help="Cisco: set the advertisement interval (MRAI) of every tgen neighbour, in s "
+                         "(default: leave the device default, 30 s for eBGP on IOS)")
     ap.add_argument("--dut-interface", default=None, help="DUT port carrying --dut-ip (default: found automatically)")
     ap.add_argument("--role", default=None, choices=["route_server", "route_reflector", "router"],
                     help="DUT role (default: router for mikrotik, route_server otherwise)")
@@ -81,7 +84,7 @@ def main() -> int:
 
     dut = make(args.dut, args.dut_ssh_host or args.dut_ip, args.dut_user, port=args.dut_port, key=args.dut_key,
                no_sudo=args.dut_no_sudo, bird_include=args.dut_bird_include, bird_conf=args.dut_bird_conf,
-               bird_socket=args.dut_bird_socket, ssh_legacy=args.dut_ssh_legacy)
+               bird_socket=args.dut_bird_socket, ssh_legacy=args.dut_ssh_legacy, mrai=args.dut_mrai)
     result: dict = {"dut": args.dut, "platform": dut.platform, "action": args.action}
     try:
         if args.action == "preview":

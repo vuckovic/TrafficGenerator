@@ -19,7 +19,7 @@ ROLES = {"router", "route_reflector", "route_server"}
 ARG_MAP = {"adapter": "dut", "peer_ip": "dut_ip", "ssh_host": "dut_ssh_host", "ssh_port": "dut_port",
            "user": "dut_user", "asn": "dut_asn", "role": "role", "max_routes": "dut_max_routes",
            "min_free_mem_pct": "dut_min_free_mem_pct", "link_mbps": "dut_link_mbps",
-           "ssh_legacy": "dut_ssh_legacy", "interface": "dut_interface"}
+           "ssh_legacy": "dut_ssh_legacy", "interface": "dut_interface", "mrai_s": "dut_mrai"}
 
 
 class InventoryError(ValueError):
@@ -66,6 +66,16 @@ def load(p: Path | None = None) -> dict[str, dict]:
 def reserved_ips(inv: dict[str, dict] | None = None) -> list[str]:
     inv = load() if inv is None else inv
     return [d["peer_ip"] for d in inv.values()]
+
+
+def effective_mrai(prof: dict | None, override: float | None = None) -> float:
+    """Seconds the DUT may hold back updates per neighbour (MRAI): what we push, else what
+    the device does by default (profile device_mrai_s), else 0."""
+    if override is not None:
+        return float(override)
+    if not prof:
+        return 0.0
+    return float(prof["mrai_s"] if prof.get("mrai_s") is not None else prof.get("device_mrai_s", 0))
 
 
 def password_env(name: str) -> str:
