@@ -23,5 +23,5 @@ max_routes = 10000
 min_free_mem_pct = 15
 ssh_legacy = false   # this container's paramiko has no SHA-1 (checked separately)
 smoke = { routers = 6, prefixes = 200 }
-series = { routers = 6, prefixes = 50, rates = [10, 25] }
+series = { routers = 6, prefixes = 50, rates = [25], mrai = ["default", 0] }
 scale = { steps = [[6, 500], [12, 500], [12, 900]] }

@@ -32,7 +32,8 @@
 #                    knee rule and timeouts allow for it: a DUT that holds updates back for
 #                    MRAI seconds is batching, not falling behind
 #   [x.smoke]        quick check: routers, prefixes
-#   [x.series]       rate series: routers, prefixes, rates (prefixes/s per router)
+#   [x.series]       rate series: routers, prefixes, rates (prefixes/s per router);
+#                    mrai = ["default", 0]: one series per advertisement interval (suite)
 #   [x.scale]        scale ladder at full speed: steps = [[routers, prefixes], ...]
 
 [mikrotik]
@@ -61,7 +62,7 @@ max_routes = 100000             # BGP table fits easily; the hardware FIB is sma
 min_free_mem_pct = 10
 device_mrai_s = 30              # measured 2026-10-23: announce and withdraw latency 15-31 s
 smoke = { routers = 12, prefixes = 1000 }
-series = { routers = 12, prefixes = 1000, rates = [5, 10, 20, 50, 100] }
+series = { routers = 12, prefixes = 1000, rates = [5, 10, 20, 50, 100], mrai = ["default", 0] }
 scale = { steps = [[12, 1000], [30, 1000], [60, 1000], [60, 1600]] }
 
 [c1841]
@@ -77,5 +78,5 @@ min_free_mem_pct = 15
 ssh_legacy = true
 device_mrai_s = 30              # IOS default for eBGP
 smoke = { routers = 6, prefixes = 200 }
-series = { routers = 6, prefixes = 50, rates = [1, 2, 4, 8, 16] }
+series = { routers = 6, prefixes = 50, rates = [1, 2, 4, 8, 16], mrai = ["default", 0] }
 scale = { steps = [[6, 500], [12, 500], [12, 800]] }

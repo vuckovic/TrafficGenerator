@@ -153,11 +153,17 @@ def main() -> int:
             save()
             time.sleep(a.pause)
 
-        if "series" in steps:
+        # profile series.mrai = ["default", 0]: one series with the device's own advertisement
+        # interval, one with MRAI pushed to 0 (processing capacity without batching)
+        variants = d.get("series", {}).get("mrai", ["default"]) if "series" in steps else []
+        for v in variants:
+            key = "series" if v == "default" else f"series_mrai_{v:g}"
             rc, rd, text = run_tool([sys.executable, str(TOOLS / "tgen_series.py"), "--pause", str(a.pause), "--",
-                                     "--dut-profile", n, *common, *(["--no-build"] if built else [])], env)
+                                     "--dut-profile", n, *common, *([] if v == "default" else ["--dut-mrai", f"{v:g}"]),
+                                     *(["--no-build"] if built else [])], env)
             built = True
-            row: dict = {"exit": rc, "dir": str(rd) if rd else None}
+            row: dict = {"exit": rc, "dir": str(rd) if rd else None,
+                         "mrai": f"device default ({d.get('device_mrai_s', 0):g} s)" if v == "default" else f"{v:g} s"}
             if rd and (rd / "series.json").exists():
                 rows = [x for x in json.loads((rd / "series.json").read_text()) if "error" not in x]
                 ok = [x for x in rows if not x.get("past_knee")]
@@ -166,7 +172,7 @@ def main() -> int:
                            sustainable_deliveries_s=max((x["offered_deliveries_s"] for x in ok), default=None),
                            knee_rate=over[0]["rate"] if over else None,
                            max_output_s=max((x["dut_output_s"] or 0 for x in rows), default=None))
-            res["series"] = row
+            res[key] = row
             save()
             time.sleep(a.pause)
 
@@ -230,8 +236,18 @@ def main() -> int:
             f(se.get("sustainable_rate"), 1), f(se.get("knee_rate"), 1), f(se.get("sustainable_deliveries_s")),
             passed[-1]["size"] if passed else "-", f(min(mems), 0) if mems else "-",
             ", ".join(f"{k} +{v}" for k, v in errs.items()) or ("none" if sm or sc else "-")]) + " |")
+    md += ["", "Rate series per advertisement interval (MRAI):", "",
+           "| device | MRAI | sustainable rate /router | knee /router | sustainable deliveries/s | max DUT output /s |",
+           "|---|---|---|---|---|---|"]
+    for n, r in suite.items():
+        for k in sorted(k for k in r if k.startswith("series")):
+            x = r[k]
+            md.append(f"| {n} | {x.get('mrai', '-')} | {f(x.get('sustainable_rate'), 1)} | {f(x.get('knee_rate'), 1)} | "
+                      f"{f(x.get('sustainable_deliveries_s'))} | {f(x.get('max_output_s'))} |")
     md += ["", "Runs: " + ", ".join(f"{n}: " + ", ".join(Path(x["dir"]).name for x in
-                                                          [r.get("smoke", {}), r.get("series", {}), *r.get("scale", [])]
+                                                          [r.get("smoke", {}),
+                                                           *[r[k] for k in sorted(r) if k.startswith("series")],
+                                                           *r.get("scale", [])]
                                                           if x.get("dir")) for n, r in suite.items())]
     (out / "suite.md").write_text("\n".join(md) + "\n")
     save()

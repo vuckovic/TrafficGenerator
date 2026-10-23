@@ -153,6 +153,9 @@ class ConnectHandler:
                     if rest == "transport connection-mode passive":
                         nb["passive"] = True
                         continue
+                    if (mm := re.fullmatch(r"advertisement-interval (\d+)", rest)):
+                        nb["mrai"] = int(mm.group(1))
+                        continue
                     if (mm := re.fullmatch(r"timers (\d+) (\d+)", rest)):
                         nb["hold"] = int(mm.group(2))
                         continue

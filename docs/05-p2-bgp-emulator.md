@@ -188,6 +188,7 @@ The devices are tested **one after another, never at the same time**: they share
 | Cisco 1841 | SSH login refused (authentication) | — | — | key exchange worked, so the legacy SSH settings are right |
 
 Fixes after this run:
+- **Two rate series per Cisco** (user decision 2026‑10‑23): profile `series.mrai = ["default", 0]` makes the suite run one series with the device's own advertisement interval (30 s, the device as deployed) and one with MRAI pushed to 0 (processing capacity without batching). `suite.md` has a table "Rate series per advertisement interval".
 - **MRAI.** `device_mrai_s` in the profile (30 s for both Ciscos): the series knee rule allows MRAI + 5 s after the last send, and timeouts include it. `mrai_s` / `--dut-mrai N` pushes `neighbor X advertisement-interval N`, e.g. 0 to measure processing capacity without batching.
 - **Scale timeouts.** Each scale step's convergence timeout is now derived from the delivery rate measured in the smoke run (or the previous step): deliveries ÷ rate × 1.5 + 60 s + MRAI, at least 300 s.
 - **Cisco polling.** Per poll only `show processes cpu` and `show memory statistics` (one line per pool); `show version` and the running config are no longer read at every poll; the neighbour list is cached.
