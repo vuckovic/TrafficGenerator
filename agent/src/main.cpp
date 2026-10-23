@@ -10,6 +10,8 @@
 #include <iostream>
 #include <thread>
 
+#include "tgen/bgp.hpp"
+#include "tgen/garp.hpp"
 #include "tgen/run.hpp"
 
 #ifndef TGEN_VERSION
@@ -33,6 +35,7 @@ void usage() {
                "tgen-agent %s\n"
                "usage: tgen-agent --plan PLAN.json --out RESULT.json\n"
                "       tgen-agent serve --listen ADDRESS:PORT --token-file FILE [--iface eth0]\n"
+               "       tgen-agent garp --iface eth0 IP...        (gratuitous ARP; needs CAP_NET_RAW)\n"
                "       tgen-agent --version\n",
                TGEN_VERSION);
 }
@@ -87,6 +90,26 @@ int cli(const std::string& plan_path, const std::string& out_path) {
 }  // namespace
 
 int main(int argc, char** argv) {
+  if (argc >= 2 && std::string(argv[1]) == "garp") {
+    std::string iface;
+    std::vector<std::uint32_t> ips;
+    for (int i = 2; i < argc; ++i) {
+      std::string a = argv[i];
+      if (a == "--iface" && i + 1 < argc) { iface = argv[++i]; continue; }
+      try {
+        ips.push_back(tgen::bgp::parse_ipv4(a));
+      } catch (const std::exception&) {
+        std::fprintf(stderr, "garp: not an IPv4 address: %s\n", a.c_str());
+        return 2;
+      }
+    }
+    if (iface.empty() || ips.empty()) { usage(); return 2; }
+    std::string err;
+    const int n = tgen::send_garp(iface, ips, err);
+    if (n < 0) { std::fprintf(stderr, "garp: %s\n", err.c_str()); return 1; }
+    std::fprintf(stderr, "garp: %d frames for %zu addresses on %s\n", n, ips.size(), iface.c_str());
+    return 0;
+  }
   if (argc >= 2 && std::string(argv[1]) == "serve") {
     std::string listen, token_file = "/etc/tgen/agent.token", iface;
     for (int i = 2; i < argc; ++i) {

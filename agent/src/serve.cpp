@@ -16,6 +16,7 @@
 
 #include <httplib.h>
 
+#include "tgen/garp.hpp"
 #include "tgen/run.hpp"
 
 namespace tgen {
@@ -141,6 +142,13 @@ int serve_main(const std::string& listen, const std::string& token_file, const s
         }
         ag.addresses.push_back(ip);
       }
+    }
+    if (!ag.iface.empty() && !plan.routers.empty()) {
+      // the DUT may still map these addresses to the node that had them in an earlier run
+      std::vector<std::uint32_t> ips;
+      for (const auto& r : plan.routers) ips.push_back(r.ip);
+      std::string err;
+      if (send_garp(ag.iface, ips, err) < 0) std::fprintf(stderr, "warning: gratuitous ARP: %s\n", err.c_str());
     }
     const auto n = plan.routers.size();
     ag.run = std::make_unique<Run>(std::move(plan), ag.version);

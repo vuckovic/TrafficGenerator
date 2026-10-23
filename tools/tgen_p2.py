@@ -360,6 +360,13 @@ def main() -> int:
             cmds = "; ".join(f"sudo ip addr replace {ip}/32 dev {cl.iface}" for ip in ips)
             cl.ssh(n, cmds)
             added[n] = ips
+            # router addresses move between nodes from run to run; a DUT with a long ARP
+            # timeout (Cisco: 4 h) would answer the old node and the session never comes up
+            if cl.iface != "lo":
+                r = cl.ssh(n, f"sudo {REMOTE_DIR}/tgen-agent garp --iface {cl.iface} {' '.join(ips)}", check=False)
+                if r.returncode != 0:
+                    log(f"WARNING {n}: gratuitous ARP failed ({(r.stderr or r.stdout).strip()[-120:]}); a DUT with "
+                        "an old ARP entry may not answer some routers (Cisco: `clear arp-cache`)")
         parallel(prep, router_nodes)
         log("agents deployed, router addresses configured")
 

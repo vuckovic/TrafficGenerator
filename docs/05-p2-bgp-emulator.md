@@ -184,7 +184,7 @@ The devices are tested **one after another, never at the same time**: they share
 | Device | Smoke 12 × 1 000 | Series | Scale | Notes |
 |---|---|---|---|---|
 | MikroTik CRS106 | PASS, 131 s, ~1 050 deliveries/s | "knee ≤ 2/s" (output 187 of 264 offered, 25.7 s after the last send) — inconsistent with the earlier knee (~870/s at 10 per UPDATE), under investigation | 12 × 500, 12 × 1 000 PASS; 20 × 1 000 hit the fixed 300 s timeout (380 000 deliveries need ~360 s at ~1 050/s) | idle CPU 24–33 % before every run; SSH polls time out at 100 % CPU |
-| Cisco ASR‑920, IOS‑XE 17.15.05 | PASS, 18.1 s (another identical run 31.4 s) | "knee ≤ 5/s" — false: announce and withdraw latency 15–31 s, uniformly spread = the **eBGP advertisement interval (MRAI) of 30 s**, IOS default | 12 × 1 000 PASS; 30 × 1 000: only **20 of 30 sessions** came up, no resets — under investigation | sends every route back to its originator (12 000 looped, dropped by our routers); memory poll timed out once (`show processes memory` too slow under load) |
+| Cisco ASR‑920, IOS‑XE 17.15.05 | PASS, 18.1 s (another identical run 31.4 s) | "knee ≤ 5/s" — false: announce and withdraw latency 15–31 s, uniformly spread = the **eBGP advertisement interval (MRAI) of 30 s**, IOS default | 12 × 1 000 PASS; 30 × 1 000: only **20 of 30 sessions** came up, no resets — stale ARP entries on the ASR, fixed (see below) | sends every route back to its originator (12 000 looped, dropped by our routers); memory poll timed out once (`show processes memory` too slow under load) |
 | Cisco 1841 | SSH login refused (authentication) | — | — | key exchange worked, so the legacy SSH settings are right |
 
 Fixes after this run:
@@ -192,6 +192,8 @@ Fixes after this run:
 - **Scale timeouts.** Each scale step's convergence timeout is now derived from the delivery rate measured in the smoke run (or the previous step): deliveries ÷ rate × 1.5 + 60 s + MRAI, at least 300 s.
 - **Cisco polling.** Per poll only `show processes cpu` and `show memory statistics` (one line per pool); `show version` and the running config are no longer read at every poll; the neighbour list is cached.
 - Link use under 1 Mb/s is shown in kb/s.
+
+**Sessions that never came up on the Ciscos (1841: 7 of 12, ASR‑920: 20 of 30) — cause and fix (2026‑10‑23).** Router addresses move between nodes from run to run, because the plan spreads routers by count (6 routers: one per node; 12: two per node). Cisco IOS keeps ARP entries for 4 hours, so it sent its SYN‑ACKs for the moved addresses to the node that had them before, and those sessions never came up. On the 1841 exactly the routers that stayed on their node (.20) or were new (.26–.31) came up: 7. The MikroTik refreshes ARP much sooner and was not affected. Fix (agent 0.3.2): right after adding the router addresses, every node sends gratuitous ARP for them (`tgen-agent garp --iface eth0 IP…`, request and reply form, twice; the service does the same when a plan is loaded). Workaround for older agents: `clear arp-cache` on the DUT before a run.
 
 **The ASR‑920:** the BGP table fits easily in its memory. The hardware forwarding table is smaller and depends on the SDM template (`show sdm prefer current`). In router role every best path is installed, so a scale step can overflow the hardware table before BGP struggles. That would be a finding, not a tool failure; check the log (`dut-bgp.log`) and `show platform hardware pp active feature cef …` if a scale step behaves oddly.
 

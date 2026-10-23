@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(tgen_agent LANGUAGES CXX VERSION 0.3.1)
+project(tgen_agent LANGUAGES CXX VERSION 0.3.2)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -16,7 +16,7 @@ find_package(nlohmann_json 3 REQUIRED)               # nlohmann-json3-dev (heade
 # cpp-httplib 0.18.3, single header vendored in third_party/ (MIT): keeps the agent binary self-contained
 set(HTTPLIB_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/third_party/httplib)
 
-add_library(tgen_core STATIC src/bgp.cpp src/plan.cpp src/router.cpp src/run.cpp)
+add_library(tgen_core STATIC src/bgp.cpp src/plan.cpp src/router.cpp src/run.cpp src/garp.cpp)
 target_include_directories(tgen_core PUBLIC include ${ASIO_INCLUDE})
 target_compile_definitions(tgen_core PUBLIC ASIO_STANDALONE ASIO_NO_DEPRECATED)
 target_link_libraries(tgen_core PUBLIC Threads::Threads nlohmann_json::nlohmann_json)
