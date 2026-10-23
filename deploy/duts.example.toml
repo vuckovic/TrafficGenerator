@@ -68,6 +68,7 @@ scale = { steps = [[12, 1000], [30, 1000], [60, 1000], [60, 1600]] }
 label = "Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s)"
 adapter = "cisco"
 peer_ip = "10.100.0.100"
+ssh_host = "192.168.100.100"
 user = "vuckovic"
 role = "router"                 # IOS 15.1(4)M has no BGP Route Server feature
 link_mbps = 100

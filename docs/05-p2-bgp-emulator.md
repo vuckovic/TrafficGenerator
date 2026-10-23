@@ -144,7 +144,7 @@ Three real devices sit on the test network next to the BIRD stand‑in. Each has
 |---|---|---|---|---|---|---|---|
 | `mikrotik` | MikroTik CRS106‑1C‑5S, RouterOS 7.11.2 | 10.100.0.111 / 192.168.100.111 | 1 Gb/s | router | 20 000 | off | knees measured: ~690–1 060 deliveries/s |
 | `asr920` | Cisco ASR‑920‑24SZ‑M, IOS‑XE | 10.100.0.200 (secondary on Gi0/0/23) / 192.168.100.200 | 1 Gb/s | router | 100 000 | 10 % | route‑server role may work: try `--role route_server` |
-| `c1841` | Cisco 1841, IOS 15.1 | 10.100.0.100 / same | **100 Mb/s** | router | 10 000 | 15 % | old SSH (SHA‑1), no Route Server feature |
+| `c1841` | Cisco 1841, IOS 15.1 | 10.100.0.100 / 192.168.100.100 | **100 Mb/s** | router | 10 000 | 15 % | old SSH (SHA‑1), no Route Server feature |
 
 ```bash
 tools/tgen_dut.py   --dut-profile c1841 test                          # login, version, memory, port speed/duplex/errors
@@ -173,7 +173,7 @@ The devices are tested **one after another, never at the same time**: they share
 
 **The Cisco 1841 in particular:**
 - **100 Mb/s port.** BGP alone will not fill it in our sizes: 12 × 800 routes fanned out to 11 routers is about 1 MB of BGP. The port matters (1) for the link‑use figure, (2) for duplex problems, which the port check shows (late collisions, CRC), and (3) later for data‑plane traffic, which must be capped at `link_mbps`.
-- **Old SSH.** IOS 15.1 offers only SHA‑1 key exchange and `ssh-rsa` host keys. `ssh_legacy = true` makes the adapter check that the controller's paramiko still supports them (Debian's `python3-paramiko` 3.x does; paramiko 4+ does not, and the tool says so). It also keeps key authentication on `ssh-rsa` and allows twice the time per command.
+- **Old SSH.** IOS 15.1 offers only SHA‑1 key exchange, `ssh-rsa` host keys and CBC ciphers. A manual login from CMNODE01 needs `ssh -oKexAlgorithms=+diffie-hellman-group14-sha1 -oHostKeyAlgorithms=+ssh-rsa -oCiphers=+aes256-cbc` (or the same three lines in a `Host` block in `~/.ssh/config`); the tool itself uses paramiko, which still offers CBC. `ssh_legacy = true` makes the adapter check that the controller's paramiko still supports them (Debian's `python3-paramiko` 3.x does; paramiko 4+ does not, and the tool says so). It also keeps key authentication on `ssh-rsa` and allows twice the time per command.
 - **No Route Server feature** in IOS 15.1(4)M, so `--role route_server` is refused by the device. The tool removes the half‑applied neighbours and says to use `--role router`.
 - **Memory.** 128–384 MB DRAM for IOS, BGP table and RIB together: hence the 10 000‑route limit and the 15 % memory guard. Raise both only after the scale steps show headroom.
 
