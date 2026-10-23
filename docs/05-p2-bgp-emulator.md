@@ -209,6 +209,21 @@ Every step converges in about one advertisement interval: with MRAI 30 s the 184
 
 **The ASR‑920:** the BGP table fits easily in its memory. The hardware forwarding table is smaller and depends on the SDM template (`show sdm prefer current`). In router role every best path is installed, so a scale step can overflow the hardware table before BGP struggles. That would be a finding, not a tool failure; check the log (`dut-bgp.log`) and `show platform hardware pp active feature cef …` if a scale step behaves oddly.
 
+## Knee chart (`tools/tgen_knee_chart.py`)
+
+One self-contained HTML page comparing the rate series of all tested devices (no network needed to open it):
+
+```bash
+tools/tgen_knee_chart.py                               # newest series per device and MRAI setting
+tools/tgen_knee_chart.py ~/tgen-test-results/suite-...  # the series of one suite (the suite also writes knee.html itself)
+```
+
+1. **Delivered vs offered** (log-log): a device that keeps up stays on the diagonal; the knee is where its line bends away (hollow rings = past the knee).
+2. **Seconds still incomplete after our last send**, with the knee limits (5 s, and 35 s for a device with a 30 s MRAI).
+3. **Highest offered rate each device kept up with** (log bars): the comparison.
+
+Colour follows the device (MikroTik blue, ASR-920 orange, 1841 aqua); dashed lines and lighter bars = the device's own 30 s advertisement interval. Every point is re-judged with the current knee rule (`tools/tgen/knee.py`, shared with `tgen_series.py`), so series measured with an earlier rule are shown correctly. Hover a point for its numbers; the table of all runs is at the bottom.
+
 ## P2 gate (spec §14)
 
 | Check | Pass when |

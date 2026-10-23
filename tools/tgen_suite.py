@@ -249,6 +249,12 @@ def main() -> int:
                                                            *[r[k] for k in sorted(r) if k.startswith("series")],
                                                            *r.get("scale", [])]
                                                           if x.get("dir")) for n, r in suite.items())]
+    if any(k.startswith("series") for r in suite.values() for k in r):
+        # knee chart of this suite's series (open knee.html in a browser)
+        subprocess.run([sys.executable, str(TOOLS / "tgen_knee_chart.py"), str(out), "--out", str(out / "knee.html")],
+                       stdin=subprocess.DEVNULL, capture_output=True)
+        if (out / "knee.html").exists():
+            md += ["", f"knee chart: {out / 'knee.html'}"]
     (out / "suite.md").write_text("\n".join(md) + "\n")
     save()
     print("\n" + "\n".join(md) + f"\n\nfiles: {out}")

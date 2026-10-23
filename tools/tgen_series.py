@@ -35,6 +35,7 @@ REPO = Path(__file__).resolve().parents[1]
 P2 = REPO / "tools" / "tgen_p2.py"
 sys.path.insert(0, str(REPO / "tools"))
 from tgen import inventory  # noqa: E402
+from tgen import knee as knee_rule  # noqa: E402
 
 
 def arg_value(args: list[str], name: str, default: str | None = None) -> str | None:
@@ -155,13 +156,9 @@ def main() -> int:
         row = run_one(r, passthrough + ["--withdraw-timeout", f"{withdraw:.0f}"], converge, log)
         rows.append(row)
         if "error" not in row:
-            # output is measured from the first to the last delivery; a DUT that batches for MRAI
-            # seconds stretches that span by up to MRAI without being behind
-            sw = row.get("send_window_s") or 0
-            expect = row["offered_deliveries_s"] * (sw / (sw + mrai) if sw > 0 and mrai else 1)
-            behind = row["dut_output_s"] is not None and row["dut_output_s"] < a.knee_ratio * expect
-            backlog = row["after_last_send_s"] is None or row["after_last_send_s"] > a.knee_backlog_s
-            over = behind or backlog
+            over = knee_rule.past_knee(row["offered_deliveries_s"], row["dut_output_s"], row["after_last_send_s"],
+                                       row.get("send_window_s"), mrai, a.knee_ratio, a.knee_backlog_s)["past_knee"]
+            row["mrai_s"] = mrai
             row["past_knee"] = over
             row["latency_ok"] = (row["p99_ms"] or 0) <= a.slo_p99_ms
             if over and knee is None:
