@@ -196,6 +196,17 @@ Fixes after this run:
 
 **Sessions that never came up on the Ciscos (1841: 7 of 12, ASR‑920: 20 of 30) — cause and fix (2026‑10‑23).** Router addresses move between nodes from run to run, because the plan spreads routers by count (6 routers: one per node; 12: two per node). Cisco IOS keeps ARP entries for 4 hours, so it sent its SYN‑ACKs for the moved addresses to the node that had them before, and those sessions never came up. On the 1841 exactly the routers that stayed on their node (.20) or were new (.26–.31) came up: 7. The MikroTik refreshes ARP much sooner and was not affected. Fix (agent 0.3.2): right after adding the router addresses, every node sends gratuitous ARP for them (`tgen-agent garp --iface eth0 IP…`, request and reply form, twice; the service does the same when a plan is loaded). Workaround for older agents: `clear arp-cache` on the DUT before a run.
 
+**Cisco 1841 after the ARP fix, 2026‑10‑23** (`suite-20261023-190702`, smoke + scale, device MRAI 30 s): **all clean** — every session up in every step, 0 missing, 0 resets, no port errors.
+
+| Step | Sessions | Convergence | Free memory (min) |
+|---|---|---|---|
+| smoke 6 × 200 | 6/6 | 30.3 s | 101 MiB |
+| scale 6 × 500 | 6/6 | 31.0 s | 99 MiB |
+| scale 12 × 500 | 12/12 (7/12 before the fix) | 31.3 s | 94 MiB |
+| scale 12 × 800 (profile limit, 9 600 routes) | 12/12 | 33.0 s | 89 MiB of 137 |
+
+Every step converges in about one advertisement interval: with MRAI 30 s the 1841's processing time is hidden by the timer up to this size. Memory: about 1.5 KB per route (BGP + RIB), so the 15 % guard would leave room for roughly 40 000 routes. One session poll took longer than 15 s under load; polls on old IOS now get 30 s.
+
 **The ASR‑920:** the BGP table fits easily in its memory. The hardware forwarding table is smaller and depends on the SDM template (`show sdm prefer current`). In router role every best path is installed, so a scale step can overflow the hardware table before BGP struggles. That would be a finding, not a tool failure; check the log (`dut-bgp.log`) and `show platform hardware pp active feature cef …` if a scale step behaves oddly.
 
 ## P2 gate (spec §14)

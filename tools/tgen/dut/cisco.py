@@ -87,7 +87,10 @@ class Cisco(Dut):
         if self.legacy:
             timeout *= 2
         try:
-            out = self._connect().send_command(command, read_timeout=self._timeout(timeout))
+            # the poll cap (15 s) applies too; an old IOS gets twice that (the 1841 needed >15 s
+            # for `show ip bgp summary` once under load)
+            rt = self._timeout(timeout) if not (self.legacy and self.call_timeout) else min(timeout, 2 * self.call_timeout)
+            out = self._connect().send_command(command, read_timeout=rt)
         except DutError:
             raise
         except Exception as e:  # netmiko ReadTimeout and friends
