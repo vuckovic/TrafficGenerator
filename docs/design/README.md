@@ -36,3 +36,14 @@ Sample values in the preview are illustrative, not measured.
 
 Measured with IBM Plex at 1440 px: English 64 px high, Serbian 64 px; at 1280 px only Serbian wraps. |
 | Prefix pool sample | `10.0.0.0/8 · /24–/28` (spec §18 change of 2026‑10‑19). |
+
+## Preview images (`previews/`)
+Rendered from the locked v1.1 artboards at 1440 px, 2026-10-27, for documentation and Jira. Sample values are illustrative, not measured.
+
+| File | Shows |
+|---|---|
+| `benchmark-en.png` | Benchmark tab, live run (English) |
+| `benchmark-sr-cyrl.png` | the same screen in Serbian Cyrillic |
+| `report-en.png` | run report |
+| `header-en.png`, `header-sr-cyrl.png` | header in both languages (one row at 1440 px) |
+| `dut-configuration-en.png` | DUT configuration card (U8–U16) |
