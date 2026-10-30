@@ -48,6 +48,7 @@ class Run {
   std::vector<std::thread> threads_;
   std::vector<std::shared_ptr<Router>> routers_;
   std::uint64_t seq_ = 0;
+  std::uint64_t cpu_prev_total_ = 0, cpu_prev_idle_ = 0;   // /proc/stat at the previous stats() call
   std::int64_t t_start_ = 0;
 };
 

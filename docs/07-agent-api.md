@@ -57,7 +57,7 @@ Each phase starts at `at_ms` on every router of the node. A new announce, churn 
 
 ```json
 {"seq": 1842, "t_ms": 1792530001000,
- "by_state": {"Established": 10},
+ "by_state": {"Established": 10}, "node_cpu_pct": 23.4, "agent_cpu_s": 41.2,
  "totals": {"prefixes_sent": 100000, "prefixes_withdrawn": 0, "updates_sent": 1000, "nlri_rx": 590000,
             "withdrawn_rx": 0, "routes_held": 590000, "converged": 10, "resets": 0, "planned_resets": 0,
             "looped_rx": 0, "bytes_sent": 2400000, "bytes_rx": 9100000, "send_lag_p99_ms": 0.4},
@@ -66,6 +66,7 @@ Each phase starts at `at_ms` on every router of the node. A new announce, churn 
 ```
 
 - Counters are cumulative; the controller derives rates from the difference between polls.
+- `node_cpu_pct` is the whole node's CPU busy % since the previous `stats` call, from `/proc/stat` (`null` on the first call); `agent_cpu_s` is the agent's own CPU time (user + system). Agent 0.4.0; they feed F12 / AC3 and the live node view.
 - `bytes_sent` / `bytes_rx` are BGP bytes (TCP payload) to and from the DUT (agent 0.3.1). The controller turns `bytes_rx` into the DUT's output in Mb/s and compares it with the DUT port's speed (`link_mbps` in the DUT inventory), so a full 100 Mb/s port is not mistaken for a slow DUT. The result also has `bytes_rx_at_converged` per router.
 - `samples` are the latency samples recorded since the previous `stats` call (each call hands them over once), for prefixes with `hash % live_sample_mod == 0`. `kind`: 1 announce, 2 withdraw, 3 attribute change; `gen` 0 = initial load. The default is `live_sample_mod` = 1 000, about 0.1 % of prefixes, a few kB/s per node.
 - The full sample set (`sample_mod`, default 100) is in the final result.

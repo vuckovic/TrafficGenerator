@@ -174,6 +174,19 @@ The run's maxima are stored with it, and shown in M6 and in the report header.
   - the controller runs a quick check and a churn/flap scenario through the API;
   - follows the WebSocket, stops a run, checks the report, the gate, cleanup and the AC6 figures.
 
+### Status (2026-10-30)
+
+- Controller 0.1.0 with agent 0.4.0. Unit tests: 12 pass. End to end on one box: all checks pass, in three runs:
+  - quick check against BIRD, gate PASS;
+  - stepped churn and a 2-router flap, then a user stop: agents stopped within 1 s, no unexpected resets;
+  - a Cisco profile through the netmiko mock: config pushed with MRAI 0, polled, and removed afterwards; attribute checks INFO.
+- AC6 maxima in the test: API p95 104 ms (the scrypt login), live delay 3 ms, loop lag 3 ms.
+- **Not yet run on the cluster.** Deployment: `deploy/ansible/services.yml`, `deploy/systemd/tgen-controller.service`, `deploy/caddy/Caddyfile`, `deploy/controller.example.toml`.
+
+**Additions to §3 found while building:**
+- `GET /api/runs/{id}/ticks`: the stored live ticks, so the UI can redraw a finished run.
+- `GET /api/runs/{id}/files`: list of the run folder.
+
 ## 10. Not in P3b
 
 - SNMP collectors and DUT log parsing (P5).

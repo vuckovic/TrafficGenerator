@@ -1,0 +1,15 @@
+# /etc/tgen/controller.toml (docs/08). Owner tgen, mode 0640.
+# Set the admin password with:  sudo -u tgen tgen-controller set-password
+password_hash = ""
+
+# data_dir = "/var/lib/tgen"                 # controller.db, session.key, runs/
+# cluster_env = "/opt/tgen/deploy/cluster.env"
+# agent_token_file = "/etc/tgen/agent.token"
+# traffic_iface = "eth0"                      # interface the agents add the router /32s to
+secure_cookie = true                          # false only for plain-HTTP tests
+session_hours = 12
+max_duration_s = 3600                         # hard limit for any run
+clock_tolerance_ms = 50                       # agents' clocks vs the controller (chrony)
+
+# [agents]                                    # override an agent's host:port (tests)
+# CMNODE01 = "127.0.0.1:7701"

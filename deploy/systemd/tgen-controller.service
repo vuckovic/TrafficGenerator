@@ -1,19 +1,33 @@
-# TrafficGenerator controller + web interface (P3), CMNODE01 only.
+# TrafficGenerator controller (P3b, docs/08-controller.md), CMNODE01 only.
+# Listens on 127.0.0.1:8080; Caddy terminates HTTPS for bgp.elfak.net (deploy/caddy/Caddyfile).
+# Configuration: /etc/tgen/controller.toml (deploy/controller.example.toml); data: /var/lib/tgen.
 [Unit]
-Description=TrafficGenerator controller and web interface
-After=network-online.target
+Description=TrafficGenerator controller (API, scenario engine, live feed)
+After=network-online.target chrony.service
 Wants=network-online.target
 
 [Service]
 User=tgen
-WorkingDirectory=/opt/tgen/controller
-ExecStart=/opt/tgen/venv/bin/uvicorn tgen_controller.app:app --host 0.0.0.0 --port 8080
+Group=tgen
+Environment=PYTHONPATH=/opt/tgen/controller:/opt/tgen/tools
+Environment=TGEN_CONTROLLER_CONFIG=/etc/tgen/controller.toml
+# DUT passwords for unattended runs, if wanted (TGEN_DUT_PASSWORD_<PROFILE>=...); mode 0600
+EnvironmentFile=-/etc/tgen/dut-passwords.env
+ExecStart=/usr/bin/python3 -m tgen_controller serve --host 127.0.0.1 --port 8080
+StateDirectory=tgen
+StateDirectoryMode=0750
 Restart=on-failure
 RestartSec=2
 # protected share of CMNODE01 (spec §10.2)
 CPUWeight=1000
 MemoryMin=4800M
 OOMScoreAdjust=-500
+Nice=-5
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/tgen
 
 [Install]
 WantedBy=multi-user.target

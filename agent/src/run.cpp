@@ -6,6 +6,9 @@
 #include <sys/resource.h>
 
 #include <atomic>
+#include <cmath>
+#include <fstream>
+#include <sstream>
 #include <chrono>
 #include <cstdio>
 #include <future>
@@ -139,6 +142,20 @@ bool Run::all_stopped() {
   return *all;
 }
 
+namespace {
+// whole-node CPU counters from /proc/stat: (total jiffies, idle + iowait jiffies)
+std::pair<std::uint64_t, std::uint64_t> read_proc_stat() {
+  std::ifstream f("/proc/stat");
+  std::string cpu;
+  std::uint64_t v[8] = {};
+  f >> cpu;
+  for (auto& x : v) f >> x;
+  std::uint64_t total = 0;
+  for (auto x : v) total += x;
+  return {total, v[3] + v[4]};
+}
+}  // namespace
+
 json Run::stats() {
   auto order = std::make_shared<std::map<const Router*, std::size_t>>();
   for (std::size_t i = 0; i < routers_.size(); ++i) (*order)[routers_[i].get()] = i;
@@ -162,7 +179,19 @@ json Run::stats() {
     for (const auto& x : s.tx) tx.push_back({x.key, x.gen, x.kind, x.t});
     for (const auto& x : s.rx) rx.push_back({x.key, x.gen, x.kind, x.t});
   }
+  // node CPU busy % since the previous stats() call (F12 / AC3), and this agent's CPU seconds
+  const auto [tot, idle] = read_proc_stat();
+  json node_cpu = nullptr;
+  if (cpu_prev_total_ && tot > cpu_prev_total_)
+    node_cpu = std::round(1000.0 * (1.0 - static_cast<double>(idle - cpu_prev_idle_) /
+                                              static_cast<double>(tot - cpu_prev_total_))) / 10.0;
+  cpu_prev_total_ = tot;
+  cpu_prev_idle_ = idle;
+  rusage ru{};
+  getrusage(RUSAGE_SELF, &ru);
+  const double agent_cpu_s = ru.ru_utime.tv_sec + ru.ru_utime.tv_usec / 1e6 + ru.ru_stime.tv_sec + ru.ru_stime.tv_usec / 1e6;
   return {{"seq", ++seq_}, {"t_ms", now_ns() / 1'000'000}, {"by_state", by_state},
+          {"node_cpu_pct", node_cpu}, {"agent_cpu_s", agent_cpu_s},
           {"totals", {{"prefixes_sent", sent}, {"prefixes_withdrawn", wd}, {"updates_sent", upd}, {"updates_rx", updrx},
                       {"nlri_rx", nlri}, {"withdrawn_rx", wdrx}, {"routes_held", held}, {"converged", conv},
                       {"resets", resets}, {"planned_resets", planned}, {"looped_rx", looped}, {"bytes_sent", btx}, {"bytes_rx", brx},

@@ -1,0 +1,152 @@
+# Services rollout (P3b, docs/07 and docs/08 §8). Run after site.yml, from CMNODE01's
+# checkout of the repository, once the agent is built there (same arch on all nodes):
+#   cmake -S agent -B agent/build -DCMAKE_BUILD_TYPE=Release && cmake --build agent/build -j4
+#   cd deploy/ansible && ansible-playbook services.yml
+#   sudo -u tgen tgen-controller set-password          # once, on CMNODE01
+# Then point bgp.elfak.net at CMNODE01 (ports 80 and 443) so Caddy gets the certificate.
+- name: Shared agent token (generated once on the controller)
+  hosts: controller
+  become: true
+  tasks:
+    - name: Create /etc/tgen/agent.token
+      ansible.builtin.shell: |
+        set -e
+        install -d -m 0755 /etc/tgen
+        [ -s /etc/tgen/agent.token ] || head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' > /etc/tgen/agent.token
+        chown tgen:tgen /etc/tgen/agent.token; chmod 0600 /etc/tgen/agent.token
+      changed_when: false
+    - name: Read the token
+      ansible.builtin.slurp:
+        src: /etc/tgen/agent.token
+      register: agent_token
+
+- name: Agents on every node
+  hosts: tgen
+  become: true
+  vars:
+    token: "{{ hostvars[groups['controller'][0]].agent_token.content | b64decode | trim }}"
+  tasks:
+    - name: Agent binary
+      ansible.builtin.copy:
+        src: ../../agent/build/tgen-agent
+        dest: /opt/tgen/bin/tgen-agent
+        mode: "0755"
+      notify: restart agent
+    - name: Token
+      ansible.builtin.copy:
+        content: "{{ token }}\n"
+        dest: /etc/tgen/agent.token
+        owner: tgen
+        group: tgen
+        mode: "0600"
+      notify: restart agent
+    - name: Agent environment (management address, traffic interface)
+      ansible.builtin.copy:
+        content: |
+          TGEN_AGENT_LISTEN={{ ansible_host }}:7700
+          TGEN_TRAFFIC_IFACE={{ traffic_iface | default('eth0') }}
+        dest: /etc/tgen/agent.env
+        mode: "0644"
+      notify: restart agent
+    - name: Service unit
+      ansible.builtin.copy:
+        src: ../systemd/tgen-agent.service
+        dest: /etc/systemd/system/tgen-agent.service
+        mode: "0644"
+      notify: restart agent
+    - name: CMNODE01 limits (spec §10.2)
+      ansible.builtin.copy:
+        src: ../systemd/tgen-agent.service.d/
+        dest: /etc/systemd/system/tgen-agent.service.d/
+        mode: "0644"
+      when: inventory_hostname in groups['controller']
+      notify: restart agent
+    - name: Enable and start the agent
+      ansible.builtin.systemd:
+        name: tgen-agent
+        enabled: true
+        state: started
+        daemon_reload: true
+  handlers:
+    - name: restart agent
+      ansible.builtin.systemd:
+        name: tgen-agent
+        state: restarted
+        daemon_reload: true
+
+- name: Controller and HTTPS on CMNODE01
+  hosts: controller
+  become: true
+  tasks:
+    - name: Python packages and Caddy (Debian packages, no pip)
+      ansible.builtin.apt:
+        name: [python3-fastapi, python3-uvicorn, python3-httpx, python3-pydantic, python3-websockets,
+               python3-netmiko, caddy]
+        state: present
+    - name: Controller and tools
+      ansible.posix.synchronize:
+        src: "../../{{ item }}/"
+        dest: "/opt/tgen/{{ item }}/"
+        delete: true
+        rsync_opts: ["--exclude=__pycache__"]
+      loop: [controller, tools]
+      notify: restart controller
+    - name: Cluster configuration
+      ansible.builtin.copy:
+        src: "../{{ item }}"
+        dest: "/opt/tgen/deploy/"
+        mode: "0644"
+      loop: [cluster.env, duts.example.toml]
+      notify: restart controller
+    - name: Device inventory, if customised
+      ansible.builtin.copy:
+        src: ../duts.toml
+        dest: /opt/tgen/deploy/duts.toml
+        mode: "0644"
+      failed_when: false
+      notify: restart controller
+    - name: "controller.toml (kept if it exists, it holds the password hash)"
+      ansible.builtin.copy:
+        src: ../controller.example.toml
+        dest: /etc/tgen/controller.toml
+        owner: tgen
+        group: tgen
+        mode: "0640"
+        force: false
+    - name: tgen-controller command (set-password)
+      ansible.builtin.copy:
+        content: |
+          #!/bin/sh
+          export PYTHONPATH=/opt/tgen/controller:/opt/tgen/tools
+          exec /usr/bin/python3 -m tgen_controller "$@"
+        dest: /usr/local/bin/tgen-controller
+        mode: "0755"
+    - name: Service unit
+      ansible.builtin.copy:
+        src: ../systemd/tgen-controller.service
+        dest: /etc/systemd/system/tgen-controller.service
+        mode: "0644"
+      notify: restart controller
+    - name: Caddy site
+      ansible.builtin.copy:
+        src: ../caddy/Caddyfile
+        dest: /etc/caddy/Caddyfile
+        mode: "0644"
+      notify: reload caddy
+    - name: Enable services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: true
+        state: started
+        daemon_reload: true
+      loop: [tgen-controller, caddy]
+  handlers:
+    - name: restart controller
+      ansible.builtin.systemd:
+        name: tgen-controller
+        state: restarted
+        daemon_reload: true
+    - name: reload caddy
+      ansible.builtin.systemd:
+        name: caddy
+        state: reloaded
