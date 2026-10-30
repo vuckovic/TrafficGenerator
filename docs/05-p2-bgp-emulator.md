@@ -220,6 +220,20 @@ Every step converges in about one advertisement interval: with MRAI 30 s the 184
 
 With MRAI 0 the ASR‑920 delivers in about 0.1–0.2 s; its processing limit is above 13 200 deliveries/s (next series: higher rates). With the default 30 s MRAI, convergence is one or two timer cycles regardless of load.
 
+**Rate series per device and MRAI, 2026‑10‑23/24** (knee chart: `docs/results/knee-20261024.html` / `.png`, every point re‑judged with the current rule):
+
+| Device | MRAI | Series | Highest rate kept up with | Note |
+|---|---|---|---|---|
+| ASR‑920 | 0 (pushed) | `series-20261024-000806`, 12 × 1 000 | ≥ 13 200 deliveries/s, no knee | done ≤ 0.2 s after our last send, p99 ≤ 360 ms, DUT CPU 54 % at the top rate |
+| ASR‑920 | 30 s (default) | `series-20261023-233242`, 12 × 1 000 | ≥ 13 200 deliveries/s, no knee | 10–24 s after the last send = one MRAI cycle |
+| 1841 | 0 (pushed) | `series-20261023-222540`, 6 × 50 | ≥ 480 deliveries/s, no knee | done ≤ 0.1 s after the last send, p99 ≤ 55 ms, CPU ≤ 10 % |
+| 1841 | 30 s (default) | `series-20261023-220312`, 6 × 50 | ≥ 480 deliveries/s, no knee | 10–26 s after the last send = one MRAI cycle |
+| MikroTik CRS106 | — | `series-20261023-125217`, 12 × 100 | below 264 deliveries/s | see DOC‑33: 2026‑10‑20 series kept up to 528/s; since 2026‑10‑22 a constant 25.7 s tail at 2/s |
+
+Neither Cisco reached its knee: the next series need higher rates (ASR‑920 above 100 prefixes/s per router; 1841 above 16 per router or more routers).
+
+**MikroTik regression (open):** the same 2/s run (12 × 100, 10 per UPDATE) took 0.6 s after the last send on 2026‑10‑20 and exactly 25.7 s on both 2026‑10‑22 and 2026‑10‑23, while its p99 latency stayed at ~2 s, so a small part of the routes or one receiver is held back ~25 s. The device also idles at 24–33 % CPU since then. To investigate with the run folders (`p2-20261023-125219`) and `/tool profile`.
+
 **The ASR‑920:** the BGP table fits easily in its memory. The hardware forwarding table is smaller and depends on the SDM template (`show sdm prefer current`). In router role every best path is installed, so a scale step can overflow the hardware table before BGP struggles. That would be a finding, not a tool failure; check the log (`dut-bgp.log`) and `show platform hardware pp active feature cef …` if a scale step behaves oddly.
 
 ## Knee chart (`tools/tgen_knee_chart.py`)

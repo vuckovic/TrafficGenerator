@@ -1,0 +1,237 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>BGP knee comparison</title>
+<style>
+:root{color-scheme:light;--bg:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--ink3:#8a8984;--grid:#e6e5e1;--axis:#b9b8b2;--s0:#2a78d6;--s1:#eb6834;--s2:#1baf7a;--s3:#6250d6;--s4:#e87ba4;--s5:#008300;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;
+--ink3:#8f8e86;--grid:#2e2e2c;--axis:#55544f;--s0:#3987e5;--s1:#d95926;--s2:#199e70;--s3:#9085e9;--s4:#d55181;--s5:#008300;}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--ink3:#8f8e86;--grid:#2e2e2c;
+--axis:#55544f;--s0:#3987e5;--s1:#d95926;--s2:#199e70;--s3:#9085e9;--s4:#d55181;--s5:#008300;}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:900px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:22px;margin:0 0 4px} h2{font-size:16px;margin:28px 0 4px} p.sub{color:var(--ink2);margin:0 0 10px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:12px 0 4px;color:var(--ink2);font-size:13px}
+.lg{display:inline-flex;align-items:center;gap:6px}
+svg{width:100%;height:auto;display:block;overflow:visible}
+.grid{stroke:var(--grid);stroke-width:1} .axis{stroke:var(--axis);stroke-width:1}
+.tick{fill:var(--ink3);font-size:11px} .axlabel{fill:var(--ink2);font-size:12px}
+.note{fill:var(--ink3);font-size:11px} .knee{fill:var(--ink);font-size:12px;font-weight:600}
+.ideal{stroke:var(--axis);stroke-width:1.5;stroke-dasharray:2 4} .limit{stroke:var(--ink3);stroke-width:1;stroke-dasharray:5 4}
+.dot{fill:var(--c);stroke:var(--bg);stroke-width:2} .ring{fill:var(--bg);stroke:var(--c);stroke-width:2.5}
+.bar{fill:var(--c)} .hatch{fill:var(--c);fill-opacity:.55;stroke:var(--c);stroke-width:1.5}
+.barname{fill:var(--ink);font-size:13px} .barin{fill:var(--bg);font-size:12px;font-weight:600}
+.lg svg{width:34px;height:12px;display:inline-block} .barval{fill:var(--ink2);font-size:12px}
+.hit{fill:transparent;cursor:default}
+#tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);padding:7px 9px;border-radius:6px;
+font-size:12px;white-space:pre;display:none;z-index:9;max-width:90vw}
+table{border-collapse:collapse;width:100%;font-size:12px;margin-top:8px} th,td{text-align:left;padding:4px 8px;
+border-bottom:1px solid var(--grid)} th{color:var(--ink2);font-weight:600} td:nth-child(n+3):nth-child(-n+6){text-align:right}
+details{margin-top:28px} summary{cursor:pointer;color:var(--ink2)} .key{color:var(--ink2);font-size:13px}
+</style></head><body><main>
+<h1>Where each router stops keeping up</h1>
+<p class="sub">BGP rate series, router role. A <b>delivery</b> is one prefix sent by the DUT to one emulated router.
+Generated 2026-10-30 07:28 from 5 series.</p>
+<div class="legend"><span class="lg"><svg width="34" height="12"><line x1="1" y1="6" x2="33" y2="6" stroke="var(--s0)" stroke-width="2"/></svg>MikroTik CRS106-1C-5S</span><span class="lg"><svg width="34" height="12"><line x1="1" y1="6" x2="33" y2="6" stroke="var(--s1)" stroke-width="2"/></svg>Cisco ASR-920-24SZ-M · MRAI 0 s (pushed)</span><span class="lg"><svg width="34" height="12"><line x1="1" y1="6" x2="33" y2="6" stroke="var(--s1)" stroke-width="2" stroke-dasharray="7 5"/></svg>Cisco ASR-920-24SZ-M · MRAI 30 s (device default)</span><span class="lg"><svg width="34" height="12"><line x1="1" y1="6" x2="33" y2="6" stroke="var(--s2)" stroke-width="2"/></svg>Cisco 1841 · MRAI 0 s (pushed)</span><span class="lg"><svg width="34" height="12"><line x1="1" y1="6" x2="33" y2="6" stroke="var(--s2)" stroke-width="2" stroke-dasharray="7 5"/></svg>Cisco 1841 · MRAI 30 s (device default)</span></div>
+<p class="key">Filled dot = kept up · hollow ring = past the knee · dashed line = the device's own 30 s advertisement
+interval (updates batched), solid = no batching. Hover any point for details.</p>
+<h2>1 · Delivered vs offered</h2>
+<p class="sub">On the dotted diagonal the DUT delivers everything we offer. The knee is where a line leaves it.</p>
+<svg viewBox="0 0 760 360" role="img" aria-label="Delivered vs offered deliveries per second"><line class="grid" x1="70.0" x2="70.0" y1="18" y2="308"/><text class="tick" x="70.0" y="326" text-anchor="middle">20</text><line class="grid" x1="158.3" x2="158.3" y1="18" y2="308"/><text class="tick" x="158.3" y="326" text-anchor="middle">50</text><line class="grid" x1="225.2" x2="225.2" y1="18" y2="308"/><text class="tick" x="225.2" y="326" text-anchor="middle">100</text><line class="grid" x1="292.0" x2="292.0" y1="18" y2="308"/><text class="tick" x="292.0" y="326" text-anchor="middle">200</text><line class="grid" x1="380.3" x2="380.3" y1="18" y2="308"/><text class="tick" x="380.3" y="326" text-anchor="middle">500</text><line class="grid" x1="447.2" x2="447.2" y1="18" y2="308"/><text class="tick" x="447.2" y="326" text-anchor="middle">1,000</text><line class="grid" x1="514.0" x2="514.0" y1="18" y2="308"/><text class="tick" x="514.0" y="326" text-anchor="middle">2,000</text><line class="grid" x1="602.3" x2="602.3" y1="18" y2="308"/><text class="tick" x="602.3" y="326" text-anchor="middle">5,000</text><line class="grid" x1="669.2" x2="669.2" y1="18" y2="308"/><text class="tick" x="669.2" y="326" text-anchor="middle">10,000</text><line class="grid" x1="736.0" x2="736.0" y1="18" y2="308"/><text class="tick" x="736.0" y="326" text-anchor="middle">20,000</text><line class="grid" x1="70" x2="736" y1="308.0" y2="308.0"/><text class="tick" x="62" y="312.0" text-anchor="end">20</text><line class="grid" x1="70" x2="736" y1="269.5" y2="269.5"/><text class="tick" x="62" y="273.5" text-anchor="end">50</text><line class="grid" x1="70" x2="736" y1="240.4" y2="240.4"/><text class="tick" x="62" y="244.4" text-anchor="end">100</text><line class="grid" x1="70" x2="736" y1="211.3" y2="211.3"/><text class="tick" x="62" y="215.3" text-anchor="end">200</text><line class="grid" x1="70" x2="736" y1="172.9" y2="172.9"/><text class="tick" x="62" y="176.9" text-anchor="end">500</text><line class="grid" x1="70" x2="736" y1="143.8" y2="143.8"/><text class="tick" x="62" y="147.8" text-anchor="end">1,000</text><line class="grid" x1="70" x2="736" y1="114.7" y2="114.7"/><text class="tick" x="62" y="118.7" text-anchor="end">2,000</text><line class="grid" x1="70" x2="736" y1="76.2" y2="76.2"/><text class="tick" x="62" y="80.2" text-anchor="end">5,000</text><line class="grid" x1="70" x2="736" y1="47.1" y2="47.1"/><text class="tick" x="62" y="51.1" text-anchor="end">10,000</text><line class="grid" x1="70" x2="736" y1="18.0" y2="18.0"/><text class="tick" x="62" y="22.0" text-anchor="end">20,000</text><line class="axis" x1="70" x2="736" y1="308" y2="308"/><text class="axlabel" x="403.0" y="350" text-anchor="middle">offered deliveries / s (log)</text><text class="axlabel" transform="translate(16,163.0) rotate(-90)" text-anchor="middle">delivered by the DUT / s (log)</text><line class="ideal" x1="70.0" y1="308.0" x2="736.0" y2="18.0"/><text class="note" x="730.0" y="34.0" text-anchor="end">keeping up: delivered = offered</text><path d="M318.8,214.2" fill="none" stroke="var(--s0)" stroke-width="2"/><circle class="ring" cx="318.8" cy="214.2" r="5.5" style="--c:var(--s0)"/><circle class="hit" cx="318.8" cy="214.2" r="12" data-tip="MikroTik CRS106-1C-5S (RouterOS 7.11.2)
+2 prefixes/s per router × 12 routers
+offered 264 deliveries/s · delivered 187/s
+complete 25.7453321 s after our last send (limit 5 s)
+PAST THE KNEE (output too low) (still behind after last send)"/><text class="knee" x="327.8" y="218.2">knee</text><path d="M407.1,160.8 L473.9,131.7 L540.8,102.6 L629.1,64.0 L695.9,35.3" fill="none" stroke="var(--s1)" stroke-width="2"/><circle class="dot" cx="407.1" cy="160.8" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="407.1" cy="160.8" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 0 s (pushed)
+5 prefixes/s per router × 12 routers
+offered 660 deliveries/s · delivered 667/s
+complete 0.081847655 s after our last send (limit 5 s)
+kept up"/><circle class="dot" cx="473.9" cy="131.7" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="473.9" cy="131.7" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 0 s (pushed)
+10 prefixes/s per router × 12 routers
+offered 1,320 deliveries/s · delivered 1,333/s
+complete 0.086514533 s after our last send (limit 5 s)
+kept up"/><circle class="dot" cx="540.8" cy="102.6" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="540.8" cy="102.6" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 0 s (pushed)
+20 prefixes/s per router × 12 routers
+offered 2,640 deliveries/s · delivered 2,665/s
+complete 0.101932303 s after our last send (limit 5 s)
+kept up"/><circle class="dot" cx="629.1" cy="64.0" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="629.1" cy="64.0" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 0 s (pushed)
+50 prefixes/s per router × 12 routers
+offered 6,600 deliveries/s · delivered 6,687/s
+complete 0.12278912 s after our last send (limit 5 s)
+kept up"/><circle class="dot" cx="695.9" cy="35.3" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="695.9" cy="35.3" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 0 s (pushed)
+100 prefixes/s per router × 12 routers
+offered 13,200 deliveries/s · delivered 13,255/s
+complete 0.150328688 s after our last send (limit 5 s)
+kept up"/><path d="M407.1,164.0 L473.9,140.6 L540.8,111.6 L629.1,81.2 L695.9,81.7" fill="none" stroke="var(--s1)" stroke-width="2" stroke-dasharray="7 5"/><circle class="dot" cx="407.1" cy="164.0" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="407.1" cy="164.0" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 30 s (device default)
+5 prefixes/s per router × 12 routers
+offered 660 deliveries/s · delivered 618/s
+complete 15.628156331 s after our last send (limit 35 s)
+kept up"/><circle class="dot" cx="473.9" cy="140.6" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="473.9" cy="140.6" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 30 s (device default)
+10 prefixes/s per router × 12 routers
+offered 1,320 deliveries/s · delivered 1,078/s
+complete 23.472135684 s after our last send (limit 35 s)
+kept up"/><circle class="dot" cx="540.8" cy="111.6" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="540.8" cy="111.6" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 30 s (device default)
+20 prefixes/s per router × 12 routers
+offered 2,640 deliveries/s · delivered 2,153/s
+complete 11.895662003 s after our last send (limit 35 s)
+kept up"/><circle class="dot" cx="629.1" cy="81.2" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="629.1" cy="81.2" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 30 s (device default)
+50 prefixes/s per router × 12 routers
+offered 6,600 deliveries/s · delivered 4,440/s
+complete 9.999723763 s after our last send (limit 35 s)
+kept up"/><circle class="dot" cx="695.9" cy="81.7" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="695.9" cy="81.7" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 30 s (device default)
+100 prefixes/s per router × 12 routers
+offered 13,200 deliveries/s · delivered 4,391/s
+complete 20.242428764 s after our last send (limit 35 s)
+kept up"/><path d="M109.1,281.6 L175.9,252.5 L242.7,223.4 L309.6,194.3 L376.4,165.2" fill="none" stroke="var(--s2)" stroke-width="2"/><circle class="dot" cx="109.1" cy="281.6" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="109.1" cy="281.6" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 0 s (pushed)
+1 prefixes/s per router × 6 routers
+offered 30 deliveries/s · delivered 37/s
+complete 0.05235612 s after our last send (limit 5 s)
+kept up"/><circle class="dot" cx="175.9" cy="252.5" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="175.9" cy="252.5" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 0 s (pushed)
+2 prefixes/s per router × 6 routers
+offered 60 deliveries/s · delivered 75/s
+complete 0.047130759 s after our last send (limit 5 s)
+kept up"/><circle class="dot" cx="242.7" cy="223.4" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="242.7" cy="223.4" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 0 s (pushed)
+4 prefixes/s per router × 6 routers
+offered 120 deliveries/s · delivered 150/s
+complete 0.053204459 s after our last send (limit 5 s)
+kept up"/><circle class="dot" cx="309.6" cy="194.3" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="309.6" cy="194.3" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 0 s (pushed)
+8 prefixes/s per router × 6 routers
+offered 240 deliveries/s · delivered 300/s
+complete 0.04681219 s after our last send (limit 5 s)
+kept up"/><circle class="dot" cx="376.4" cy="165.2" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="376.4" cy="165.2" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 0 s (pushed)
+16 prefixes/s per router × 6 routers
+offered 480 deliveries/s · delivered 601/s
+complete 0.047027074 s after our last send (limit 5 s)
+kept up"/><path d="M109.1,299.3 L175.9,269.2 L242.7,269.6 L309.6,269.8 L376.4,267.7" fill="none" stroke="var(--s2)" stroke-width="2" stroke-dasharray="7 5"/><circle class="dot" cx="109.1" cy="299.3" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="109.1" cy="299.3" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 30 s (device default)
+1 prefixes/s per router × 6 routers
+offered 30 deliveries/s · delivered 25/s
+complete 21.011995914 s after our last send (limit 35 s)
+kept up"/><circle class="dot" cx="175.9" cy="269.2" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="175.9" cy="269.2" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 30 s (device default)
+2 prefixes/s per router × 6 routers
+offered 60 deliveries/s · delivered 50/s
+complete 9.822087298 s after our last send (limit 35 s)
+kept up"/><circle class="dot" cx="242.7" cy="269.6" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="242.7" cy="269.6" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 30 s (device default)
+4 prefixes/s per router × 6 routers
+offered 120 deliveries/s · delivered 50/s
+complete 20.09121963 s after our last send (limit 35 s)
+kept up"/><circle class="dot" cx="309.6" cy="269.8" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="309.6" cy="269.8" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 30 s (device default)
+8 prefixes/s per router × 6 routers
+offered 240 deliveries/s · delivered 50/s
+complete 25.208644099 s after our last send (limit 35 s)
+kept up"/><circle class="dot" cx="376.4" cy="267.7" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="376.4" cy="267.7" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 30 s (device default)
+16 prefixes/s per router × 6 routers
+offered 480 deliveries/s · delivered 52/s
+complete 26.264478724 s after our last send (limit 35 s)
+kept up"/></svg>
+<h2>2 · Still incomplete after our last send</h2>
+<p class="sub">Seconds until every router had all routes, counted from our last announcement. Above the limit = falling behind.</p>
+<svg viewBox="0 0 760 360" role="img" aria-label="Seconds still incomplete after the last send"><line class="grid" x1="70.0" x2="70.0" y1="18" y2="308"/><text class="tick" x="70.0" y="326" text-anchor="middle">20</text><line class="grid" x1="158.3" x2="158.3" y1="18" y2="308"/><text class="tick" x="158.3" y="326" text-anchor="middle">50</text><line class="grid" x1="225.2" x2="225.2" y1="18" y2="308"/><text class="tick" x="225.2" y="326" text-anchor="middle">100</text><line class="grid" x1="292.0" x2="292.0" y1="18" y2="308"/><text class="tick" x="292.0" y="326" text-anchor="middle">200</text><line class="grid" x1="380.3" x2="380.3" y1="18" y2="308"/><text class="tick" x="380.3" y="326" text-anchor="middle">500</text><line class="grid" x1="447.2" x2="447.2" y1="18" y2="308"/><text class="tick" x="447.2" y="326" text-anchor="middle">1,000</text><line class="grid" x1="514.0" x2="514.0" y1="18" y2="308"/><text class="tick" x="514.0" y="326" text-anchor="middle">2,000</text><line class="grid" x1="602.3" x2="602.3" y1="18" y2="308"/><text class="tick" x="602.3" y="326" text-anchor="middle">5,000</text><line class="grid" x1="669.2" x2="669.2" y1="18" y2="308"/><text class="tick" x="669.2" y="326" text-anchor="middle">10,000</text><line class="grid" x1="736.0" x2="736.0" y1="18" y2="308"/><text class="tick" x="736.0" y="326" text-anchor="middle">20,000</text><line class="grid" x1="70" x2="736" y1="308.0" y2="308.0"/><text class="tick" x="62" y="312.0" text-anchor="end">0</text><line class="grid" x1="70" x2="736" y1="236.0" y2="236.0"/><text class="tick" x="62" y="240.0" text-anchor="end">10</text><line class="grid" x1="70" x2="736" y1="163.9" y2="163.9"/><text class="tick" x="62" y="167.9" text-anchor="end">20</text><line class="grid" x1="70" x2="736" y1="91.9" y2="91.9"/><text class="tick" x="62" y="95.9" text-anchor="end">30</text><line class="grid" x1="70" x2="736" y1="19.8" y2="19.8"/><text class="tick" x="62" y="23.8" text-anchor="end">40</text><line class="axis" x1="70" x2="736" y1="308" y2="308"/><text class="axlabel" x="403.0" y="350" text-anchor="middle">offered deliveries / s (log)</text><text class="axlabel" transform="translate(16,163.0) rotate(-90)" text-anchor="middle">seconds still incomplete after our last send</text><line class="limit" x1="70" x2="736" y1="272.0" y2="272.0"/><text class="note" x="732" y="266.0" text-anchor="end">knee limit 5 s</text><line class="limit" x1="70" x2="736" y1="55.8" y2="55.8"/><text class="note" x="732" y="49.8" text-anchor="end">knee limit 35 s (5 s + MRAI)</text><path d="M318.8,122.5" fill="none" stroke="var(--s0)" stroke-width="2"/><circle class="ring" cx="318.8" cy="122.5" r="5.5" style="--c:var(--s0)"/><circle class="hit" cx="318.8" cy="122.5" r="12" data-tip="MikroTik CRS106-1C-5S (RouterOS 7.11.2)
+2 prefixes/s per router × 12 routers
+offered 264 deliveries/s · delivered 187/s
+complete 25.7453321 s after our last send (limit 5 s)
+PAST THE KNEE (output too low) (still behind after last send)"/><path d="M407.1,307.4 L473.9,307.4 L540.8,307.3 L629.1,307.1 L695.9,306.9" fill="none" stroke="var(--s1)" stroke-width="2"/><circle class="dot" cx="407.1" cy="307.4" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="407.1" cy="307.4" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 0 s (pushed)
+5 prefixes/s per router × 12 routers
+offered 660 deliveries/s · delivered 667/s
+complete 0.081847655 s after our last send (limit 5 s)
+kept up"/><circle class="dot" cx="473.9" cy="307.4" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="473.9" cy="307.4" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 0 s (pushed)
+10 prefixes/s per router × 12 routers
+offered 1,320 deliveries/s · delivered 1,333/s
+complete 0.086514533 s after our last send (limit 5 s)
+kept up"/><circle class="dot" cx="540.8" cy="307.3" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="540.8" cy="307.3" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 0 s (pushed)
+20 prefixes/s per router × 12 routers
+offered 2,640 deliveries/s · delivered 2,665/s
+complete 0.101932303 s after our last send (limit 5 s)
+kept up"/><circle class="dot" cx="629.1" cy="307.1" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="629.1" cy="307.1" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 0 s (pushed)
+50 prefixes/s per router × 12 routers
+offered 6,600 deliveries/s · delivered 6,687/s
+complete 0.12278912 s after our last send (limit 5 s)
+kept up"/><circle class="dot" cx="695.9" cy="306.9" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="695.9" cy="306.9" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 0 s (pushed)
+100 prefixes/s per router × 12 routers
+offered 13,200 deliveries/s · delivered 13,255/s
+complete 0.150328688 s after our last send (limit 5 s)
+kept up"/><path d="M407.1,195.4 L473.9,138.9 L540.8,222.3 L629.1,236.0 L695.9,162.2" fill="none" stroke="var(--s1)" stroke-width="2" stroke-dasharray="7 5"/><circle class="dot" cx="407.1" cy="195.4" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="407.1" cy="195.4" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 30 s (device default)
+5 prefixes/s per router × 12 routers
+offered 660 deliveries/s · delivered 618/s
+complete 15.628156331 s after our last send (limit 35 s)
+kept up"/><circle class="dot" cx="473.9" cy="138.9" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="473.9" cy="138.9" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 30 s (device default)
+10 prefixes/s per router × 12 routers
+offered 1,320 deliveries/s · delivered 1,078/s
+complete 23.472135684 s after our last send (limit 35 s)
+kept up"/><circle class="dot" cx="540.8" cy="222.3" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="540.8" cy="222.3" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 30 s (device default)
+20 prefixes/s per router × 12 routers
+offered 2,640 deliveries/s · delivered 2,153/s
+complete 11.895662003 s after our last send (limit 35 s)
+kept up"/><circle class="dot" cx="629.1" cy="236.0" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="629.1" cy="236.0" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 30 s (device default)
+50 prefixes/s per router × 12 routers
+offered 6,600 deliveries/s · delivered 4,440/s
+complete 9.999723763 s after our last send (limit 35 s)
+kept up"/><circle class="dot" cx="695.9" cy="162.2" r="5.5" style="--c:var(--s1)"/><circle class="hit" cx="695.9" cy="162.2" r="12" data-tip="Cisco ASR-920-24SZ-M (IOS-XE) · MRAI 30 s (device default)
+100 prefixes/s per router × 12 routers
+offered 13,200 deliveries/s · delivered 4,391/s
+complete 20.242428764 s after our last send (limit 35 s)
+kept up"/><path d="M109.1,307.6 L175.9,307.7 L242.7,307.6 L309.6,307.7 L376.4,307.7" fill="none" stroke="var(--s2)" stroke-width="2"/><circle class="dot" cx="109.1" cy="307.6" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="109.1" cy="307.6" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 0 s (pushed)
+1 prefixes/s per router × 6 routers
+offered 30 deliveries/s · delivered 37/s
+complete 0.05235612 s after our last send (limit 5 s)
+kept up"/><circle class="dot" cx="175.9" cy="307.7" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="175.9" cy="307.7" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 0 s (pushed)
+2 prefixes/s per router × 6 routers
+offered 60 deliveries/s · delivered 75/s
+complete 0.047130759 s after our last send (limit 5 s)
+kept up"/><circle class="dot" cx="242.7" cy="307.6" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="242.7" cy="307.6" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 0 s (pushed)
+4 prefixes/s per router × 6 routers
+offered 120 deliveries/s · delivered 150/s
+complete 0.053204459 s after our last send (limit 5 s)
+kept up"/><circle class="dot" cx="309.6" cy="307.7" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="309.6" cy="307.7" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 0 s (pushed)
+8 prefixes/s per router × 6 routers
+offered 240 deliveries/s · delivered 300/s
+complete 0.04681219 s after our last send (limit 5 s)
+kept up"/><circle class="dot" cx="376.4" cy="307.7" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="376.4" cy="307.7" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 0 s (pushed)
+16 prefixes/s per router × 6 routers
+offered 480 deliveries/s · delivered 601/s
+complete 0.047027074 s after our last send (limit 5 s)
+kept up"/><path d="M109.1,156.6 L175.9,237.2 L242.7,163.2 L309.6,126.4 L376.4,118.8" fill="none" stroke="var(--s2)" stroke-width="2" stroke-dasharray="7 5"/><circle class="dot" cx="109.1" cy="156.6" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="109.1" cy="156.6" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 30 s (device default)
+1 prefixes/s per router × 6 routers
+offered 30 deliveries/s · delivered 25/s
+complete 21.011995914 s after our last send (limit 35 s)
+kept up"/><circle class="dot" cx="175.9" cy="237.2" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="175.9" cy="237.2" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 30 s (device default)
+2 prefixes/s per router × 6 routers
+offered 60 deliveries/s · delivered 50/s
+complete 9.822087298 s after our last send (limit 35 s)
+kept up"/><circle class="dot" cx="242.7" cy="163.2" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="242.7" cy="163.2" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 30 s (device default)
+4 prefixes/s per router × 6 routers
+offered 120 deliveries/s · delivered 50/s
+complete 20.09121963 s after our last send (limit 35 s)
+kept up"/><circle class="dot" cx="309.6" cy="126.4" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="309.6" cy="126.4" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 30 s (device default)
+8 prefixes/s per router × 6 routers
+offered 240 deliveries/s · delivered 50/s
+complete 25.208644099 s after our last send (limit 35 s)
+kept up"/><circle class="dot" cx="376.4" cy="118.8" r="5.5" style="--c:var(--s2)"/><circle class="hit" cx="376.4" cy="118.8" r="12" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s) · MRAI 30 s (device default)
+16 prefixes/s per router × 6 routers
+offered 480 deliveries/s · delivered 52/s
+complete 26.264478724 s after our last send (limit 35 s)
+kept up"/></svg>
+<h2>3 · Highest rate each device kept up with</h2>
+<p class="sub">Log scale. Solid bar = no batching; lighter bar = with the device&#39;s own 30 s advertisement interval.</p>
+<svg viewBox="0 0 760 254" role="img" aria-label="Highest sustained deliveries per second per device"><line class="grid" x1="230.0" x2="230.0" y1="10" y2="210"/><text class="tick" x="230.0" y="228" text-anchor="middle">20</text><line class="grid" x1="297.1" x2="297.1" y1="10" y2="210"/><text class="tick" x="297.1" y="228" text-anchor="middle">50</text><line class="grid" x1="347.9" x2="347.9" y1="10" y2="210"/><text class="tick" x="347.9" y="228" text-anchor="middle">100</text><line class="grid" x1="398.7" x2="398.7" y1="10" y2="210"/><text class="tick" x="398.7" y="228" text-anchor="middle">200</text><line class="grid" x1="465.8" x2="465.8" y1="10" y2="210"/><text class="tick" x="465.8" y="228" text-anchor="middle">500</text><line class="grid" x1="516.6" x2="516.6" y1="10" y2="210"/><text class="tick" x="516.6" y="228" text-anchor="middle">1,000</text><line class="grid" x1="567.3" x2="567.3" y1="10" y2="210"/><text class="tick" x="567.3" y="228" text-anchor="middle">2,000</text><line class="grid" x1="634.5" x2="634.5" y1="10" y2="210"/><text class="tick" x="634.5" y="228" text-anchor="middle">5,000</text><line class="grid" x1="685.2" x2="685.2" y1="10" y2="210"/><text class="tick" x="685.2" y="228" text-anchor="middle">10,000</text><line class="grid" x1="736.0" x2="736.0" y1="10" y2="210"/><text class="tick" x="736.0" y="228" text-anchor="middle">20,000</text><text class="axlabel" x="483.0" y="248" text-anchor="middle">highest offered deliveries / s the DUT kept up with (log)</text><text class="barname" x="220" y="21.0" text-anchor="end">Cisco ASR-920-24SZ-M</text><text class="tick" x="220" y="35.0" text-anchor="end">MRAI 0 s (pushed)</text><rect class="bar" x="230" y="10" width="475.6" height="26" rx="4" style="--c:var(--s1)"/><text class="barin" x="697.6" y="27.0" text-anchor="end">≥ 13,200 /s · no knee reached</text><rect class="hit" x="0" y="10" width="760" height="26" data-tip="Cisco ASR-920-24SZ-M (IOS-XE)
+MRAI 0 s (pushed)
+series series-20261024-000806
+kept up to 13,200 deliveries/s"/><text class="barname" x="220" y="61.0" text-anchor="end">Cisco ASR-920-24SZ-M</text><text class="tick" x="220" y="75.0" text-anchor="end">MRAI 30 s (device default)</text><rect class="bar hatch" x="230" y="50" width="475.6" height="26" rx="4" style="--c:var(--s1)"/><text class="barin" x="697.6" y="67.0" text-anchor="end">≥ 13,200 /s · no knee reached</text><rect class="hit" x="0" y="50" width="760" height="26" data-tip="Cisco ASR-920-24SZ-M (IOS-XE)
+MRAI 30 s (device default)
+series series-20261023-233242
+kept up to 13,200 deliveries/s"/><text class="barname" x="220" y="101.0" text-anchor="end">Cisco 1841</text><text class="tick" x="220" y="115.0" text-anchor="end">MRAI 0 s (pushed)</text><rect class="bar" x="230" y="90" width="232.8" height="26" rx="4" style="--c:var(--s2)"/><text class="barval" x="470.8" y="107.0">≥ 480 /s · no knee reached</text><rect class="hit" x="0" y="90" width="760" height="26" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s)
+MRAI 0 s (pushed)
+series series-20261023-222540
+kept up to 480 deliveries/s"/><text class="barname" x="220" y="141.0" text-anchor="end">Cisco 1841</text><text class="tick" x="220" y="155.0" text-anchor="end">MRAI 30 s (device default)</text><rect class="bar hatch" x="230" y="130" width="232.8" height="26" rx="4" style="--c:var(--s2)"/><text class="barval" x="470.8" y="147.0">≥ 480 /s · no knee reached</text><rect class="hit" x="0" y="130" width="760" height="26" data-tip="Cisco 1841 (IOS 15.1, FastEthernet 100 Mb/s)
+MRAI 30 s (device default)
+series series-20261023-220312
+kept up to 480 deliveries/s"/><text class="barname" x="220" y="181.0" text-anchor="end">MikroTik CRS106-1C-5S</text><text class="tick" x="220" y="195.0" text-anchor="end">no MRAI</text><text class="barval" x="238" y="187.0">knee below the lowest rate tested (264 /s)</text><rect class="hit" x="0" y="170" width="760" height="26" data-tip="MikroTik CRS106-1C-5S (RouterOS 7.11.2)
+no MRAI
+series series-20261023-125217
+past the knee at every rate tested; knee before 264/s"/></svg>
+<details><summary>Table of all runs</summary><table><thead><tr><th>device</th><th>MRAI</th><th>rate /router</th>
+<th>offered /s</th><th>delivered /s</th><th>after last send s</th><th>verdict</th><th>run</th></tr></thead>
+<tbody><tr><td>MikroTik CRS106-1C-5S</td><td>–</td><td>2</td><td>264</td><td>187</td><td>25.7</td><td>past the knee</td><td>p2-20261023-125219</td></tr><tr><td>Cisco ASR-920-24SZ-M</td><td>MRAI 0 s (pushed)</td><td>5</td><td>660</td><td>667</td><td>0.1</td><td>kept up</td><td>p2-20261024-000812</td></tr><tr><td>Cisco ASR-920-24SZ-M</td><td>MRAI 0 s (pushed)</td><td>10</td><td>1,320</td><td>1,333</td><td>0.1</td><td>kept up</td><td>p2-20261024-002035</td></tr><tr><td>Cisco ASR-920-24SZ-M</td><td>MRAI 0 s (pushed)</td><td>20</td><td>2,640</td><td>2,665</td><td>0.1</td><td>kept up</td><td>p2-20261024-002818</td></tr><tr><td>Cisco ASR-920-24SZ-M</td><td>MRAI 0 s (pushed)</td><td>50</td><td>6,600</td><td>6,687</td><td>0.1</td><td>kept up</td><td>p2-20261024-003342</td></tr><tr><td>Cisco ASR-920-24SZ-M</td><td>MRAI 0 s (pushed)</td><td>100</td><td>13,200</td><td>13,255</td><td>0.2</td><td>kept up</td><td>p2-20261024-003741</td></tr><tr><td>Cisco ASR-920-24SZ-M</td><td>MRAI 30 s (device default)</td><td>5</td><td>660</td><td>618</td><td>15.6</td><td>kept up</td><td>p2-20261023-233248</td></tr><tr><td>Cisco ASR-920-24SZ-M</td><td>MRAI 30 s (device default)</td><td>10</td><td>1,320</td><td>1,078</td><td>23.5</td><td>kept up</td><td>p2-20261023-234540</td></tr><tr><td>Cisco ASR-920-24SZ-M</td><td>MRAI 30 s (device default)</td><td>20</td><td>2,640</td><td>2,153</td><td>11.9</td><td>kept up</td><td>p2-20261023-235352</td></tr><tr><td>Cisco ASR-920-24SZ-M</td><td>MRAI 30 s (device default)</td><td>50</td><td>6,600</td><td>4,440</td><td>10.0</td><td>kept up</td><td>p2-20261023-235944</td></tr><tr><td>Cisco ASR-920-24SZ-M</td><td>MRAI 30 s (device default)</td><td>100</td><td>13,200</td><td>4,391</td><td>20.2</td><td>kept up</td><td>p2-20261024-000413</td></tr><tr><td>Cisco 1841</td><td>MRAI 0 s (pushed)</td><td>1</td><td>30</td><td>37</td><td>0.1</td><td>kept up</td><td>p2-20261023-222550</td></tr><tr><td>Cisco 1841</td><td>MRAI 0 s (pushed)</td><td>2</td><td>60</td><td>75</td><td>0.0</td><td>kept up</td><td>p2-20261023-223115</td></tr><tr><td>Cisco 1841</td><td>MRAI 0 s (pushed)</td><td>4</td><td>120</td><td>150</td><td>0.1</td><td>kept up</td><td>p2-20261023-223534</td></tr><tr><td>Cisco 1841</td><td>MRAI 0 s (pushed)</td><td>8</td><td>240</td><td>300</td><td>0.0</td><td>kept up</td><td>p2-20261023-223914</td></tr><tr><td>Cisco 1841</td><td>MRAI 0 s (pushed)</td><td>16</td><td>480</td><td>601</td><td>0.0</td><td>kept up</td><td>p2-20261023-224240</td></tr><tr><td>Cisco 1841</td><td>MRAI 30 s (device default)</td><td>1</td><td>30</td><td>25</td><td>21.0</td><td>kept up</td><td>p2-20261023-220321</td></tr><tr><td>Cisco 1841</td><td>MRAI 30 s (device default)</td><td>2</td><td>60</td><td>50</td><td>9.8</td><td>kept up</td><td>p2-20261023-220916</td></tr><tr><td>Cisco 1841</td><td>MRAI 30 s (device default)</td><td>4</td><td>120</td><td>50</td><td>20.1</td><td>kept up</td><td>p2-20261023-221400</td></tr><tr><td>Cisco 1841</td><td>MRAI 30 s (device default)</td><td>8</td><td>240</td><td>50</td><td>25.2</td><td>kept up</td><td>p2-20261023-221810</td></tr><tr><td>Cisco 1841</td><td>MRAI 30 s (device default)</td><td>16</td><td>480</td><td>52</td><td>26.3</td><td>kept up</td><td>p2-20261023-222202</td></tr></tbody></table></details>
+</main><div id="tip"></div>
+<script>
+const t=document.getElementById('tip');
+document.addEventListener('mousemove',e=>{const h=e.target.closest('[data-tip]');
+if(!h){t.style.display='none';return}t.textContent=h.dataset.tip;t.style.display='block';
+const w=t.offsetWidth,x=e.clientX+14+w>innerWidth?e.clientX-w-14:e.clientX+14;t.style.left=x+'px';t.style.top=(e.clientY+14)+'px'});
+</script></body></html>
