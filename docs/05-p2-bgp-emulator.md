@@ -207,6 +207,19 @@ Fixes after this run:
 
 Every step converges in about one advertisement interval: with MRAI 30 s the 1841's processing time is hidden by the timer up to this size. Memory: about 1.5 KB per route (BGP + RIB), so the 15 % guard would leave room for roughly 40 000 routes. One session poll took longer than 15 s under load; polls on old IOS now get 30 s.
 
+**Cisco ASR‑920 after the ARP fix, 2026‑10‑24** (runs `p2-20261024-000413` … `-011237`, `series-20261024-000806`): **all clean** — every session up in every run, 0 missing, 0 resets, no port errors, no attributes beyond the router role, free memory steady at 75 %.
+
+| Run | Sessions | Convergence | Note |
+|---|---|---|---|
+| series MRAI 0, 12 × 1 000 at 5 / 10 / 20 / 50 / 100 prefixes/s per router | 12/12 each | complete ≤ 0.2 s after our last send | delivered = offered up to 13 200 deliveries/s; latency p50 78–197 ms, p99 ≤ 360 ms; **no knee reached** |
+| 12 × 1 000 at 100/s, device MRAI 30 s | 12/12 | 30.1 s (20.2 s after the last send) | keeps up under the MRAI-aware rule; the rest of this series was not in the archive |
+| scale 12 × 1 000 | 12/12 | 32.5 s | one MRAI cycle |
+| scale 30 × 1 000 | **30/30** (20/30 before the fix) | 36.0 s | |
+| scale 60 × 1 000 | 60/60 | 50.2 s | 70 700 deliveries/s |
+| scale 60 × 1 600 (96 000 routes) | 60/60 | 73.7 s | 78 100 deliveries/s, 3.1 Mb/s |
+
+With MRAI 0 the ASR‑920 delivers in about 0.1–0.2 s; its processing limit is above 13 200 deliveries/s (next series: higher rates). With the default 30 s MRAI, convergence is one or two timer cycles regardless of load.
+
 **The ASR‑920:** the BGP table fits easily in its memory. The hardware forwarding table is smaller and depends on the SDM template (`show sdm prefer current`). In router role every best path is installed, so a scale step can overflow the hardware table before BGP struggles. That would be a finding, not a tool failure; check the log (`dut-bgp.log`) and `show platform hardware pp active feature cef …` if a scale step behaves oddly.
 
 ## Knee chart (`tools/tgen_knee_chart.py`)
