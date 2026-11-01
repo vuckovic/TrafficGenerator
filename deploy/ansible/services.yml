@@ -97,12 +97,12 @@
         mode: "0644"
       loop: [cluster.env, duts.example.toml]
       notify: restart controller
-    - name: Device inventory, if customised
+    - name: Device inventory, if customised (deploy/duts.toml)
       ansible.builtin.copy:
-        src: ../duts.toml
+        src: "{{ playbook_dir }}/../duts.toml"
         dest: /opt/tgen/deploy/duts.toml
         mode: "0644"
-      failed_when: false
+      when: (playbook_dir ~ '/../duts.toml') is file
       notify: restart controller
     - name: "controller.toml (kept if it exists, it holds the password hash)"
       ansible.builtin.copy:
