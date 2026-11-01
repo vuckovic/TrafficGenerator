@@ -84,11 +84,10 @@
                python3-netmiko, caddy]
         state: present
     - name: Controller and tools
-      ansible.posix.synchronize:
+      ansible.builtin.copy:
         src: "../../{{ item }}/"
         dest: "/opt/tgen/{{ item }}/"
-        delete: true
-        rsync_opts: ["--exclude=__pycache__"]
+        mode: preserve
       loop: [controller, tools]
       notify: restart controller
     - name: Cluster configuration
