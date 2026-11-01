@@ -1,6 +1,13 @@
-# /etc/caddy/Caddyfile on CMNODE01 (docs/08 §1). Caddy obtains and renews the
-# Let's Encrypt certificate (HTTP-01: port 80 must reach CMNODE01) and redirects
-# HTTP to HTTPS. The controller only listens on 127.0.0.1:8080.
+# /etc/caddy/Caddyfile on CMNODE01 (docs/08 §1).
+# Port forwarding on the faculty router (443 stays with the router's own interface):
+#   public 80   -> CMNODE01:80    Let's Encrypt HTTP-01 check + redirect to HTTPS
+#   public 8443 -> CMNODE01:443   the web interface: https://bgp.elfak.net:8443
+# Caddy obtains and renews the certificate by itself. The controller only listens
+# on 127.0.0.1:8080. To use another public HTTPS port, change 8443 below only.
+{
+	auto_https disable_redirects
+}
+
 bgp.elfak.net {
 	encode zstd gzip
 	reverse_proxy 127.0.0.1:8080
@@ -10,4 +17,9 @@ bgp.elfak.net {
 		X-Frame-Options DENY
 		Referrer-Policy same-origin
 	}
+}
+
+# plain HTTP: the ACME check is answered before this; everything else goes to HTTPS
+http://bgp.elfak.net {
+	redir https://bgp.elfak.net:8443{uri} permanent
 }

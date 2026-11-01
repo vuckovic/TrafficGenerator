@@ -8,7 +8,10 @@ Spec references: architecture §3, scenario §5, controller §10, CMNODE01 reser
 
 - One Python process: FastAPI on uvicorn, asyncio. The scenario engine, agent polling and the live WebSocket share the event loop.
 - Blocking work never runs on the event loop. DUT SSH work runs in a thread. Analysis runs in a separate process at `nice 10`, so the API stays fast (§10.2).
-- Listens on **127.0.0.1:8080**. HTTPS for `bgp.elfak.net` is terminated by **Caddy**, which also obtains and renews the Let's Encrypt certificate (HTTP-01) and redirects port 80 to HTTPS.
+- Listens on **127.0.0.1:8080**. HTTPS for `bgp.elfak.net` is terminated by **Caddy**, which also obtains and renews the Let's Encrypt certificate (HTTP-01) and redirects HTTP to HTTPS.
+- **Port forwarding** (decision 2026-11-01; public 443 stays with the router's own interface):
+  - public **80 → CMNODE01:80**: the Let's Encrypt check, and the redirect;
+  - public **8443 → CMNODE01:443**: the web interface, `https://bgp.elfak.net:8443`.
 - **Data:**
   - `/var/lib/tgen/controller.db`: SQLite history (§5).
   - `/var/lib/tgen/runs/<run-id>/`: per-run files, in the same layout as a `tgen_p2.py` result folder (`plan-*.json`, `result-*.json`, `meta.json`, `report.json`, `summary.txt`, `dut-*`). The command-line tools (knee chart, series) also work on these folders.
