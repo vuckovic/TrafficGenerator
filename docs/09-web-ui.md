@@ -1,0 +1,46 @@
+# 09 — Web interface (P3c)
+
+The browser interface at `https://bgp.elfak.net:8443`. It follows the frozen controls (doc 04 v1.2) and the locked design (`docs/design/`, v1.2), and talks only to the controller API (doc 08).
+
+Status: **proposed 2026‑11‑03, for confirmation.**
+
+## 1. How it is built and served
+
+- **Served by the controller**, same origin as the API: `/` is the interface, `/api` and `/ws` the API. One login cookie, no CORS, nothing else to install.
+- **No build step.** Plain HTML, CSS and JavaScript modules in `ui/web/`, copied to `/opt/tgen/ui/web` by `services.yml`. Nothing to compile on the nodes; there is no npm on the cluster.
+- **Libraries, kept in the repo (no CDN at run time; the lab works offline):**
+  - **uPlot** (MIT) for the time charts, as the design says;
+  - **IBM Plex Sans and Mono** (OFL) as local font files.
+- **Texts** come from `ui/i18n/labels.csv`, served as JSON by `GET /api/i18n` (no login needed, so the login page is translated too). The language choice is kept per browser (G9). Number formats follow the `_lang.*` rows.
+- **Screens follow the design artboards one to one**: the same colours, sizes, explanations on hover and keyboard focus, and phone‑width stacking.
+
+## 2. Delivery in three steps
+
+| Step | Contents | Needs in the controller |
+|---|---|---|
+| **P3c‑1 Benchmark** | Login page; header with tabs, language, run badge, Start / Stop, log out. **Benchmark tab:** Device under test with the **device selector (U0)**, role, DUT IP / ASN; DUT configuration (U8–U18) with Test connection · Preview config · Push now · Remove · Status; emulated routers (count per node or total, prefixes per router, seed, ASN range); scenario presets and phase parameters (C). **Live view:** sessions, convergence, latency (uPlot, cursor, zoom, window), DUT output, **port and link use (M9)**, generator health, control‑plane health (AC6), events. | `GET /api/i18n`; static files; the scenario takes a memory‑guard value (U17); the live tick carries the DUT port and link use; the agent reports node temperature (agent 0.4.1) |
+| **P3c‑2 Test scheme** | The whole Test scheme tab (K1–K11): instructions, devices with passwords and connection tests, steps, estimate, progress grid, comparison table, knee chart (three views). | a **scheme runner** in the controller (`POST /api/schemes`, `GET /api/schemes/{id}`, stop). It runs the same steps as `tgen_suite.py` as ordinary runs, one after another, with the knee rule from `tools/tgen/knee.py` |
+| **P3c‑3 History and settings** | **History** (H1–H3, H5): list, open, re‑run, delete. **Reports** (X1, X5, X6): the run report page with header, verdict table, key figures and tables from `report.json`; export JSON / CSV. **Nodes & settings**: node status (S1), safety limits (S3), change password (S6). | `POST /api/password`; settings stored in the controller |
+
+## 3. Left for later phases (as already planned)
+
+- **P4 reports:** figures F1–F12, report comparison (X4) and PDF export.
+- **P5:** DUT logs tab (L), SNMP polling (U5).
+- **P6 data plane:** Traffic tab (T), H4 packet capture, router traffic.
+- **Detailed router editing** (R3c–R3e paste and per‑router receive mode, R6–R11 attributes): the tab shows the generated routers; editing them needs planner and agent support. I propose P4, unless you want it earlier.
+- **Profiles (G7):** saving whole configurations, in P3c‑3 if time allows.
+
+## 4. Tests
+
+- **Browser end to end** (Playwright, the same loopback setup as `tests/controller/test_e2e.py`):
+  - log in;
+  - run a quick check from the Benchmark tab and follow the live view;
+  - run a two‑step scheme against the Cisco mock;
+  - switch the language;
+  - check the explanations, keyboard focus and phone width.
+- **Screenshots** of every screen compared with the design previews by eye, in both languages.
+- **On the cluster:** you run one benchmark and one scheme from the browser.
+
+## 5. Open points
+
+- **Password file for unattended schemes** (the earlier question 2). Until you decide, a scheme asks for each device's password when it starts, and keeps it in memory only.
