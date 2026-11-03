@@ -454,3 +454,130 @@ unit.prefixes_s,unit,prefixes/s,префикса/s
 unit.mbit_s,unit,Mbit/s,Mbit/s
 unit.kpps,unit,kpps,kpps
 unit.gb,unit,GB,GB
+nav.test_scheme,tab,Test scheme,Шема тестирања
+dut.device,label,Device,Уређај
+dut.device.tip,tooltip,The devices come from the inventory file deploy/duts.toml on CMNODE01. Choosing one fills in the fields below.,Уређаји се читају из датотеке deploy/duts.toml на CMNODE01. Избор уређаја попуњава поља испод.
+dut.device.note,text,"Devices come from deploy/duts.toml on CMNODE01. To add or change a device, edit that file; the list is re‑read when the page is reloaded. Values filled in from the device can be changed below for this run only — they are not written back.","Уређаји се читају из датотеке deploy/duts.toml на CMNODE01. Да бисте додали или изменили уређај, измените ту датотеку; списак се поново учитава при освежавању странице. Вредности попуњене из уређаја могу се испод изменити само за овај тест — не уписују се назад."
+dut.device.custom,option,Custom (enter by hand),Прилагођено (унос ручно)
+dut.device.bird,option,BIRD stand‑in on {node},BIRD замена на чвору {node}
+dut.password_on_controller,label,Password on the controller,Лозинка на контролеру
+dut.password.unset,text,"not set — asked at start, not stored","није подешена — тражи се при покретању, не чува се"
+dut.password.set,text,set on the controller,подешена на контролеру
+dut.password.key,text,not needed (SSH key of CMNODE01),није потребна (SSH кључ чвора CMNODE01)
+dutcfg.mem_guard,label,Memory guard (% free),Заштита меморије (% слободно)
+dutcfg.mem_guard.tip,tooltip,Protects a small device from running out of memory: the run stops before the DUT does. Read with every DUT poll. 0 = off.,Штити мали уређај од нестанка меморије: тест се зауставља пре него што DUT остане без меморије. Чита се при сваком очитавању DUT‑а. 0 = искључено.
+dutcfg.mrai,label,Advertisement interval (MRAI),Интервал оглашавања (MRAI)
+dutcfg.mrai.tip,tooltip,How long the DUT may hold updates back to batch them. 0 measures raw processing speed; the device default shows real‑world behaviour. Cisco only: pushed as advertisement‑interval to every tgen neighbour.,Колико дуго DUT сме да задржава ажурирања да би их груписао. 0 мери чисту брзину обраде; подразумевана вредност уређаја показује понашање у пракси. Само Cisco: шаље се као advertisement‑interval сваком tgen суседу.
+dutcfg.mrai.default,option,Device default ({s}),Подразумевано за уређај ({s})
+dutcfg.mrai.zero,option,0 s,0 s
+dutcfg.mrai.custom,option,Custom…,Прилагођено…
+dutcfg.mrai.na,option,Not configurable on this platform,Није подесиво на овој платформи
+live.port,heading,DUT port and link use,Порт DUT‑а и искоришћеност линка
+live.port.tip,tooltip,"Shows whether a slow result is the device or its link: a 100 Mb/s port can be full long before the CPU is. Link use = DUT output in BGP Mb/s, including TCP/IP overhead, divided by the port speed.","Показује да ли је спор резултат последица уређаја или његовог линка: порт од 100 Mb/s може да се попуни много пре него што се оптерети CPU. Искоришћеност = излаз DUT‑а у BGP Mb/s, са TCP/IP заглављима, подељен брзином порта."
+live.port.of,text,{mbps} Mb/s of {speed},{mbps} Mb/s од {speed}
+live.port.marks,text,marks at 70 % and 90 %,ознаке на 70 % и 90 %
+live.port.no_errors,text,No new port errors since the start of the run (input errors {in} · CRC {crc} · drops {drops}),Нема нових грешака на порту од почетка теста (input errors {in} · CRC {crc} · drops {drops})
+live.port.new_errors,text,New port errors since the start of the run: input errors {in} · CRC {crc} · drops {drops},Нове грешке на порту од почетка теста: input errors {in} · CRC {crc} · drops {drops}
+scheme.title,heading,Test scheme,Шема тестирања
+scheme.sub,text,"The standard comparison test of the test devices: connection test → smoke → rate series → scale, one device after another, one run at a time. The same as tools/tgen_suite.py.","Стандардни упоредни тест уређаја: провера везе → брзи тест → серија брзина → скалирање, уређај по уређај, један тест у једном тренутку. Исто што и tools/tgen_suite.py."
+scheme.k1.title,heading,How this test works,Како се тест спроводи
+scheme.k1.hide,button,Hide instructions,Сакриј упутство
+scheme.k1.show,button,Show instructions,Прикажи упутство
+scheme.k1.what.lead,text,What this test measures.,Шта тест мери.
+scheme.k1.what,text,"How fast each device can take in BGP routes and pass them on, where it stops keeping up (the knee), and how many routes it can hold. Every device gets exactly the same load, so the results can be compared side by side.","Колико брзо сваки уређај прима BGP руте и прослеђује их даље, где престаје да стиже (тачка засићења), и колико рута може да држи. Сваки уређај добија потпуно исто оптерећење, па се резултати могу поредити један поред другог."
+scheme.k1.before.lead,text,Before you start.,Пре почетка.
+scheme.k1.before,text,The devices are listed in deploy/duts.toml on CMNODE01 — add or change a device there. Each device needs SSH access and an existing router bgp with the AS from the file; enter its password below (it is used for this test only and not stored). The controller adds its own BGP neighbours (tagged tgen) before each run and removes them afterwards; nothing else on the device is changed. Do not run other tests at the same time.,Уређаји су наведени у датотеци deploy/duts.toml на CMNODE01 — уређај се додаје или мења тамо. Сваки уређај мора бити доступан преко SSH‑а и имати постојећи router bgp са AS бројем из датотеке; лозинку унесите испод (користи се само за овај тест и не чува се). Контролер пре сваког теста додаје своје BGP суседе (означене са tgen) и после теста их уклања; ништа друго на уређају се не мења. Не покрећите друге тестове у исто време.
+scheme.k1.read.lead,text,Reading the results.,Читање резултата.
+scheme.k1.read,text,"Sustainable rate is the highest rate before the knee; deliveries/s counts every route copy the device sends to every peer, so it can be compared across sizes. A device whose port is nearly full (link use) is limited by its link, not its CPU — check before comparing. Every run of the scheme also appears in History with its own report.","Одржива брзина је највећа брзина пре тачке засићења; испорука/s броји сваку копију руте коју уређај пошаље сваком суседу, па се може поредити између различитих величина теста. Уређај чији је порт скоро пун (искоришћеност линка) ограничен је линком, а не процесором — проверите то пре поређења. Сваки тест из шеме појављује се и у Историји са сопственим извештајем."
+scheme.k1.time.lead,text,How long it takes.,Колико траје.
+scheme.k1.time,text,It depends on the device’s size and MRAI — from a few minutes to well over half an hour per device; the estimate is shown below and updated as runs finish.,Зависи од величине уређаја и MRAI‑а — од неколико минута до више од пола сата по уређају; процена је приказана испод и ажурира се како се тестови завршавају.
+scheme.k1.steps.lead,text,"The four steps, for each device in turn:","Четири корака, за сваки уређај редом:"
+scheme.k1.step1.name,text,Connection test,Провера везе
+scheme.k1.step1,text,"logs in, reads model, software, CPU, free memory and the port’s speed and error counters. Nothing is changed.","пријава, читање модела, софтвера, CPU‑а, слободне меморије, брзине порта и бројача грешака. Ништа се не мења."
+scheme.k1.step2.name,text,Smoke,Брзи тест
+scheme.k1.step2,text,"a small run (e.g. 12 routers × 1 000 prefixes): all sessions must come up, every route must arrive, nothing extra. If this fails, the device’s other steps are skipped.","мали тест (нпр. 12 рутера × 1 000 префикса): све сесије морају да се успоставе, свака рута мора да стигне, ништа вишка. Ако не прође, остали кораци за тај уређај се прескачу."
+scheme.k1.step3.name,text,Rate series,Серија брзина
+scheme.k1.step3,text,"the same routers announce at increasing rates (prefixes per second per router). At each rate we measure how fast the device passes routes on. The knee is the first rate where the device falls behind: it delivers less than 90 % of what it is offered, or it is still sending more than 5 s (plus its MRAI) after the last route was sent. Cisco devices run the series twice: with their own advertisement interval (MRAI, real‑world behaviour) and with MRAI 0 (raw processing speed).","исти рутери оглашавају руте све већом брзином (префикса у секунди по рутеру). За сваку брзину мери се колико брзо уређај прослеђује руте. Тачка засићења је прва брзина при којој уређај заостаје: испоручи мање од 90 % понуђеног, или још шаље више од 5 s (плус свој MRAI) после последње послате руте. Cisco уређаји пролазе серију двапут: са сопственим интервалом оглашавања (MRAI, понашање у пракси) и са MRAI 0 (чиста брзина обраде)."
+scheme.k1.step4.name,text,Scale,Скалирање
+scheme.k1.step4,text,"more routers and prefixes at full speed, step by step, up to the device’s route limit, watching its free memory. The step stops early if memory drops below the device’s memory guard.","више рутера и префикса пуном брзином, корак по корак, до ограничења броја рута уређаја, уз праћење слободне меморије. Корак се прекида раније ако слободна меморија падне испод заштите меморије уређаја."
+scheme.devices,heading,Devices,Уређаји
+scheme.devices.note,text,From deploy/duts.toml. Passwords are used for this scheme only and not stored.,Из датотеке deploy/duts.toml. Лозинке се користе само за ову шему и не чувају се.
+scheme.col.dev,column,Device,Уређај
+scheme.col.port,column,Port,Порт
+scheme.col.pw,column,Password,Лозинка
+scheme.col.conn,column,Connection,Веза
+scheme.col.smoke,column,Smoke,Брзи тест
+scheme.col.series,column,Rate series,Серија брзина
+scheme.col.mrai,column,MRAI variants,MRAI варијанте
+scheme.col.scale,column,Scale,Скалирање
+scheme.password.placeholder,label,not stored,не чува се
+scheme.steps,heading,Steps,Кораци
+scheme.step1,label,Connection test,Провера везе
+scheme.step1.hint,text,read‑only check of each device,провера сваког уређаја само читањем
+scheme.step2,label,Smoke,Брзи тест
+scheme.step2.hint,text,"small run, all routes must arrive","мали тест, све руте морају да стигну"
+scheme.step3,label,Rate series,Серија брзина
+scheme.step3.hint,text,increasing rates up to the knee,све веће брзине до тачке засићења
+scheme.step4,label,Scale,Скалирање
+scheme.step4.hint,text,more routers and prefixes up to the route limit,више рутера и префикса до ограничења броја рута
+scheme.sizes,heading,Sizes and MRAI variants from the file (read‑only),Величине и MRAI варијанте из датотеке (само за читање)
+scheme.pause,label,Pause between runs (s),Пауза између тестова (s)
+scheme.stop_on_failure,label,Stop on failure,Заустави при грешци
+scheme.stop_on_failure.tip,tooltip,A failed connection test or smoke skips the rest of that device; the scheme continues with the next one.,Неуспела провера везе или брзи тест прескаче остатак тог уређаја; шема наставља са следећим.
+scheme.estimate,label,Estimated duration,Процењено трајање
+scheme.estimate.value,text,Remaining ≈ {left} · total ≈ {total},Преостало ≈ {left} · укупно ≈ {total}
+scheme.start,button,Start scheme,Покрени шему
+scheme.stop,button,Stop scheme,Заустави шему
+scheme.progress,heading,Progress,Напредак
+scheme.progress.col.conn,column,Connection,Веза
+scheme.progress.col.smoke,column,Smoke,Брзи тест
+scheme.progress.col.series_device,column,Series · device MRAI,Серија · MRAI уређаја
+scheme.progress.col.series_zero,column,Series · MRAI 0,Серија · MRAI 0
+scheme.progress.col.scale,column,Scale,Скалирање
+scheme.state.passed,state,Passed,Прошао
+scheme.state.running,state,Running,У току
+scheme.state.waiting,state,Waiting,Чека
+scheme.state.na,state,n/a,н/п
+scheme.state.failed,state,Failed,Није прошао
+scheme.live_view,link,live view,приказ уживо
+scheme.compare,heading,Comparison,Поређење
+scheme.compare.col.device,column,Device,Уређај
+scheme.compare.col.mrai,column,MRAI,MRAI
+scheme.compare.col.mrai.tip,tooltip,Advertisement interval used for this row: the device’s own (real‑world) or 0 (raw processing speed).,Интервал оглашавања за овај ред: сопствени (понашање у пракси) или 0 (чиста брзина обраде).
+scheme.compare.col.smoke,column,Smoke,Брзи тест
+scheme.compare.col.smoke.tip,tooltip,Initial convergence time and missing routes of the small run.,Време почетне конвергенције и број рута које недостају у малом тесту.
+scheme.compare.col.sust_rate,column,Sustainable rate /router,Одржива брзина /рутеру
+scheme.compare.col.sust_rate.tip,tooltip,Highest offered rate (prefixes/s per router) before the knee.,Највећа понуђена брзина (префикса/s по рутеру) пре тачке засићења.
+scheme.compare.col.knee,column,Knee /router,Засићење /рутеру
+scheme.compare.col.knee.tip,tooltip,First rate where the device fell behind. “Not reached” = it kept up at every rate tried.,Прва брзина при којој је уређај заостао. „Није достигнуто“ = стизао је при свакој испробаној брзини.
+scheme.compare.col.sust_deliv,column,Sustainable deliveries/s,Одржива испорука/s
+scheme.compare.col.sust_deliv.tip,tooltip,Route copies per second the device sent to all peers at the sustainable rate: comparable across sizes.,Копије рута у секунди које је уређај послао свим суседима при одрживој брзини: упоредиво између величина.
+scheme.compare.col.max_out,column,Max DUT output /s,Највећи излаз DUT‑а /s
+scheme.compare.col.max_out.tip,tooltip,Highest output measured at full speed (smoke or scale).,Највећи излаз измерен пуном брзином (брзи тест или скалирање).
+scheme.compare.col.largest,column,Largest scale passed,Највећи прошли ниво
+scheme.compare.col.largest.tip,tooltip,Largest routers × prefixes step that converged with nothing missing.,Највећи корак рутери × префикси који је конвергирао без рута које недостају.
+scheme.compare.col.min_mem,column,Lowest free memory,Најмање слободне меморије
+scheme.compare.col.min_mem.tip,tooltip,Lowest free memory seen during the scale steps.,Најмање слободне меморије током корака скалирања.
+scheme.knee,heading,Knee chart,Графикон тачке засићења
+scheme.knee.view.delivered,button,Delivered vs offered,Испоручено у односу на понуђено
+scheme.knee.view.tail,button,Time to finish after last send,Време до завршетка после последњег слања
+scheme.knee.view.sustained,button,Sustained rate,Одржива брзина
+scheme.knee.note,text,One colour per device · solid = MRAI 0 · dashed = device MRAI · ringed points are past the knee,Једна боја по уређају · пуна линија = MRAI 0 · испрекидана = MRAI уређаја · заокружене тачке су после тачке засићења
+scheme.knee.ax1x,label,offered deliveries/s (log),понуђена испорука/s (лог)
+scheme.knee.ax1y,label,delivered/s (log),испоручено/s (лог)
+scheme.knee.ax2y,label,s after last send,s после последњег слања
+scheme.knee.ax3x,label,sustained deliveries/s (log),одржива испорука/s (лог)
+scheme.knee.diagonal,label,delivered = offered,испоручено = понуђено
+scheme.knee.limit,label,limit {s} s,граница {s} s
+scheme.knee.cursor,label,Offered,Понуђено
+scheme.knee.none,text,No series at this offered rate.,Нема серије при овој понуђеној брзини.
+scheme.knee.read,text,{n}: offered {o} → delivered {d} ({p} %),{n}: понуђено {o} → испоручено {d} ({p} %)
+scheme.knee.read_tail,text,{n}: offered {o} → {s} s after last send (limit {l} s),{n}: понуђено {o} → {s} s после последњег слања (граница {l} s)
+scheme.knee.past,text,past the knee,после тачке засићења
+scheme.knee_at,text,knee at {r} /s,засићење при {r} /s
+scheme.no_knee,text,no knee up to {r} /s,без засићења до {r} /s
+scheme.not_reached,text,not reached,није достигнуто
+scheme.mrai.device,text,device default,подразумевано за уређај
+scheme.mrai.routeros,text,RouterOS: no MRAI setting,RouterOS: нема подешавања MRAI
+scheme.export.csv,button,Export CSV,Извези CSV
+scheme.export.md,button,Export Markdown,Извези Markdown

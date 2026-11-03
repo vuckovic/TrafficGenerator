@@ -33,7 +33,7 @@ a{color:#0E6E66}a:hover{color:#0A524C}
 .tip{display:inline-flex;width:16px;height:16px;border-radius:50%;border:1px solid #8A9097;color:#545A61;font-size:10px;align-items:center;justify-content:center;margin-left:4px}
 </style>
 </helmet>
-<div style="min-height: 1760px; display: flex; flex-direction: column">
+<div style="min-height: 2000px; display: flex; flex-direction: column">
 
 <header style="background: #16191D; color: #F3F4F1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 0 24px; min-height: 64px">
 <div style="display: flex; align-items: center; gap: 10px">
@@ -42,6 +42,7 @@ a{color:#0E6E66}a:hover{color:#0A524C}
 </div>
 <nav aria-label="Main" style="display: flex; flex-wrap: wrap; gap: 0; flex: 1 1 auto; min-width: 0">
 <a href="#" style="color: #FFFFFF; text-decoration: none; padding: 21px 8px 19px; border-bottom: 3px solid #5FD3C5; font-weight: 600; white-space: nowrap">Benchmark</a>
+<a href="TestScheme.dc.html" style="color: #C4C9CE; text-decoration: none; padding: 22px 8px; white-space: nowrap">Test scheme</a>
 <a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 8px; white-space: nowrap">Traffic</a>
 <a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 8px; white-space: nowrap">Reports</a>
 <a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 8px; white-space: nowrap">DUT logs</a>
@@ -79,19 +80,24 @@ a{color:#0E6E66}a:hover{color:#0A524C}
 
 <div class="card">
 <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap"><h2 class="h2">Device under test</h2><button class="btn btn-sm" type="button">Export DUT config ▾</button></div>
+<div style="display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; align-items: end">
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="dev">Device <span class="tip" title="The devices come from the inventory file deploy/duts.toml on CMNODE01. Choosing one fills in the fields below.">i</span></label><select id="dev" class="inp" value="{{dev.cur}}" onChange="{{dev.pick}}"><sc-for list="{{dev.list}}" as="d" hint-placeholder-count="5"><option value="{{d.id}}">{{d.label}}</option></sc-for></select></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Password on the controller</span><span style="min-height: 36px; display: flex; align-items: center; font-size: 13px; color: #23403C">{{dev.pw}}</span></div>
+</div>
+<p style="margin: 0; font-size: 12px; color: #545A61; line-height: 1.5">Devices come from <span class="mono">deploy/duts.toml</span> on CMNODE01. To add or change a device, edit that file; the list is re‑read when the page is reloaded. Values filled in from the device can be changed below for this run only — they are not written back.</p>
 <fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
 <legend class="lbl" style="padding: 0; margin-bottom: 8px">DUT role</legend>
 <div style="display: flex; flex-wrap: wrap; border: 1px solid #C9CDC6; border-radius: 8px; overflow: hidden; width: fit-content; max-width: 100%">
-<label style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #0E6E66; color: #FFFFFF; font-weight: 600"><input type="radio" name="role" checked="checked" style="accent-color: #FFFFFF; margin: 0">Route server</label>
-<label style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-left: 1px solid #C9CDC6"><input type="radio" name="role" style="margin: 0">Route reflector</label>
-<label style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-left: 1px solid #C9CDC6"><input type="radio" name="role" style="margin: 0">Router (forwards traffic)</label>
+<sc-for list="{{dev.roles}}" as="r" hint-placeholder-count="3">
+<label style="{{r.style}}"><input type="radio" name="role" checked="{{r.on}}" onChange="{{r.pick}}" style="margin: 0; accent-color: #FFFFFF">{{r.label}}</label>
+</sc-for>
 </div>
-<p style="margin: 4px 0 0; padding: 10px 12px; background: #EEF6F5; border-radius: 6px; color: #23403C; font-size: 13px; line-height: 1.5">IXP route server. Every emulated router is a separate eBGP peer with its own AS number. The route server passes routes between peers without adding its own AS number and without changing the next hop. Control‑plane test only.</p>
+<p style="margin: 4px 0 0; padding: 10px 12px; background: #EEF6F5; border-radius: 6px; color: #23403C; font-size: 13px; line-height: 1.5">{{dev.roleNote}}</p>
 </fieldset>
 <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
 <div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Detected platform</span><span class="mono" style="height: 36px; display: flex; align-items: center; font-size: 13px; color: #23403C">{{cfg.detected}}</span></div>
-<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="dutip">DUT IP</label><input id="dutip" class="inp mono" value="10.100.0.1"></div>
-<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="dutas">DUT ASN</label><input id="dutas" class="inp mono" value="64500"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="dutip">DUT IP</label><input id="dutip" class="inp mono" value="{{dev.ip}}"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="dutas">DUT ASN</label><input id="dutas" class="inp mono" value="{{dev.asn}}"></div>
 <div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">DUT polling</span><div style="display: flex; gap: 14px; align-items: center; height: 36px"><label style="display: flex; gap: 6px; align-items: center"><input type="checkbox" checked="checked">SSH</label><label style="display: flex; gap: 6px; align-items: center"><input type="checkbox">SNMP</label></div></div>
 </div>
 </div>
@@ -122,6 +128,8 @@ a{color:#0E6E66}a:hover{color:#0A524C}
 <div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="birdinc">BIRD include file <span class="tip" title="The neighbours are written to this file; bird.conf gets one include line the first time.">i</span></label><input id="birdinc" class="inp mono" value="/etc/bird/tgen.conf"></div>
 </sc-if>
 <div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="maxr">Route limit <span class="tip" title="Runs above this many routes are refused, to protect small devices (MikroTik CRS106: 20 000). Empty = no limit.">i</span></label><input id="maxr" class="inp mono" placeholder="no limit" value="{{cfg.limit}}"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="mguard">Memory guard (% free) <span class="tip" title="Protects a small device from running out of memory: the run stops before the DUT does. Read with every DUT poll. 0 = off.">i</span></label><input id="mguard" class="inp mono" value="{{dev.guard}}"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="mrai">Advertisement interval (MRAI) <span class="tip" title="How long the DUT may hold updates back to batch them. 0 measures raw processing speed; the device default shows real‑world behaviour. Cisco only: pushed as advertisement‑interval to every tgen neighbour.">i</span></label><select id="mrai" class="inp" disabled="{{dev.mraiDis}}"><sc-for list="{{dev.mraiOpts}}" as="o" hint-placeholder-count="3"><option>{{o.l}}</option></sc-for></select></div>
 <div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="after">After the run</label><select id="after" class="inp"><option>Remove neighbours</option><option>Keep neighbours</option></select></div>
 </div>
 <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
@@ -214,6 +222,21 @@ a{color:#0E6E66}a:hover{color:#0A524C}
 <div style="display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; color: #545A61"><span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 16px; height: 3px; background: #0E6E66"></span>p50</span><span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 16px; height: 3px; background: #C2410C"></span>p99</span><span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 16px; border-top: 2px dashed #8A9097"></span>offered updates/s (right axis)</span></div>
 </div>
 
+<sc-if value="{{dev.hasPort}}" hint-placeholder-val="{{ true }}">
+<div class="card" style="gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px"><h2 class="h2"><span class="hint" tabindex="0">DUT port and link use<span class="tt" role="tooltip">Shows whether a slow result is the device or its link: a 100 Mb/s port can be full long before the CPU is. Link use = DUT output in BGP Mb/s, including TCP/IP overhead, divided by the port speed.</span></span></h2><span class="mono" style="font-size: 12px; color: #545A61">{{dev.portLine}}</span></div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center">
+<div style="display: flex; flex-direction: column; gap: 2px; flex: 0 0 auto"><span class="kv">{{dev.use}} %</span><span style="font-size: 12px; color: #545A61">{{dev.mbps}} Mb/s of {{dev.speed}}</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 260px; min-width: 0">
+<span style="position: relative; height: 10px; background: #ECEEEA; border-radius: 5px"><span style="{{dev.bar}}"></span><span style="position: absolute; left: 70%; top: -3px; bottom: -3px; width: 2px; background: #A15C07"></span><span style="position: absolute; left: 90%; top: -3px; bottom: -3px; width: 2px; background: #B42318"></span></span>
+<svg viewBox="0 0 300 36" role="img" aria-label="DUT port and link use: last 5 minutes" style="width: 100%; height: 36px"><polyline fill="none" stroke="#0E6E66" stroke-width="2" points="{{dev.spark}}"></polyline></svg>
+<span style="font-size: 12px; color: #545A61">marks at 70 % and 90 %</span>
+</div>
+</div>
+<span style="display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: #1E7B3A; font-weight: 500"><span style="width: 8px; height: 8px; border-radius: 50%; background: #1E7B3A; flex: none"></span>No new port errors since the start of the run (input errors 0 · CRC 0 · drops 0)</span>
+</div>
+</sc-if>
+
 <div class="card" style="gap: 10px">
 <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px"><h2 class="h2">Generator health</h2><span style="font-size: 12px; color: #545A61">node‑average CPU · marks at 70 % and 90 %</span></div>
 <div style="display: grid; grid-template-columns: 92px minmax(0, 1fr) 56px 64px; gap: 8px 12px; align-items: center; font-size: 13px">
@@ -245,7 +268,7 @@ a{color:#0E6E66}a:hover{color:#0A524C}
 </main>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1760}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2000}}'>
 var M50 = [[-300,42.4],[-270,44.7],[-240,44.7],[-209,47.1],[-179,47.1],[-149,49.4],[-118,51.8],[-88,51.8],[-58,54.1],[-28,56.5],[0,56.5]];
 var M99 = [[-300,70.6],[-270,72.9],[-240,75.3],[-209,77.6],[-179,82.4],[-149,89.4],[-118,117.6],[-88,160],[-58,216.5],[-28,301.2],[0,367.1]];
 function lerp(p, x) {
@@ -283,22 +306,54 @@ var SEG_ON = "display: flex; align-items: center; gap: 8px; min-height: 44px; bo
 var SEG_OFF = "display: flex; align-items: center; gap: 8px; min-height: 44px; box-sizing: border-box; padding: 0 16px; background: #FFFFFF; color: #16191D; cursor: pointer";
 function ago(t) { var s = Math.round(-t); return s === 0 ? "now" : "−" + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
 
+var DEVICES = [{"id": "mikrotik", "plat": "mikrotik", "ip": "10.100.0.111", "asn": "64500", "role": 2, "user": "admin", "host": "192.168.100.111", "limit": "20000", "guard": "0", "mrai": null, "port": null, "detected": "RouterOS 7.11.2 · CRS106‑1C‑5S", "pw": 0, "label": "MikroTik CRS106‑1C‑5S (RouterOS 7.11.2) · 10.100.0.111 · 1 Gb/s", "status": "Connected · CRS106‑1C‑5S · RouterOS 7.11.2 · CPU 3 % · 92 MiB free · 0 tgen neighbours"}, {"id": "asr920", "plat": "cisco", "ip": "10.100.0.200", "asn": "64500", "role": 2, "user": "vuckovic", "host": "192.168.100.200", "limit": "100000", "guard": "10", "mrai": "30 s", "port": {"name": "Gi0/0/23", "speed": "1000 Mb/s", "dup": "full", "use": 0.4, "mbps": "3.6"}, "detected": "IOS‑XE 17.15.05 · ASR‑920‑24SZ‑M", "pw": 0, "label": "Cisco ASR‑920‑24SZ‑M (IOS‑XE) · 10.100.0.200 · 1 Gb/s", "status": "Connected · ASR‑920‑24SZ‑M · IOS‑XE 17.15.05 · CPU 9 % · processor memory 624 MiB free of 829 MiB · 0 tgen neighbours"}, {"id": "c1841", "plat": "cisco", "ip": "10.100.0.100", "asn": "64500", "role": 2, "user": "vuckovic", "host": "192.168.100.100", "limit": "30000", "guard": "15", "mrai": "30 s", "port": {"name": "Fa0/0", "speed": "100 Mb/s", "dup": "full", "use": 3.1, "mbps": "3.1"}, "detected": "IOS 15.1(4)M · Cisco 1841", "pw": 0, "label": "Cisco 1841 (IOS 15.1) · 10.100.0.100 · 100 Mb/s", "status": "Connected · Cisco 1841 · IOS 15.1(4)M · CPU 2 % · processor memory 118 MiB free of 137 MiB · 0 tgen neighbours"}, {"id": "bird", "plat": "bird", "ip": "10.100.0.16", "asn": "64500", "role": 0, "user": "root", "host": "192.168.100.16", "limit": "", "guard": "0", "mrai": null, "port": {"name": "CMNODE06 eth0", "speed": "1000 Mb/s", "dup": "full", "use": 0.4, "mbps": "3.6"}, "detected": "BIRD 2.15", "pw": 1, "label": "BIRD stand‑in on CMNODE06 · 10.100.0.16 · 1 Gb/s", "status": "Connected · BIRD 2.15 on CMNODE06 · load 0.4 · 7.4 GiB free · 60 tgen neighbours · 60 Established"}, {"id": "custom", "plat": null, "ip": "", "asn": "64500", "role": 0, "user": "", "host": "", "limit": "", "guard": "0", "mrai": null, "port": null, "detected": "", "pw": 2, "label": "Custom (enter by hand)", "status": ""}];
+var ROLES = [["Route server", "IXP route server. Every emulated router is a separate eBGP peer with its own AS number. The route server passes routes between peers without adding its own AS number and without changing the next hop. Control‑plane test only."], ["Route reflector", "iBGP route reflector. All emulated routers are clients in the DUT's AS; the AS numbers you set appear as origin AS in the AS_PATH. The reflector adds ORIGINATOR_ID and CLUSTER_LIST and keeps the next hop. Control‑plane test only."], ["Router (forwards traffic)", "BGP router that sets itself as next hop. Routes are learned and re‑advertised, and data traffic between the emulated routers' prefixes is sent through the DUT, so forwarding, loss and data‑plane convergence can be measured."]];
+var DTXT = {"pw": ["not set — asked at start, not stored", "not needed (SSH key of CMNODE01)", "asked at start, not stored"], "mdef": "Device default", "m0": "0 s", "mcust": "Custom…", "mna": "Not configurable on this platform", "dup": {"full": "full‑duplex"}, "up": "up"};
+var DEC = ".";
+function devById(id) { var k = id || "bird"; return DEVICES.filter(function (d) { return d.id === k; })[0] || DEVICES[3]; }
+var SPARK = [0.31,0.33,0.30,0.35,0.36,0.34,0.38,0.37,0.41,0.40,0.43,0.42,0.45,0.44,0.47,0.46,0.48,0.47,0.50,0.49];
+
 class Component extends DCLogic {
   cfgVals() {
-    var self = this, st = this.state || {}, cur = st.plat || "bird", prev = !!st.prev;
+    var self = this, st = this.state || {}, D = devById(st.dev), cur = st.plat || D.plat || "bird", prev = !!st.prev;
     var P = PLATS.filter(function (p) { return p.id === cur; })[0];
+    var own = D.plat === cur;
     return {
       plats: PLATS.map(function (p, i) {
         return { label: p.label, on: p.id === cur,
                  style: (p.id === cur ? SEG_ON : SEG_OFF) + (i ? "; border-left: 1px solid #C9CDC6" : ""),
                  pick: function () { self.setState({ plat: p.id }); } };
       }),
-      note: P.note, user: P.user, limit: P.limit, host: P.host, status: P.status, preview: P.preview,
-      detected: P.detected, platLabel: P.label,
+      note: P.note, user: own ? D.user : P.user, limit: own ? D.limit : P.limit, host: own ? D.host : P.host,
+      status: own ? D.status : P.status, preview: P.preview,
+      detected: own ? D.detected : P.detected, platLabel: P.label,
       isCisco: cur === "cisco", isLinux: cur === "bird" || cur === "frr", isBird: cur === "bird",
       prevOpen: prev,
       prevBtnStyle: "height: 36px" + (prev ? "; background: #EEF6F5; border-color: #0E6E66; color: #0A524C" : ""),
       togglePrev: function () { self.setState({ prev: !prev }); }
+    };
+  }
+  devVals() {
+    var self = this, st = this.state || {}, D = devById(st.dev);
+    var role = st.role !== undefined ? st.role : D.role, P = D.port;
+    var isCisco = D.plat === "cisco";
+    var use = P ? P.use : 0, mx = Math.max.apply(null, SPARK);
+    return {
+      list: DEVICES.map(function (d) { return { id: d.id, label: d.label, on: d.id === D.id }; }),
+      pick: function (e) { var n = devById(e.target.value); self.setState({ dev: n.id, plat: n.plat || st.plat, role: undefined }); },
+      cur: D.id, pw: DTXT.pw[D.pw],
+      roles: ROLES.map(function (r, i) {
+        return { label: r[0], on: i === role, style: (i === role ? SEG_ON : SEG_OFF) + (i ? "; border-left: 1px solid #C9CDC6" : ""),
+                 pick: function () { self.setState({ role: i }); } };
+      }),
+      roleNote: ROLES[role][1], ip: D.ip, asn: D.asn, guard: D.guard,
+      mraiDis: !isCisco,
+      mraiOpts: isCisco ? [{ l: DTXT.mdef + " (" + D.mrai + ")" }, { l: DTXT.m0 }, { l: DTXT.mcust }] : [{ l: DTXT.mna }],
+      hasPort: !!P,
+      portLine: P ? P.name + " · " + P.speed + " " + DTXT.dup[P.dup] + " · " + DTXT.up : "",
+      use: String(use).replace(".", DEC), mbps: P ? P.mbps : "", speed: P ? P.speed : "",
+      bar: "position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; background: #0E6E66; width: " + Math.max(1, use) + "%",
+      spark: SPARK.map(function (v, i) { return (i * 300 / (SPARK.length - 1)).toFixed(1) + "," + (32 - v / mx * 26).toFixed(1); }).join(" ")
     };
   }
   langVals() {
@@ -330,7 +385,7 @@ class Component extends DCLogic {
       move: function (e) { var r = e.currentTarget.getBoundingClientRect(); if (!r.width) return; var vx = (e.clientX - r.left) / r.width * 560; if (vx < L || vx > R) return; put({ cur: a + (vx - L) / (R - L) * (b - a) }); },
       slide: function (e) { put({ cur: parseFloat(e.target.value) }); },
       panTo: function (e) { var p = parseFloat(e.target.value); put({ pan: p, cur: clamp(c, p, p + s.span) }); }
-    }, ticks), cfg: this.cfgVals(), lang: this.langVals() };
+    }, ticks), cfg: this.cfgVals(), dev: this.devVals(), lang: this.langVals() };
   }
 }
 </script>

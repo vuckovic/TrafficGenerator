@@ -33,7 +33,7 @@ a{color:#0E6E66}a:hover{color:#0A524C}
 .tip{display:inline-flex;width:16px;height:16px;border-radius:50%;border:1px solid #8A9097;color:#545A61;font-size:10px;align-items:center;justify-content:center;margin-left:4px}
 </style>
 </helmet>
-<div style="min-height: 1760px; display: flex; flex-direction: column">
+<div style="min-height: 2000px; display: flex; flex-direction: column">
 
 <header style="background: #16191D; color: #F3F4F1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 0 24px; min-height: 64px">
 <div style="display: flex; align-items: center; gap: 10px">
@@ -42,6 +42,7 @@ a{color:#0E6E66}a:hover{color:#0A524C}
 </div>
 <nav aria-label="Главни мени" style="display: flex; flex-wrap: wrap; gap: 0; flex: 1 1 auto; min-width: 0">
 <a href="#" style="color: #FFFFFF; text-decoration: none; padding: 21px 8px 19px; border-bottom: 3px solid #5FD3C5; font-weight: 600; white-space: nowrap">Мерење</a>
+<a href="TestScheme.sr.dc.html" style="color: #C4C9CE; text-decoration: none; padding: 22px 8px; white-space: nowrap">Шема тестирања</a>
 <a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 8px; white-space: nowrap">Саобраћај</a>
 <a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 8px; white-space: nowrap">Извештаји</a>
 <a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 8px; white-space: nowrap">Логови DUT‑а</a>
@@ -79,19 +80,24 @@ a{color:#0E6E66}a:hover{color:#0A524C}
 
 <div class="card">
 <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap"><h2 class="h2">Уређај под тестом</h2><button class="btn btn-sm" type="button">Извези конфигурацију DUT‑а ▾</button></div>
+<div style="display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; align-items: end">
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="dev">Уређај <span class="tip" title="Уређаји се читају из датотеке deploy/duts.toml на CMNODE01. Избор уређаја попуњава поља испод.">i</span></label><select id="dev" class="inp" value="{{dev.cur}}" onChange="{{dev.pick}}"><sc-for list="{{dev.list}}" as="d" hint-placeholder-count="5"><option value="{{d.id}}">{{d.label}}</option></sc-for></select></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Лозинка на контролеру</span><span style="min-height: 36px; display: flex; align-items: center; font-size: 13px; color: #23403C">{{dev.pw}}</span></div>
+</div>
+<p style="margin: 0; font-size: 12px; color: #545A61; line-height: 1.5">Уређаји се читају из датотеке <span class="mono">deploy/duts.toml</span> на CMNODE01. Да бисте додали или изменили уређај, измените ту датотеку; списак се поново учитава при освежавању странице. Вредности попуњене из уређаја могу се испод изменити само за овај тест — не уписују се назад.</p>
 <fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
 <legend class="lbl" style="padding: 0; margin-bottom: 8px">Улога DUT‑а</legend>
 <div style="display: flex; flex-wrap: wrap; border: 1px solid #C9CDC6; border-radius: 8px; overflow: hidden; width: fit-content; max-width: 100%">
-<label style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #0E6E66; color: #FFFFFF; font-weight: 600"><input type="radio" name="role" checked="checked" style="accent-color: #FFFFFF; margin: 0">Рут сервер</label>
-<label style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-left: 1px solid #C9CDC6"><input type="radio" name="role" style="margin: 0">Рут рефлектор</label>
-<label style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-left: 1px solid #C9CDC6"><input type="radio" name="role" style="margin: 0">Рутер (прослеђује саобраћај)</label>
+<sc-for list="{{dev.roles}}" as="r" hint-placeholder-count="3">
+<label style="{{r.style}}"><input type="radio" name="role" checked="{{r.on}}" onChange="{{r.pick}}" style="margin: 0; accent-color: #FFFFFF">{{r.label}}</label>
+</sc-for>
 </div>
-<p style="margin: 4px 0 0; padding: 10px 12px; background: #EEF6F5; border-radius: 6px; color: #23403C; font-size: 13px; line-height: 1.5">Рут сервер IXP‑а. Сваки емулирани рутер је засебан eBGP сусед са сопственим AS бројем. Рут сервер прослеђује руте између суседа без додавања свог AS броја и без промене следећег скока (next hop). Само тест контролне равни.</p>
+<p style="margin: 4px 0 0; padding: 10px 12px; background: #EEF6F5; border-radius: 6px; color: #23403C; font-size: 13px; line-height: 1.5">{{dev.roleNote}}</p>
 </fieldset>
 <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
 <div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Препозната платформа</span><span class="mono" style="height: 36px; display: flex; align-items: center; font-size: 13px; color: #23403C">{{cfg.detected}}</span></div>
-<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="dutip">IP DUT‑а</label><input id="dutip" class="inp mono" value="10.100.0.1"></div>
-<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="dutas">ASN DUT‑а</label><input id="dutas" class="inp mono" value="64500"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="dutip">IP DUT‑а</label><input id="dutip" class="inp mono" value="{{dev.ip}}"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="dutas">ASN DUT‑а</label><input id="dutas" class="inp mono" value="{{dev.asn}}"></div>
 <div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Праћење DUT‑а</span><div style="display: flex; gap: 14px; align-items: center; height: 36px"><label style="display: flex; gap: 6px; align-items: center"><input type="checkbox" checked="checked">SSH</label><label style="display: flex; gap: 6px; align-items: center"><input type="checkbox">SNMP</label></div></div>
 </div>
 </div>
@@ -122,6 +128,8 @@ a{color:#0E6E66}a:hover{color:#0A524C}
 <div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="birdinc">BIRD include датотека <span class="tip" title="Суседи се уписују у ову датотеку; у bird.conf се први пут додаје један ред include.">i</span></label><input id="birdinc" class="inp mono" value="/etc/bird/tgen.conf"></div>
 </sc-if>
 <div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="maxr">Ограничење броја рута <span class="tip" title="Тестови са више рута од овога се одбијају, ради заштите малих уређаја (MikroTik CRS106: 20 000). Празно = без ограничења.">i</span></label><input id="maxr" class="inp mono" placeholder="без ограничења" value="{{cfg.limit}}"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="mguard">Заштита меморије (% слободно) <span class="tip" title="Штити мали уређај од нестанка меморије: тест се зауставља пре него што DUT остане без меморије. Чита се при сваком очитавању DUT‑а. 0 = искључено.">i</span></label><input id="mguard" class="inp mono" value="{{dev.guard}}"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="mrai">Интервал оглашавања (MRAI) <span class="tip" title="Колико дуго DUT сме да задржава ажурирања да би их груписао. 0 мери чисту брзину обраде; подразумевана вредност уређаја показује понашање у пракси. Само Cisco: шаље се као advertisement‑interval сваком tgen суседу.">i</span></label><select id="mrai" class="inp" disabled="{{dev.mraiDis}}"><sc-for list="{{dev.mraiOpts}}" as="o" hint-placeholder-count="3"><option>{{o.l}}</option></sc-for></select></div>
 <div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="after">После теста</label><select id="after" class="inp"><option>Уклони суседе</option><option>Задржи суседе</option></select></div>
 </div>
 <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
@@ -214,6 +222,21 @@ a{color:#0E6E66}a:hover{color:#0A524C}
 <div style="display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; color: #545A61"><span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 16px; height: 3px; background: #0E6E66"></span>p50</span><span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 16px; height: 3px; background: #C2410C"></span>p99</span><span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 16px; border-top: 2px dashed #8A9097"></span>понуђена ажурирања/s (десна оса)</span></div>
 </div>
 
+<sc-if value="{{dev.hasPort}}" hint-placeholder-val="{{ true }}">
+<div class="card" style="gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px"><h2 class="h2"><span class="hint" tabindex="0">Порт DUT‑а и искоришћеност линка<span class="tt" role="tooltip">Показује да ли је спор резултат последица уређаја или његовог линка: порт од 100 Mb/s може да се попуни много пре него што се оптерети CPU. Искоришћеност = излаз DUT‑а у BGP Mb/s, са TCP/IP заглављима, подељен брзином порта.</span></span></h2><span class="mono" style="font-size: 12px; color: #545A61">{{dev.portLine}}</span></div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center">
+<div style="display: flex; flex-direction: column; gap: 2px; flex: 0 0 auto"><span class="kv">{{dev.use}} %</span><span style="font-size: 12px; color: #545A61">{{dev.mbps}} Mb/s од {{dev.speed}}</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 260px; min-width: 0">
+<span style="position: relative; height: 10px; background: #ECEEEA; border-radius: 5px"><span style="{{dev.bar}}"></span><span style="position: absolute; left: 70%; top: -3px; bottom: -3px; width: 2px; background: #A15C07"></span><span style="position: absolute; left: 90%; top: -3px; bottom: -3px; width: 2px; background: #B42318"></span></span>
+<svg viewBox="0 0 300 36" role="img" aria-label="Порт DUT‑а и искоришћеност линка: last 5 minutes" style="width: 100%; height: 36px"><polyline fill="none" stroke="#0E6E66" stroke-width="2" points="{{dev.spark}}"></polyline></svg>
+<span style="font-size: 12px; color: #545A61">ознаке на 70 % и 90 %</span>
+</div>
+</div>
+<span style="display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: #1E7B3A; font-weight: 500"><span style="width: 8px; height: 8px; border-radius: 50%; background: #1E7B3A; flex: none"></span>Нема нових грешака на порту од почетка теста (input errors 0 · CRC 0 · drops 0)</span>
+</div>
+</sc-if>
+
 <div class="card" style="gap: 10px">
 <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px"><h2 class="h2">Стање генератора</h2><span style="font-size: 12px; color: #545A61">просечан CPU чвора · ознаке на 70 % и 90 %</span></div>
 <div style="display: grid; grid-template-columns: 92px minmax(0, 1fr) 56px 64px; gap: 8px 12px; align-items: center; font-size: 13px">
@@ -245,7 +268,7 @@ a{color:#0E6E66}a:hover{color:#0A524C}
 </main>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1760}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2000}}'>
 var M50 = [[-300,42.4],[-270,44.7],[-240,44.7],[-209,47.1],[-179,47.1],[-149,49.4],[-118,51.8],[-88,51.8],[-58,54.1],[-28,56.5],[0,56.5]];
 var M99 = [[-300,70.6],[-270,72.9],[-240,75.3],[-209,77.6],[-179,82.4],[-149,89.4],[-118,117.6],[-88,160],[-58,216.5],[-28,301.2],[0,367.1]];
 function lerp(p, x) {
@@ -283,22 +306,54 @@ var SEG_ON = "display: flex; align-items: center; gap: 8px; min-height: 44px; bo
 var SEG_OFF = "display: flex; align-items: center; gap: 8px; min-height: 44px; box-sizing: border-box; padding: 0 16px; background: #FFFFFF; color: #16191D; cursor: pointer";
 function ago(t) { var s = Math.round(-t); return s === 0 ? "сада" : "−" + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
 
+var DEVICES = [{"id": "mikrotik", "plat": "mikrotik", "ip": "10.100.0.111", "asn": "64500", "role": 2, "user": "admin", "host": "192.168.100.111", "limit": "20000", "guard": "0", "mrai": null, "port": null, "detected": "RouterOS 7.11.2 · CRS106‑1C‑5S", "pw": 0, "label": "MikroTik CRS106‑1C‑5S (RouterOS 7.11.2) · 10.100.0.111 · 1 Gb/s", "status": "Повезано · CRS106‑1C‑5S · RouterOS 7.11.2 · CPU 3 % · слободно 92 MiB · tgen суседа: 0"}, {"id": "asr920", "plat": "cisco", "ip": "10.100.0.200", "asn": "64500", "role": 2, "user": "vuckovic", "host": "192.168.100.200", "limit": "100000", "guard": "10", "mrai": "30 s", "port": {"name": "Gi0/0/23", "speed": "1000 Mb/s", "dup": "full", "use": 0.4, "mbps": "3,6"}, "detected": "IOS‑XE 17.15.05 · ASR‑920‑24SZ‑M", "pw": 0, "label": "Cisco ASR‑920‑24SZ‑M (IOS‑XE) · 10.100.0.200 · 1 Gb/s", "status": "Повезано · ASR‑920‑24SZ‑M · IOS‑XE 17.15.05 · CPU 9 % · процесорска меморија: слободно 624 од 829 MiB · tgen суседа: 0"}, {"id": "c1841", "plat": "cisco", "ip": "10.100.0.100", "asn": "64500", "role": 2, "user": "vuckovic", "host": "192.168.100.100", "limit": "30000", "guard": "15", "mrai": "30 s", "port": {"name": "Fa0/0", "speed": "100 Mb/s", "dup": "full", "use": 3.1, "mbps": "3,1"}, "detected": "IOS 15.1(4)M · Cisco 1841", "pw": 0, "label": "Cisco 1841 (IOS 15.1) · 10.100.0.100 · 100 Mb/s", "status": "Повезано · Cisco 1841 · IOS 15.1(4)M · CPU 2 % · процесорска меморија: слободно 118 од 137 MiB · tgen суседа: 0"}, {"id": "bird", "plat": "bird", "ip": "10.100.0.16", "asn": "64500", "role": 0, "user": "root", "host": "192.168.100.16", "limit": "", "guard": "0", "mrai": null, "port": {"name": "CMNODE06 eth0", "speed": "1000 Mb/s", "dup": "full", "use": 0.4, "mbps": "3,6"}, "detected": "BIRD 2.15", "pw": 1, "label": "BIRD замена на чвору CMNODE06 · 10.100.0.16 · 1 Gb/s", "status": "Повезано · BIRD 2.15 на CMNODE06 · оптерећење 0,4 · слободно 7,4 GiB · tgen суседа: 60 · Established: 60"}, {"id": "custom", "plat": null, "ip": "", "asn": "64500", "role": 0, "user": "", "host": "", "limit": "", "guard": "0", "mrai": null, "port": null, "detected": "", "pw": 2, "label": "Прилагођено (унос ручно)", "status": ""}];
+var ROLES = [["Рут сервер", "Рут сервер IXP‑а. Сваки емулирани рутер је засебан eBGP сусед са сопственим AS бројем. Рут сервер прослеђује руте између суседа без додавања свог AS броја и без промене следећег скока (next hop). Само тест контролне равни."], ["Рут рефлектор", "iBGP рут рефлектор. Сви емулирани рутери су клијенти у AS‑у DUT‑а; AS бројеви које подесите појављују се као изворни AS у AS_PATH. Рефлектор додаје ORIGINATOR_ID и CLUSTER_LIST и задржава следећи скок. Само тест контролне равни."], ["Рутер (прослеђује саобраћај)", "BGP рутер који себе поставља као следећи скок. Руте се уче и поново оглашавају, а саобраћај између префикса емулираних рутера шаље се кроз DUT, па се могу мерити прослеђивање, губици и конвергенција равни података."]];
+var DTXT = {"pw": ["није подешена — тражи се при покретању, не чува се", "није потребна (SSH кључ чвора CMNODE01)", "тражи се при покретању, не чува се"], "mdef": "Подразумевано за уређај", "m0": "0 s", "mcust": "Прилагођено…", "mna": "Није подесиво на овој платформи", "dup": {"full": "пун дуплекс"}, "up": "активан"};
+var DEC = ",";
+function devById(id) { var k = id || "bird"; return DEVICES.filter(function (d) { return d.id === k; })[0] || DEVICES[3]; }
+var SPARK = [0.31,0.33,0.30,0.35,0.36,0.34,0.38,0.37,0.41,0.40,0.43,0.42,0.45,0.44,0.47,0.46,0.48,0.47,0.50,0.49];
+
 class Component extends DCLogic {
   cfgVals() {
-    var self = this, st = this.state || {}, cur = st.plat || "bird", prev = !!st.prev;
+    var self = this, st = this.state || {}, D = devById(st.dev), cur = st.plat || D.plat || "bird", prev = !!st.prev;
     var P = PLATS.filter(function (p) { return p.id === cur; })[0];
+    var own = D.plat === cur;
     return {
       plats: PLATS.map(function (p, i) {
         return { label: p.label, on: p.id === cur,
                  style: (p.id === cur ? SEG_ON : SEG_OFF) + (i ? "; border-left: 1px solid #C9CDC6" : ""),
                  pick: function () { self.setState({ plat: p.id }); } };
       }),
-      note: P.note, user: P.user, limit: P.limit, host: P.host, status: P.status, preview: P.preview,
-      detected: P.detected, platLabel: P.label,
+      note: P.note, user: own ? D.user : P.user, limit: own ? D.limit : P.limit, host: own ? D.host : P.host,
+      status: own ? D.status : P.status, preview: P.preview,
+      detected: own ? D.detected : P.detected, platLabel: P.label,
       isCisco: cur === "cisco", isLinux: cur === "bird" || cur === "frr", isBird: cur === "bird",
       prevOpen: prev,
       prevBtnStyle: "height: 36px" + (prev ? "; background: #EEF6F5; border-color: #0E6E66; color: #0A524C" : ""),
       togglePrev: function () { self.setState({ prev: !prev }); }
+    };
+  }
+  devVals() {
+    var self = this, st = this.state || {}, D = devById(st.dev);
+    var role = st.role !== undefined ? st.role : D.role, P = D.port;
+    var isCisco = D.plat === "cisco";
+    var use = P ? P.use : 0, mx = Math.max.apply(null, SPARK);
+    return {
+      list: DEVICES.map(function (d) { return { id: d.id, label: d.label, on: d.id === D.id }; }),
+      pick: function (e) { var n = devById(e.target.value); self.setState({ dev: n.id, plat: n.plat || st.plat, role: undefined }); },
+      cur: D.id, pw: DTXT.pw[D.pw],
+      roles: ROLES.map(function (r, i) {
+        return { label: r[0], on: i === role, style: (i === role ? SEG_ON : SEG_OFF) + (i ? "; border-left: 1px solid #C9CDC6" : ""),
+                 pick: function () { self.setState({ role: i }); } };
+      }),
+      roleNote: ROLES[role][1], ip: D.ip, asn: D.asn, guard: D.guard,
+      mraiDis: !isCisco,
+      mraiOpts: isCisco ? [{ l: DTXT.mdef + " (" + D.mrai + ")" }, { l: DTXT.m0 }, { l: DTXT.mcust }] : [{ l: DTXT.mna }],
+      hasPort: !!P,
+      portLine: P ? P.name + " · " + P.speed + " " + DTXT.dup[P.dup] + " · " + DTXT.up : "",
+      use: String(use).replace(".", DEC), mbps: P ? P.mbps : "", speed: P ? P.speed : "",
+      bar: "position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; background: #0E6E66; width: " + Math.max(1, use) + "%",
+      spark: SPARK.map(function (v, i) { return (i * 300 / (SPARK.length - 1)).toFixed(1) + "," + (32 - v / mx * 26).toFixed(1); }).join(" ")
     };
   }
   langVals() {
@@ -330,7 +385,7 @@ class Component extends DCLogic {
       move: function (e) { var r = e.currentTarget.getBoundingClientRect(); if (!r.width) return; var vx = (e.clientX - r.left) / r.width * 560; if (vx < L || vx > R) return; put({ cur: a + (vx - L) / (R - L) * (b - a) }); },
       slide: function (e) { put({ cur: parseFloat(e.target.value) }); },
       panTo: function (e) { var p = parseFloat(e.target.value); put({ pan: p, cur: clamp(c, p, p + s.span) }); }
-    }, ticks), cfg: this.cfgVals(), lang: this.langVals() };
+    }, ticks), cfg: this.cfgVals(), dev: this.devVals(), lang: this.langVals() };
   }
 }
 </script>

@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TrafficGenerator — Test scheme</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F4F1;color:#16191D;font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:14px}
+a{color:#0E6E66}a:hover{color:#0A524C}
+.card{background:#FFFFFF;border:1px solid #D9DCD6;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.h2{margin:0;font-size:15px;font-weight:600;letter-spacing:.01em}
+.lbl{font-size:12px;color:#545A61;font-weight:500}
+.inp{height:36px;box-sizing:border-box;border:1px solid #C9CDC6;border-radius:6px;padding:0 10px;font:inherit;background:#FFFFFF;color:#16191D}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.btn{height:36px;padding:0 14px;border-radius:6px;border:1px solid #C9CDC6;background:#FFFFFF;color:#16191D;font:inherit;font-weight:500;cursor:pointer}
+.btn-sm{height:30px;padding:0 10px;font-size:12px}
+.th{font-size:11px;color:#545A61;font-weight:600;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:8px 10px;border-bottom:1px solid #D9DCD6}
+.td{padding:8px 10px;border-bottom:1px solid #ECEEEA;white-space:nowrap}
+.kpi{background:#FFFFFF;border:1px solid #D9DCD6;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;flex:1 1 150px}
+.kv{font-size:24px;font-weight:600;font-family:'IBM Plex Mono',ui-monospace,monospace}
+.hint{position:relative;display:inline-block;cursor:help;border-bottom:1px dotted #8A9097;outline:none;width:fit-content}
+.hint:focus-visible{box-shadow:0 0 0 2px #0E6E66;border-radius:2px}
+.tt{display:none;position:absolute;left:0;top:calc(100% + 6px);width:260px;white-space:normal;background:#16191D;color:#F3F4F1;font-size:12px;font-weight:400;line-height:1.45;padding:8px 10px;border-radius:6px;z-index:5}
+.hint:hover .tt,.hint:focus .tt{display:block}
+.zb{height:32px;min-width:44px;padding:0 10px;border:1px solid #C9CDC6;background:#FFFFFF;color:#16191D;border-radius:6px;font:inherit;font-size:12px;font-weight:500;cursor:pointer}
+.zon{background:#0E6E66;color:#FFFFFF;border-color:#0E6E66}
+.tip{display:inline-flex;width:16px;height:16px;border-radius:50%;border:1px solid #8A9097;color:#545A61;font-size:10px;align-items:center;justify-content:center;margin-left:4px}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.k1 p{margin:0;line-height:1.55}
+</style>
+</helmet>
+<div style="min-height: 2700px; display: flex; flex-direction: column">
+
+<header style="background: #16191D; color: #F3F4F1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 0 24px; min-height: 64px">
+<div style="display: flex; align-items: center; gap: 10px">
+<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="1" y="1" width="24" height="24" rx="6" fill="none" stroke="#5FD3C5" stroke-width="2"></rect><path d="M6 17 L10 9 L14 15 L17 11 L20 17" fill="none" stroke="#5FD3C5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span style="display: flex; flex-direction: column; gap: 1px; line-height: 1.2"><span style="font-weight: 700; font-size: 16px">TrafficGenerator</span><span class="mono" style="font-size: 11px; color: #A9AFB5">CMNODE01 · 192.168.100.11</span></span>
+</div>
+<nav aria-label="Main" style="display: flex; flex-wrap: wrap; gap: 0; flex: 1 1 auto; min-width: 0">
+<a href="Main.dc.html" style="color: #C4C9CE; text-decoration: none; padding: 22px 8px; white-space: nowrap">Benchmark</a>
+<a href="TestScheme.dc.html" style="color: #FFFFFF; text-decoration: none; padding: 21px 8px 19px; border-bottom: 3px solid #5FD3C5; font-weight: 600; white-space: nowrap" aria-current="page">Test scheme</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 8px; white-space: nowrap">Traffic</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 8px; white-space: nowrap">Reports</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 8px; white-space: nowrap">DUT logs</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 8px; white-space: nowrap">History</a>
+<a href="#" style="color: #C4C9CE; text-decoration: none; padding: 22px 8px; white-space: nowrap">Nodes &amp; settings</a>
+</nav>
+<div style="display: flex; align-items: center; gap: 8px; flex: none; margin-left: auto">
+<span style="display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; background: #23403C; color: #BFF2EA; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 600"><span style="width: 8px; height: 8px; border-radius: 50%; background: #5FD3C5"></span>RUNNING · Test scheme · Cisco 1841 · rate series, MRAI 0 · <span class="mono">1:18:05</span></span>
+<button class="btn" type="button" disabled="disabled" style="background: #2A2F35; color: #8A9097; border-color: #3A4047">Start</button>
+<button class="btn" type="button" style="background: #B42318; color: #FFFFFF; border-color: #B42318; font-weight: 600">Stop</button>
+<button type="button" aria-label="admin · Log out" title="admin · Log out" style="height: 36px; width: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid #3A4047; background: transparent; color: #C4C9CE; cursor: pointer"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M7 3 H4 a1 1 0 0 0 -1 1 v10 a1 1 0 0 0 1 1 h3 M11 12.5 L14.5 9 L11 5.5 M14.5 9 H7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<div style="position: relative">
+<button type="button" aria-haspopup="menu" aria-expanded="{{lang.open}}" aria-label="Language: English" title="Interface language" onClick="{{lang.toggle}}" style="height: 36px; min-width: 44px; display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; border-radius: 6px; border: 1px solid #3A4047; background: transparent; color: #F3F4F1; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer"><svg width="22" height="11" viewBox="0 0 60 30" aria-hidden="true" style="border-radius: 2px; display: block"><clipPath id="gbA1"><path d="M0,0 v30 h60 v-30 z"></path></clipPath><clipPath id="gbA2"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"></path></clipPath><g clip-path="url(#gbA1)"><path d="M0,0 v30 h60 v-30 z" fill="#012169"></path><path d="M0,0 L60,30 M60,0 L0,30" stroke="#FFFFFF" stroke-width="6"></path><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#gbA2)" stroke="#C8102E" stroke-width="4"></path><path d="M30,0 v30 M0,15 h60" stroke="#FFFFFF" stroke-width="10"></path><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"></path></g></svg><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5 L5 6.5 L8 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<sc-if value="{{lang.open}}" hint-placeholder-val="{{ false }}">
+<div role="menu" aria-label="Language" style="position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; min-width: 190px; background: #FFFFFF; color: #16191D; border: 1px solid #D9DCD6; border-radius: 8px; box-shadow: 0 10px 28px rgba(22, 25, 29, 0.22); padding: 6px; display: flex; flex-direction: column; gap: 2px">
+<a href="#" role="menuitemradio" aria-checked="true" onClick="{{lang.toggle}}" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 6px; background: #EEF6F5; color: #16191D; text-decoration: none; font-weight: 600"><svg width="22" height="11" viewBox="0 0 60 30" aria-hidden="true" style="border-radius: 2px; display: block"><clipPath id="gbB1"><path d="M0,0 v30 h60 v-30 z"></path></clipPath><clipPath id="gbB2"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"></path></clipPath><g clip-path="url(#gbB1)"><path d="M0,0 v30 h60 v-30 z" fill="#012169"></path><path d="M0,0 L60,30 M60,0 L0,30" stroke="#FFFFFF" stroke-width="6"></path><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#gbB2)" stroke="#C8102E" stroke-width="4"></path><path d="M30,0 v30 M0,15 h60" stroke="#FFFFFF" stroke-width="10"></path><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"></path></g></svg><span style="flex: 1 1 auto">English</span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 7.5 L6 10 L11 4" fill="none" stroke="#0E6E66" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
+<a href="TestScheme.sr.dc.html" role="menuitemradio" aria-checked="false" lang="sr-Cyrl" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 6px; color: #16191D; text-decoration: none"><img src="/_blob/5daebb858327040443dbd410dc778160" width="22" height="15" alt="" style="border-radius: 2px; display: block; box-shadow: 0 0 0 1px #D9DCD6"><span style="flex: 1 1 auto">Српски</span></a>
+</div>
+</sc-if>
+</div>
+</div>
+</header>
+
+<div style="background: #FFF7E6; color: #6B3E00; font-size: 12px; padding: 6px 28px; border-bottom: 1px solid #F0DDB5">Preview — layout mock‑up with illustrative sample values, not measured data.</div>
+
+<main style="flex: 1 1 auto; width: 100%; max-width: 1440px; margin: 0 auto; box-sizing: border-box; padding: 24px 28px 40px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; flex-direction: column; gap: 6px; max-width: 900px"><h1 style="margin: 0; font-size: 24px; font-weight: 700">Test scheme</h1><p style="margin: 0; color: #545A61; line-height: 1.5">The standard comparison test of the test devices: connection test → smoke → rate series → scale, one device after another, one run at a time. The same as tools/tgen_suite.py.</p></div>
+
+<section class="card k1" aria-labelledby="k1h" style="background: #F8FBFA; border-color: #C7E3DF">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap"><h2 class="h2" id="k1h" style="font-size: 17px">How this test works</h2><button class="btn btn-sm" type="button" aria-expanded="{{k1.open}}" aria-controls="k1body" onClick="{{k1.toggle}}" style="height: 36px">{{k1.label}}</button></div>
+<sc-if value="{{k1.open}}" hint-placeholder-val="{{ true }}">
+<div id="k1body" style="display: flex; flex-wrap: wrap; gap: 20px 32px; align-items: flex-start">
+<div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<p><b>What this test measures.</b> How fast each device can take in BGP routes and pass them on, where it stops keeping up (the knee), and how many routes it can hold. Every device gets exactly the same load, so the results can be compared side by side.</p>
+<p><b>Before you start.</b> The devices are listed in <span class="mono">deploy/duts.toml</span> on CMNODE01 — add or change a device there. Each device needs SSH access and an existing <span class="mono">router bgp</span> with the AS from the file; enter its password below (it is used for this test only and not stored). The controller adds its own BGP neighbours (tagged <span class="mono">tgen</span>) before each run and removes them afterwards; nothing else on the device is changed. Do not run other tests at the same time.</p>
+<p><b>Reading the results.</b> Sustainable rate is the highest rate before the knee; deliveries/s counts every route copy the device sends to every peer, so it can be compared across sizes. A device whose port is nearly full (link use) is limited by its link, not its CPU — check before comparing. Every run of the scheme also appears in History with its own report.</p>
+<p><b>How long it takes.</b> It depends on the device’s size and MRAI — from a few minutes to well over half an hour per device; the estimate is shown below and updated as runs finish.</p>
+</div>
+<div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+<p><b>The four steps, for each device in turn:</b></p>
+<ol style="margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px">
+<li style="line-height: 1.55"><b>Connection test</b> — logs in, reads model, software, CPU, free memory and the port’s speed and error counters. Nothing is changed.</li>
+<li style="line-height: 1.55"><b>Smoke</b> — a small run (e.g. 12 routers × 1 000 prefixes): all sessions must come up, every route must arrive, nothing extra. If this fails, the device’s other steps are skipped.</li>
+<li style="line-height: 1.55"><b>Rate series</b> — the same routers announce at increasing rates (prefixes per second per router). At each rate we measure how fast the device passes routes on. The knee is the first rate where the device falls behind: it delivers less than 90 % of what it is offered, or it is still sending more than 5 s (plus its MRAI) after the last route was sent. Cisco devices run the series twice: with their own advertisement interval (MRAI, real‑world behaviour) and with MRAI 0 (raw processing speed).</li>
+<li style="line-height: 1.55"><b>Scale</b> — more routers and prefixes at full speed, step by step, up to the device’s route limit, watching its free memory. The step stops early if memory drops below the device’s memory guard.</li>
+</ol>
+</div>
+</div>
+</sc-if>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+<section class="card" aria-labelledby="k2h" style="flex: 999 1 640px; min-width: 0">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 class="h2" id="k2h">Devices</h2><span style="font-size: 12px; color: #545A61">From <span class="mono">deploy/duts.toml</span>. Passwords are used for this scheme only and not stored.</span></div>
+<div style="overflow-x: auto; border: 1px solid #ECEEEA; border-radius: 8px">
+<table style="border-collapse: collapse; width: 100%; font-size: 13px">
+<thead><tr><th class="th"><span style="position: absolute; left: -9999px">✓</span></th><th class="th">Device</th><th class="th">Port</th><th class="th">Password</th><th class="th">Connection</th></tr></thead>
+<tbody>
+<sc-for list="{{devs}}" as="d" hint-placeholder-count="3">
+<tr><td class="td"><input type="checkbox" checked="{{d.on}}" onChange="{{d.toggle}}" aria-label="{{d.name}}" style="accent-color: #0E6E66; width: 18px; height: 18px; margin: 0"></td><td class="td"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">{{d.name}}</span><span class="mono" style="font-size: 12px; color: #545A61">{{d.ip}}</span></span></td><td class="td mono" style="font-size: 12px">{{d.port}}</td><td class="td"><input class="inp" type="password" placeholder="not stored" aria-label="Password · {{d.name}}" style="width: 150px"></td><td class="td"><span style="display: flex; gap: 10px; align-items: center"><button class="btn btn-sm" type="button" style="height: 36px">Test connection</button><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #1E7B3A"><span style="width: 8px; height: 8px; border-radius: 50%; background: #1E7B3A; flex: none"></span><span class="mono" style="color: #23403C">{{d.conn}}</span></span></span></td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+<h3 class="lbl" style="margin: 6px 0 0; font-size: 12px">Sizes and MRAI variants from the file (read‑only)</h3>
+<div style="overflow-x: auto; border: 1px solid #ECEEEA; border-radius: 8px">
+<table style="border-collapse: collapse; width: 100%; font-size: 12px">
+<thead><tr><th class="th">Device</th><th class="th">Smoke</th><th class="th">Rate series</th><th class="th">MRAI variants</th><th class="th">Scale</th></tr></thead>
+<tbody>
+<sc-for list="{{sizes}}" as="z" hint-placeholder-count="3">
+<tr><td class="td" style="font-weight: 600">{{z.name}}</td><td class="td mono">{{z.smoke}}</td><td class="td mono" style="white-space: normal">{{z.series}}</td><td class="td" style="white-space: normal">{{z.mrai}}</td><td class="td mono" style="white-space: normal">{{z.scale}}</td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<section class="card" aria-labelledby="k3h" style="flex: 1 1 340px; min-width: 0">
+<h2 class="h2" id="k3h">Steps</h2>
+<div style="display: flex; flex-direction: column">
+<label style="display: flex; gap: 10px; align-items: flex-start; min-height: 44px; padding: 6px 0"><input type="checkbox" checked="checked" style="accent-color: #0E6E66; width: 18px; height: 18px; margin: 2px 0 0"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">1 · Connection test</span><span style="font-size: 12px; color: #545A61">read‑only check of each device</span></span></label>
+<label style="display: flex; gap: 10px; align-items: flex-start; min-height: 44px; padding: 6px 0"><input type="checkbox" checked="checked" style="accent-color: #0E6E66; width: 18px; height: 18px; margin: 2px 0 0"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">2 · Smoke</span><span style="font-size: 12px; color: #545A61">small run, all routes must arrive</span></span></label>
+<label style="display: flex; gap: 10px; align-items: flex-start; min-height: 44px; padding: 6px 0"><input type="checkbox" checked="checked" style="accent-color: #0E6E66; width: 18px; height: 18px; margin: 2px 0 0"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">3 · Rate series</span><span style="font-size: 12px; color: #545A61">increasing rates up to the knee</span></span></label>
+<label style="display: flex; gap: 10px; align-items: flex-start; min-height: 44px; padding: 6px 0"><input type="checkbox" checked="checked" style="accent-color: #0E6E66; width: 18px; height: 18px; margin: 2px 0 0"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">4 · Scale</span><span style="font-size: 12px; color: #545A61">more routers and prefixes up to the route limit</span></span></label>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: end">
+<div style="display: flex; flex-direction: column; gap: 6px"><label class="lbl" for="pause">Pause between runs (s)</label><input id="pause" class="inp mono" value="10"></div>
+<label style="display: flex; gap: 8px; align-items: center; min-height: 36px; font-size: 13px; font-weight: 500"><input type="checkbox" checked="checked" style="accent-color: #0E6E66; width: 18px; height: 18px; margin: 0">Stop on failure <span class="tip" title="A failed connection test or smoke skips the rest of that device; the scheme continues with the next one.">i</span></label>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; background: #F3F4F1; border-radius: 6px"><span class="lbl">Estimated duration</span><span style="font-size: 14px">Remaining ≈ <b class="mono">22 min</b> · total ≈ <b class="mono">1 h 40 min</b></span><span style="font-size: 12px; color: #545A61">MikroTik 31 min (done) · ASR‑920 38 min (done) · 1841 ≈ 31 min</span></div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><button class="btn" type="button" disabled="disabled" style="flex: 1 1 140px; background: #ECEEEA; color: #8A9097">Start scheme</button><button class="btn" type="button" style="flex: 1 1 140px; background: #B42318; color: #FFFFFF; border-color: #B42318; font-weight: 600">Stop scheme</button></div>
+</section>
+
+</div>
+
+<section class="card" aria-labelledby="k9h">
+<h2 class="h2" id="k9h">Progress</h2>
+<div style="overflow-x: auto; border: 1px solid #ECEEEA; border-radius: 8px">
+<table style="border-collapse: collapse; width: 100%; font-size: 13px">
+<thead><tr><th class="th">Device</th><th class="th">Connection</th><th class="th">Smoke</th><th class="th">Series · device MRAI</th><th class="th">Series · MRAI 0</th><th class="th">Scale</th></tr></thead>
+<tbody>
+<sc-for list="{{prog}}" as="r" hint-placeholder-count="3">
+<tr><td class="td" style="font-weight: 600">{{r.name}}</td><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="5"><td class="td"><span style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start"><span class="chip" style="{{c.style}}">{{c.state}}</span><span style="font-size: 12px; color: #545A61">{{c.detail}}</span><sc-if value="{{c.live}}" hint-placeholder-val="{{ false }}"><a href="Main.dc.html" style="font-size: 12px">live view →</a></sc-if></span></td></sc-for></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<section class="card" aria-labelledby="k10h">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap"><h2 class="h2" id="k10h">Comparison</h2><div style="display: flex; gap: 8px"><button class="btn btn-sm" type="button">Export CSV</button><button class="btn btn-sm" type="button">Export Markdown</button></div></div>
+<div style="overflow-x: auto; border: 1px solid #ECEEEA; border-radius: 8px">
+<table style="border-collapse: collapse; width: 100%; font-size: 13px">
+<thead><tr><th class="th">Device</th><th class="th"><span class="hint" tabindex="0">MRAI<span class="tt" role="tooltip" style="text-transform: none; letter-spacing: 0">Advertisement interval used for this row: the device’s own (real‑world) or 0 (raw processing speed).</span></span></th><th class="th"><span class="hint" tabindex="0">Smoke<span class="tt" role="tooltip" style="text-transform: none; letter-spacing: 0">Initial convergence time and missing routes of the small run.</span></span></th><th class="th"><span class="hint" tabindex="0">Sustainable rate /router<span class="tt" role="tooltip" style="text-transform: none; letter-spacing: 0">Highest offered rate (prefixes/s per router) before the knee.</span></span></th><th class="th"><span class="hint" tabindex="0">Knee /router<span class="tt" role="tooltip" style="text-transform: none; letter-spacing: 0">First rate where the device fell behind. “Not reached” = it kept up at every rate tried.</span></span></th><th class="th"><span class="hint" tabindex="0">Sustainable deliveries/s<span class="tt" role="tooltip" style="text-transform: none; letter-spacing: 0">Route copies per second the device sent to all peers at the sustainable rate: comparable across sizes.</span></span></th><th class="th"><span class="hint" tabindex="0">Max DUT output /s<span class="tt" role="tooltip" style="text-transform: none; letter-spacing: 0">Highest output measured at full speed (smoke or scale).</span></span></th><th class="th"><span class="hint" tabindex="0">Largest scale passed<span class="tt" role="tooltip" style="text-transform: none; letter-spacing: 0">Largest routers × prefixes step that converged with nothing missing.</span></span></th><th class="th"><span class="hint" tabindex="0">Lowest free memory<span class="tt" role="tooltip" style="text-transform: none; letter-spacing: 0">Lowest free memory seen during the scale steps.</span></span></th></tr></thead>
+<tbody>
+<sc-for list="{{cmp}}" as="r" hint-placeholder-count="5">
+<tr><td class="td"><span style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600"><span style="{{r.sw}}"></span>{{r.name}}</span></td><td class="td">{{r.mrai}}</td><td class="td mono">{{r.smoke}}</td><td class="td mono">{{r.sust}}</td><td class="td mono">{{r.knee}}</td><td class="td mono" style="font-weight: 600">{{r.deliv}}</td><td class="td mono">{{r.out}}</td><td class="td mono">{{r.scale}}</td><td class="td mono">{{r.mem}}</td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+
+<section class="card" aria-labelledby="k11h">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap"><h2 class="h2" id="k11h">Knee chart</h2><div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center"><div role="group" aria-label="Knee chart" style="display: flex; gap: 4px; flex-wrap: wrap"><sc-for list="{{kc.views}}" as="v" hint-placeholder-count="3"><button type="button" class="{{v.cls}}" aria-pressed="{{v.on}}" onClick="{{v.pick}}" style="height: 36px">{{v.label}}</button></sc-for></div><button class="btn btn-sm" type="button">SVG</button><button class="btn btn-sm" type="button">PNG</button><button class="btn btn-sm" type="button">HTML</button></div></div>
+<div style="position: relative; max-width: 1100px">
+<svg viewBox="0 0 760 330" role="img" aria-label="{{kc.aria}}" style="width: 100%; height: auto; display: block; cursor: crosshair" onMouseMove="{{kc.move}}">
+<g stroke="#ECEEEA" stroke-width="1"><sc-for list="{{kc.gx}}" as="g" hint-placeholder-count="4"><line x1="{{g.x}}" y1="16" x2="{{g.x}}" y2="286"></line></sc-for><sc-for list="{{kc.gy}}" as="g" hint-placeholder-count="4"><line x1="64" y1="{{g.y}}" x2="740" y2="{{g.y}}"></line></sc-for></g>
+<line x1="64" y1="286" x2="740" y2="286" stroke="#8A9097"></line><line x1="64" y1="16" x2="64" y2="286" stroke="#8A9097"></line>
+<sc-for list="{{kc.refs}}" as="f" hint-placeholder-count="1"><line x1="{{f.x1}}" y1="{{f.y1}}" x2="{{f.x2}}" y2="{{f.y2}}" stroke="#8A9097" stroke-width="1.2" stroke-dasharray="2 4"></line></sc-for>
+<sc-for list="{{kc.lines}}" as="s" hint-placeholder-count="5"><polyline fill="none" stroke="{{s.color}}" stroke-width="2.5" stroke-dasharray="{{s.dash}}" points="{{s.pts}}"></polyline><sc-for list="{{s.dots}}" as="p" hint-placeholder-count="5"><circle cx="{{p.x}}" cy="{{p.y}}" r="{{p.r}}" fill="{{p.fill}}" stroke="{{p.stroke}}" stroke-width="2"></circle></sc-for></sc-for>
+<sc-for list="{{kc.bars}}" as="b" hint-placeholder-count="5"><rect x="64" y="{{b.y}}" width="{{b.w}}" height="22" rx="3" fill="{{b.color}}" fill-opacity="{{b.op}}"></rect></sc-for>
+<sc-if value="{{kc.hasCursor}}" hint-placeholder-val="{{ true }}"><line x1="{{kc.cx}}" y1="16" x2="{{kc.cx}}" y2="286" stroke="#5B4FC4" stroke-width="1.5"></line></sc-if>
+</svg>
+<sc-for list="{{kc.labels}}" as="q" hint-placeholder-count="10"><span style="{{q.style}}">{{q.t}}</span></sc-for>
+</div>
+<sc-if value="{{kc.hasCursor}}" hint-placeholder-val="{{ true }}">
+<label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #545A61">Offered <input type="range" min="1" max="4.477" step="0.01" value="{{kc.cur}}" onChange="{{kc.slide}}" style="width: 260px; accent-color: #0E6E66"><span class="mono">{{kc.curLabel}}</span></label>
+<ul class="mono" style="list-style: none; margin: 0; padding: 8px 10px; background: #F3F4F1; border-radius: 6px; font-size: 12px; display: flex; flex-direction: column; gap: 3px">
+<sc-for list="{{kc.read}}" as="q" hint-placeholder-count="4"><li style="display: flex; gap: 8px; align-items: center"><span style="{{q.sw}}"></span>{{q.t}}</li></sc-for>
+</ul>
+</sc-if>
+<div style="display: flex; gap: 8px 18px; flex-wrap: wrap; font-size: 12px; color: #545A61; align-items: center"><sc-for list="{{kc.legend}}" as="g" hint-placeholder-count="5"><span style="display: inline-flex; align-items: center; gap: 6px"><svg width="22" height="6" aria-hidden="true"><line x1="0" y1="3" x2="22" y2="3" stroke="{{g.color}}" stroke-width="3" stroke-dasharray="{{g.dash}}"></line></svg>{{g.l}}</span></sc-for><span>· One colour per device · solid = MRAI 0 · dashed = device MRAI · ringed points are past the knee</span></div>
+</section>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2700}}'>
+var D = {"devs": [{"id": "mikrotik", "name": "MikroTik CRS106", "ip": "10.100.0.111 · ssh 192.168.100.111", "port": "ether1 · 1 Gb/s", "conn": "OK · RouterOS 7.11.2"}, {"id": "asr920", "name": "Cisco ASR‑920", "ip": "10.100.0.200 · ssh 192.168.100.200", "port": "Gi0/0/23 · 1 Gb/s", "conn": "OK · IOS‑XE 17.15.05"}, {"id": "c1841", "name": "Cisco 1841", "ip": "10.100.0.100 · ssh 192.168.100.100", "port": "Fa0/0 · 100 Mb/s", "conn": "OK · IOS 15.1(4)M"}], "sizes": [{"name": "MikroTik CRS106", "smoke": "12 × 1 000", "series": "12 × 100 · 2 · 5 · 8 · 10 · 15 /s per router", "mrai": "device default only (RouterOS has no MRAI setting)", "scale": "12×500 → 12×1 000 → 20×1 000"}, {"name": "Cisco ASR‑920", "smoke": "12 × 1 000", "series": "12 × 1 000 · 5 · 10 · 20 · 50 · 100 /s per router", "mrai": "device default (30 s) · 0 s", "scale": "12×1 000 → 30×1 000 → 60×1 000 → 60×1 600"}, {"name": "Cisco 1841", "smoke": "6 × 200", "series": "6 × 50 · 1 · 2 · 4 · 8 · 16 /s per router", "mrai": "device default (30 s) · 0 s", "scale": "6×500 → 12×500 → 12×800 → 20×1 000 → 30×1 000"}], "prog": [{"name": "MikroTik CRS106", "cells": [["passed", "RouterOS 7.11.2"], ["passed", "6.2 s · 0 missing"], ["passed", "knee at 8 /s"], ["na", "RouterOS: no MRAI setting"], ["passed", "20 × 1 000"]]}, {"name": "Cisco ASR‑920", "cells": [["passed", "IOS‑XE 17.15.05"], ["passed", "5.7 s · 0 missing"], ["passed", "no knee up to 100 /s"], ["passed", "no knee up to 100 /s"], ["passed", "60 × 1 600"]]}, {"name": "Cisco 1841", "cells": [["passed", "IOS 15.1(4)M"], ["passed", "3.9 s · 0 missing"], ["passed", "no knee up to 16 /s"], ["running", "rate 4 /s (3 of 5)"], ["waiting", "—"]]}], "cmp": [{"dev": "mikrotik", "name": "MikroTik CRS106", "mrai": "device default", "smoke": "6.2 s · 0 missing", "sust": "5 /s", "knee": "8 /s", "deliv": "660", "out": "1 050", "scale": "20 × 1 000", "mem": "38 %", "color": "#2A6FDB"}, {"dev": "asr920", "name": "Cisco ASR‑920", "mrai": "device default (30 s)", "smoke": "5.7 s · 0 missing", "sust": "≥ 100 /s", "knee": "not reached", "deliv": "≥ 13 200", "out": "26 050", "scale": "60 × 1 600", "mem": "71 %", "color": "#D9661F"}, {"dev": "asr920", "name": "Cisco ASR‑920", "mrai": "0 s", "smoke": "—", "sust": "≥ 100 /s", "knee": "not reached", "deliv": "≥ 13 200", "out": "26 050", "scale": "—", "mem": "—", "color": "#D9661F"}, {"dev": "c1841", "name": "Cisco 1841", "mrai": "device default (30 s)", "smoke": "3.9 s · 0 missing", "sust": "≥ 16 /s", "knee": "not reached", "deliv": "≥ 480", "out": "1 950", "scale": "running", "mem": "—", "color": "#0F8C9C"}, {"dev": "c1841", "name": "Cisco 1841", "mrai": "0 s", "smoke": "—", "sust": "running", "knee": "running", "deliv": "running", "out": "—", "scale": "—", "mem": "—", "color": "#0F8C9C"}], "ser": [{"dev": "mikrotik", "l": "MikroTik CRS106", "dash": "", "lim": 5, "kneeFrom": 2, "pts": [[264, 263, 0.4], [660, 655, 0.9], [1056, 870, 7.8], [1320, 880, 18], [1980, 890, 41]], "color": "#2A6FDB"}, {"dev": "asr920", "l": "Cisco ASR‑920 · MRAI 30 s", "dash": "6 4", "lim": 35, "kneeFrom": 99, "pts": [[660, 560, 29], [1320, 1130, 30], [2640, 2280, 31], [6600, 5800, 30], [13200, 11900, 31]], "color": "#D9661F"}, {"dev": "asr920", "l": "Cisco ASR‑920 · MRAI 0", "dash": "", "lim": 5, "kneeFrom": 99, "pts": [[660, 655, 0.3], [1320, 1318, 0.4], [2640, 2630, 0.5], [6600, 6580, 0.8], [13200, 13150, 1.2]], "color": "#D9661F"}, {"dev": "c1841", "l": "Cisco 1841 · MRAI 30 s", "dash": "6 4", "lim": 35, "kneeFrom": 99, "pts": [[30, 26, 30], [60, 52, 31], [120, 104, 30], [240, 210, 32], [480, 425, 31]], "color": "#0F8C9C"}, {"dev": "c1841", "l": "Cisco 1841 · MRAI 0 (running)", "dash": "", "lim": 5, "kneeFrom": 99, "pts": [[30, 30, 0.5], [60, 60, 0.6]], "color": "#0F8C9C"}], "bars": [{"dev": "mikrotik", "l": "MikroTik", "v": 660, "ge": false, "color": "#2A6FDB"}, {"dev": "asr920", "l": "ASR‑920 · 30 s", "v": 13200, "ge": true, "color": "#D9661F"}, {"dev": "asr920", "l": "ASR‑920 · 0", "v": 13200, "ge": true, "color": "#D9661F"}, {"dev": "c1841", "l": "1841 · 30 s", "v": 480, "ge": true, "color": "#0F8C9C"}, {"dev": "c1841", "l": "1841 · 0", "v": 60, "ge": true, "run": true, "color": "#0F8C9C"}], "st": {"passed": "Passed", "running": "Running", "waiting": "Waiting", "na": "n/a", "failed": "Failed"}, "views": ["Delivered vs offered", "Time to finish after last send", "Sustained rate"], "aria": ["Delivered versus offered deliveries per second, log–log, per device and MRAI", "Seconds each series was still incomplete after the last send, with the limits", "Sustained deliveries per second per device and MRAI"], "ax": ["offered deliveries/s (log)", "delivered/s (log)", "s after last send", "sustained deliveries/s (log)"], "diag": "delivered = offered", "lim": "limit", "k1": ["Hide instructions", "Show instructions"], "reading": "{n}: offered {o} → delivered {d} ({p} %)", "reading2": "{n}: offered {o} → {s} s after last send (limit {l} s)", "past": " · past the knee", "none": "No series at this offered rate.", "run": "running", "dec": "."};
+var CHIP = { passed: "background: #E6F4EA; color: #1E7B3A", running: "background: #E3F1EF; color: #0A524C; box-shadow: inset 0 0 0 1.5px #0E6E66", waiting: "background: #F3F4F1; color: #545A61", na: "background: #F3F4F1; color: #8A9097", failed: "background: #FDECEA; color: #B42318" };
+var XL = 64, XR = 740, YT = 16, YB = 286, LMAX = Math.log(30000) / Math.LN10;
+function lg(v) { return Math.log(v) / Math.LN10; }
+function fx(v) { return XL + (lg(v) - 1) / (LMAX - 1) * (XR - XL); }
+function fyl(v) { return YB - (lg(v) - 1) / (LMAX - 1) * (YB - YT); }
+function fys(s) { return YB - s / 45 * (YB - YT); }
+function fmt(v) { var s = String(Math.round(v)); return s.replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
+function f1(v) { return (Math.round(v * 10) / 10).toFixed(1).replace(".", D.dec); }
+function sw(c, dash) { return "display: inline-block; width: 12px; height: 12px; border-radius: 3px; flex: none; background: " + c; }
+function interp(pts, lv, k) {
+  if (lv < lg(pts[0][0]) - 1e-9 || lv > lg(pts[pts.length - 1][0]) + 1e-9) return null;
+  for (var i = 1; i < pts.length; i++) {
+    var a = pts[i - 1], b = pts[i], la = lg(a[0]), lb = lg(b[0]);
+    if (lv <= lb + 1e-9) { var f = (lv - la) / (lb - la || 1); return { o: Math.pow(10, lv), v: k === 1 ? Math.pow(10, lg(a[1]) + f * (lg(b[1]) - lg(a[1]))) : a[2] + f * (b[2] - a[2]), i: f < 0.5 ? i - 1 : i }; }
+  }
+  return { o: pts[0][0], v: k === 1 ? pts[0][1] : pts[0][2], i: 0 };
+}
+
+class Component extends DCLogic {
+  renderVals() {
+    var self = this, st = this.state || {}, view = st.view || 0, cur = st.cur !== undefined ? st.cur : 3.0, open = st.k1 !== undefined ? st.k1 : true;
+    var off = st.off || {};
+    var gx = [10, 100, 1000, 10000].map(function (v) { return { x: fx(v).toFixed(1), l: v >= 1000 ? (v / 1000) + "k" : String(v) }; });
+    var gy, lines = [], refs = [], bars = [], legend = [], read = [];
+    if (view === 0) {
+      gy = [10, 100, 1000, 10000].map(function (v) { var y = fyl(v); return { y: y.toFixed(1), ty: (y + 3).toFixed(1), l: v >= 1000 ? (v / 1000) + "k" : String(v) }; });
+      refs = [{ x1: fx(10).toFixed(1), y1: fyl(10).toFixed(1), x2: fx(30000).toFixed(1), y2: fyl(30000).toFixed(1), tx: (fx(30000) - 6).toFixed(1), ty: (fyl(30000) + 14).toFixed(1), l: D.diag }];
+    } else if (view === 1) {
+      gy = [0, 10, 20, 30, 40].map(function (v) { var y = fys(v); return { y: y.toFixed(1), ty: (y + 3).toFixed(1), l: String(v) }; });
+      refs = [5, 35].map(function (s) { return { x1: XL, y1: fys(s).toFixed(1), x2: XR, y2: fys(s).toFixed(1), tx: XR - 4, ty: (fys(s) - 4).toFixed(1), l: D.lim + " " + s + " s" }; });
+    } else {
+      gy = [];
+    }
+    if (view < 2) {
+      D.ser.forEach(function (s) {
+        var pts = s.pts.map(function (p) { return [fx(p[0]), view === 0 ? fyl(p[1]) : fys(p[2])]; });
+        lines.push({ color: s.color, dash: s.dash, pts: pts.map(function (p) { return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" "),
+          dots: pts.map(function (p, i) { var k = i >= s.kneeFrom; return { x: p[0].toFixed(1), y: p[1].toFixed(1), r: k ? 6 : 3.5, fill: k ? "#FFFFFF" : s.color, stroke: k ? "#B42318" : s.color }; }) });
+        var r = interp(s.pts, cur, view === 0 ? 1 : 2);
+        if (r) {
+          var past = r.i >= s.kneeFrom ? D.past : "";
+          read.push({ sw: sw(s.color), t: view === 0 ? D.reading.replace("{n}", s.l).replace("{o}", fmt(r.o)).replace("{d}", fmt(r.v)).replace("{p}", Math.round(100 * r.v / r.o)) + past
+                                                    : D.reading2.replace("{n}", s.l).replace("{o}", fmt(r.o)).replace("{s}", f1(r.v)).replace("{l}", s.lim) + past });
+        }
+      });
+      if (!read.length) read.push({ sw: "display: none", t: D.none });
+    } else {
+      gx = [100, 1000, 10000].map(function (v) { return { x: fx(v).toFixed(1), l: v >= 1000 ? (v / 1000) + "k" : String(v) }; });
+      D.bars.forEach(function (b, i) {
+        var y = 30 + i * 48, w = fx(b.v) - XL;
+        bars.push({ l: b.l, y: y, ty: y + 15, w: w.toFixed(1), color: b.color, op: b.run ? 0.35 : 1, vx: (XL + w + 8).toFixed(1), v: (b.ge ? "≥ " : "") + fmt(b.v) + (b.run ? " (" + D.run + ")" : "") });
+      });
+    }
+    var seen = {};
+    D.ser.forEach(function (s) { legend.push({ color: s.color, dash: s.dash, l: s.l }); });
+    var labels = [];
+    function lab(t, x, y, al, extra) { labels.push({ t: t, style: "position: absolute; left: " + (x / 760 * 100).toFixed(2) + "%; top: " + (y / 330 * 100).toFixed(2) + "%; transform: translate(" + (al === "end" ? "-100%" : al === "start" ? "0" : "-50%") + ", -50%)" + (extra || "") + "; font-size: 11px; color: #545A61; white-space: nowrap; pointer-events: none; font-family: 'IBM Plex Mono', monospace" }); }
+    gx.forEach(function (g) { lab(g.l, +g.x, 298, "mid"); });
+    gy.forEach(function (g) { lab(g.l, 58, +g.y, "end"); });
+    refs.forEach(function (f) { lab(f.l, +f.tx, +f.ty - 2, "end"); });
+    bars.forEach(function (b) { lab(b.l, 58, b.y + 11, "end", "; color: #16191D"); lab(b.v, +b.vx, b.y + 11, "start", "; color: #16191D"); });
+    lab(view === 2 ? D.ax[3] : D.ax[0], 402, 318, "mid", "; font-family: inherit");
+    if (view < 2) lab(view === 0 ? D.ax[1] : D.ax[2], 12, 151, "mid", " rotate(-90deg)");
+    var px = fx(Math.pow(10, cur));
+    return {
+      k1: { open: open, label: open ? D.k1[0] : D.k1[1], toggle: function () { self.setState({ k1: !open }); } },
+      devs: D.devs.map(function (d) { var on = off[d.id] !== true; return Object.assign({}, d, { on: on, toggle: function () { var o = Object.assign({}, off); o[d.id] = on; self.setState({ off: o }); } }); }),
+      sizes: D.sizes,
+      prog: D.prog.map(function (r) { return { name: r.name, cells: r.cells.map(function (c) { return { state: D.st[c[0]], detail: c[1], style: CHIP[c[0]], live: c[0] === "running" }; }) }; }),
+      cmp: D.cmp.map(function (r) { return Object.assign({}, r, { sw: sw(r.color) }); }),
+      kc: {
+        views: D.views.map(function (l, i) { return { label: l, on: i === view, cls: i === view ? "zb zon" : "zb", pick: function () { self.setState({ view: i }); } }; }),
+        aria: D.aria[view], labels: labels, gx: gx, gy: gy, refs: refs, lines: lines, bars: bars, legend: legend, read: read,
+        xl: view === 2 ? D.ax[3] : D.ax[0], yl: view === 0 ? D.ax[1] : view === 1 ? D.ax[2] : "",
+        hasCursor: view < 2, cx: px.toFixed(1), cur: cur, curLabel: fmt(Math.pow(10, cur)) + "/s",
+        move: function (e) { if (view === 2) return; var r = e.currentTarget.getBoundingClientRect(); if (!r.width) return; var vx = (e.clientX - r.left) / r.width * 760; if (vx < XL || vx > XR) return; self.setState({ cur: 1 + (vx - XL) / (XR - XL) * (LMAX - 1) }); },
+        slide: function (e) { self.setState({ cur: parseFloat(e.target.value) }); }
+      },
+      lang: this.langVals()
+    };
+  }
+  langVals() {
+    var self = this, open = !!(this.state || {}).langOpen;
+    return { open: open, toggle: function (e) { if (e && e.preventDefault) e.preventDefault(); self.setState({ langOpen: !open }); } };
+  }
+}
+</script>
+</body>
+</html>
