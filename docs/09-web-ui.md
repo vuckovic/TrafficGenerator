@@ -2,7 +2,7 @@
 
 The browser interface at `https://bgp.elfak.net:8443`. It follows the frozen controls (doc 04 v1.2) and the locked design (`docs/design/`, v1.2), and talks only to the controller API (doc 08).
 
-Status: **proposed 2026‑11‑03, for confirmation.**
+Status: confirmed 2026‑11‑03. **P3c‑1 built** (2026‑11‑03): login, header, Benchmark tab, live view; browser test `tests/controller/ui_e2e.py` passes. P3c‑2 and P3c‑3 to follow.
 
 ## 1. How it is built and served
 
@@ -44,3 +44,22 @@ Status: **proposed 2026‑11‑03, for confirmation.**
 ## 5. Open points
 
 - **Password file for unattended schemes** (the earlier question 2). Until you decide, a scheme asks for each device's password when it starts, and keeps it in memory only.
+
+## 6. P3c‑1 as built (2026‑11‑03)
+
+- **Files:**
+  - `ui/web/index.html`, `app.css`;
+  - `js/app.js` (screens), `js/chart.js` (latency chart), `js/i18n.js`, `js/api.js`;
+  - `vendor/uplot` (uPlot 1.6.31, MIT) and `vendor/fonts` (IBM Plex Sans and Mono, Latin and Cyrillic, OFL).
+- **Not yet in P3c‑1:**
+  - The BIRD stand‑in entry in the device list. The controller cannot start the stand‑in yet; a BIRD you run yourself works as *Custom* with platform BIRD.
+  - Profiles (G7) and SNMP (U5).
+  - The routers table shows the planned routers and their live session state; editing them comes later (§3).
+- **Browser test**, against the loopback setup:
+  - log in (wrong password, then right);
+  - device selector and DUT buttons on the Cisco mock;
+  - a quick check against BIRD, configured by hand: live sessions, convergence, chart, routers table, health, events, DONE with summary links;
+  - Serbian, including after a reload;
+  - a Cisco‑mock run with the port card, stopped from the browser;
+  - phone width (390 px, no horizontal scroll), first visit in the browser's language;
+  - Nodes & settings, and no browser errors.

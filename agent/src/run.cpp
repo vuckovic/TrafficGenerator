@@ -154,6 +154,13 @@ std::pair<std::uint64_t, std::uint64_t> read_proc_stat() {
   for (auto x : v) total += x;
   return {total, v[3] + v[4]};
 }
+// SoC temperature in °C (Raspberry Pi: thermal_zone0); null where there is none
+json read_temp_c() {
+  std::ifstream f("/sys/class/thermal/thermal_zone0/temp");
+  long milli = 0;
+  if (!(f >> milli)) return nullptr;
+  return std::round(milli / 100.0) / 10.0;
+}
 }  // namespace
 
 json Run::stats() {
@@ -191,7 +198,7 @@ json Run::stats() {
   getrusage(RUSAGE_SELF, &ru);
   const double agent_cpu_s = ru.ru_utime.tv_sec + ru.ru_utime.tv_usec / 1e6 + ru.ru_stime.tv_sec + ru.ru_stime.tv_usec / 1e6;
   return {{"seq", ++seq_}, {"t_ms", now_ns() / 1'000'000}, {"by_state", by_state},
-          {"node_cpu_pct", node_cpu}, {"agent_cpu_s", agent_cpu_s},
+          {"node_cpu_pct", node_cpu}, {"node_temp_c", read_temp_c()}, {"agent_cpu_s", agent_cpu_s},
           {"totals", {{"prefixes_sent", sent}, {"prefixes_withdrawn", wd}, {"updates_sent", upd}, {"updates_rx", updrx},
                       {"nlri_rx", nlri}, {"withdrawn_rx", wdrx}, {"routes_held", held}, {"converged", conv},
                       {"resets", resets}, {"planned_resets", planned}, {"looped_rx", looped}, {"bytes_sent", btx}, {"bytes_rx", brx},

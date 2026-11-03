@@ -49,7 +49,17 @@ class Dut(BaseModel):
     configure: bool = True                # push the neighbours before the run (needs an adapter)
     keep_config: bool = False
     password: str | None = Field(None, exclude=True)   # never stored
-    poll_s: float = 10
+    enable: str | None = Field(None, exclude=True)     # Cisco enable secret, never stored
+    poll_s: float = Field(10, ge=0, le=60)
+    # per-run overrides of the device's inventory values (U10, U16-U18, U13)
+    ssh_port: int | None = Field(None, ge=1, le=65535)
+    max_routes: int | None = Field(None, ge=1)
+    min_free_mem_pct: float | None = Field(None, ge=0, le=50)
+    link_mbps: float | None = Field(None, gt=0)
+    interface: str | None = None
+    ssh_legacy: bool | None = None
+    sudo: bool | None = None
+    bird_include: str | None = None
 
 
 class Routers(BaseModel):

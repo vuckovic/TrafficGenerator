@@ -24,6 +24,8 @@ class Hub:
     def publish(self, msg: dict, data_t_ms: int | None = None) -> None:
         if msg.get("type") == "tick":
             self.last_tick = msg
+        elif msg.get("type") == "state" and msg.get("state") in ("done", "failed", "stopped"):
+            self.last_tick = None          # a new client must not see a finished run as running
         text = json.dumps(msg)
         for q in list(self.clients):
             if q.full():

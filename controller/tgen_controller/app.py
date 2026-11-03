@@ -11,13 +11,14 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel, ValidationError
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field, ValidationError
 
 from . import REPO, __version__, auth
 from .engine import Busy, Engine
 from .health import Health
 from .live import Hub
-from .scenario import PRESETS, Scenario
+from .scenario import PRESETS, Dut, Scenario
 from .settings import Settings, load
 from .store import Store, now_ms
 
@@ -28,8 +29,15 @@ class Login(BaseModel):
 
 class DutAction(BaseModel):
     password: str | None = None
-    routers: int = 60
+    enable: str | None = None
+    routers: int = Field(60, ge=1, le=600)
     role: str | None = None
+
+
+class DutRequest(BaseModel):
+    """U14 buttons for any device: a profile, explicit fields, or both (as a scenario's dut)."""
+    dut: Dut
+    routers: int = Field(60, ge=1, le=600)
 
 
 DUT_ACTIONS = ("test", "preview", "push", "remove", "status")
@@ -125,13 +133,26 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
                     "password_set": bool(os.environ.get(inventory.password_env(name)))}
                 for name, p in inventory.load().items()}
 
-    @app.post("/api/duts/{profile}/{action}", dependencies=S)
-    async def dut_action(profile: str, action: str, body: DutAction):
+    def _dut_guard(action: str) -> None:
         if action not in DUT_ACTIONS:
             raise HTTPException(404, f"unknown action {action}")
         if action in ("push", "remove") and engine.task and not engine.task.done():
             raise HTTPException(409, "a run is active")
-        return await asyncio.to_thread(_dut_action, profile, action, body)
+
+    @app.post("/api/duts/{profile}/{action}", dependencies=S)
+    async def dut_action(profile: str, action: str, body: DutAction):
+        _dut_guard(action)
+        d = Dut(profile=profile, role=body.role, password=body.password, enable=body.enable)
+        return await asyncio.to_thread(_dut_action, d, action, body.routers) | {"profile": profile}
+
+    @app.post("/api/dut/{action}", dependencies=S)
+    async def dut_action_any(action: str, body: DutRequest):
+        _dut_guard(action)
+        return await asyncio.to_thread(_dut_action, body.dut, action, body.routers)
+
+    @app.get("/api/i18n")
+    async def i18n():
+        return _i18n()
 
     # ---------------------------------------------------------- runs
     @app.post("/api/runs", status_code=202, dependencies=S)
@@ -210,27 +231,26 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
         with contextlib.suppress(WebSocketDisconnect, RuntimeError):
             await hub.serve(ws)
 
-    def _dut_action(profile: str, action: str, body: DutAction) -> dict:
-        """Same as tools/tgen_dut.py, for the UI's DUT buttons (U12-U16)."""
-        from tgen import inventory
-        from tgen.dut import DutError, make
-        from tgen_dut import DEFAULT_ROLE, plan_meta
+    def _dut_action(d: Dut, action: str, routers: int) -> dict:
+        """Same as tools/tgen_dut.py, for the UI's DUT buttons (U14)."""
+        from tgen.dut import DutError
+        from tgen_dut import plan_meta
+        from .dutspec import make_dut, resolve
 
-        p = inventory.load().get(profile)
-        if not p:
-            raise HTTPException(404, f"unknown profile {profile}")
-        adapter, ip = p["adapter"], p["peer_ip"]
-        role = body.role or p.get("role") or DEFAULT_ROLE.get(adapter, "route_server")
-        asn = p.get("asn", 64500)
-        dut = make(adapter, p.get("ssh_host") or ip, p.get("user"), port=p.get("ssh_port", 22),
-                   password=body.password or os.environ.get(inventory.password_env(profile)),
-                   ssh_legacy=p.get("ssh_legacy", False), mrai=p.get("mrai_s"))
+        try:
+            info = resolve(d)
+        except ValueError as e:
+            raise HTTPException(422, str(e))
+        if not info["adapter"]:
+            raise HTTPException(422, "no platform: choose one (U8)")
+        ip, asn, role = info["ip"], info["asn"], info["role"]
+        dut = make_dut(info, d)
 
         class A:  # what plan_meta() reads from the CLI arguments
-            routers, seed, dut_ip, dut_asn = body.routers, 1, ip, asn
+            seed, dut_ip, dut_asn = 1, ip, asn
             config = str(cfg.raw.get("cluster_env") or REPO / "deploy" / "cluster.env")
-        A.role = role
-        out: dict = {"profile": profile, "action": action, "platform": dut.platform}
+        A.routers, A.role = routers, role
+        out: dict = {"action": action, "platform": dut.platform, "ip": ip, "role": role}
         try:
             if action == "preview":
                 out["config"] = dut.render(plan_meta(A), ip, asn, role)
@@ -238,16 +258,16 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
                 out["resources"] = dut.resources()
                 out["tgen_neighbours"] = dut.count()
                 with contextlib.suppress(DutError, NotImplementedError):
-                    out["port"] = dut.interface_info(ip, p.get("interface"))
+                    out["port"] = dut.interface_info(ip, info["interface"])
             elif action == "push":
-                out["neighbours"] = dut.push(dut.render(plan_meta(A), ip, asn, role), body.routers)
+                out["neighbours"] = dut.push(dut.render(plan_meta(A), ip, asn, role), routers)
             elif action == "remove":
                 dut.remove()
                 out["tgen_neighbours"] = dut.count()
             elif action == "status":
                 out["sessions"], out["established"] = dut.sessions()
             out["ok"] = True
-        except (DutError, OSError) as e:
+        except (DutError, OSError, NotImplementedError) as e:
             out.update(ok=False, error=str(e)[:1000])
         finally:
             close = getattr(dut, "close", None)
@@ -255,5 +275,30 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
                 close()
         out["notes"] = dut.notes
         return out
+
+    _i18n_cache: dict = {}
+
+    def _i18n() -> dict:
+        """ui/i18n/labels.csv as JSON: languages (from the _lang.* rows) and texts."""
+        import csv
+        f = REPO / "ui" / "i18n" / "labels.csv"
+        m = f.stat().st_mtime
+        if _i18n_cache.get("m") != m:
+            rows = list(csv.reader(f.open(encoding="utf-8")))
+            langs = rows[0][2:]
+            meta = {r[0][6:]: r[2:] for r in rows[1:] if r and r[0].startswith("_lang.")}
+            _i18n_cache.update(m=m, data={
+                "languages": [{"tag": tag, **{k: v[i] for k, v in meta.items() if i < len(v)}} for i, tag in enumerate(langs)],
+                "texts": {r[0]: {tag: r[2 + i] for i, tag in enumerate(langs) if 2 + i < len(r) and r[2 + i]}
+                          for r in rows[1:] if r and not r[0].startswith("_lang.")}})
+        return _i18n_cache["data"]
+
+    # ---------------------------------------------------------- web interface (P3c), same origin
+    flags = REPO / "ui" / "i18n" / "flags"
+    web = Path(cfg.raw.get("web_dir") or REPO / "ui" / "web")
+    if flags.is_dir():
+        app.mount("/i18n/flags", StaticFiles(directory=flags), name="flags")
+    if web.is_dir():
+        app.mount("/", StaticFiles(directory=web, html=True), name="web")
 
     return app

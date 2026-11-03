@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrafficGenerator</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="vendor/fonts/fonts.css">
+<link rel="stylesheet" href="vendor/uplot/uPlot.min.css">
+<link rel="stylesheet" href="app.css">
+<script src="vendor/uplot/uPlot.iife.min.js"></script>
+<script type="module" src="js/app.js"></script>
+</head>
+<body>
+
+<!-- login -->
+<section id="login" class="login" hidden>
+<form class="card" id="loginForm">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+<h1 class="h2" style="font-size:20px" data-t="ui.login.title">Log in</h1>
+<div class="langsel" style="position:relative"></div>
+</div>
+<p class="small" id="loginSub" style="margin:0"></p>
+<div class="field"><label class="lbl" for="pw" data-t="auth.password">Password</label><input id="pw" class="inp" type="password" autocomplete="current-password" required></div>
+<p id="loginErr" class="bad small" role="alert" style="margin:0" hidden></p>
+<button class="btn btn-primary" type="submit" data-t="auth.login">Log in</button>
+</form>
+</section>
+
+<!-- application -->
+<div id="app" hidden style="min-height:100vh;display:flex;flex-direction:column">
+<header class="top">
+<div style="display:flex;align-items:center;gap:10px">
+<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="1" y="1" width="24" height="24" rx="6" fill="none" stroke="#5FD3C5" stroke-width="2"/><path d="M6 17 L10 9 L14 15 L17 11 L20 17" fill="none" stroke="#5FD3C5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<span style="display:flex;flex-direction:column;gap:1px;line-height:1.2"><span style="font-weight:700;font-size:16px" data-t="app.title">TrafficGenerator</span><span class="mono" style="font-size:11px;color:#A9AFB5" id="hostLine"></span></span>
+</div>
+<nav id="tabs" data-t-aria="nav.main">
+<a href="#benchmark" data-tab="benchmark" data-t="nav.benchmark">Benchmark</a>
+<a href="#scheme" data-tab="scheme" data-t="nav.test_scheme">Test scheme</a>
+<a href="#traffic" data-tab="traffic" data-t="nav.traffic">Traffic</a>
+<a href="#reports" data-tab="reports" data-t="nav.reports">Reports</a>
+<a href="#logs" data-tab="logs" data-t="nav.dut_logs">DUT logs</a>
+<a href="#history" data-tab="history" data-t="nav.history">History</a>
+<a href="#settings" data-tab="settings" data-t="nav.settings">Nodes &amp; settings</a>
+</nav>
+<div class="runctl" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px;flex:0 1 auto;min-width:0;margin-left:auto;padding:6px 0">
+<span class="badge" id="badge" role="status"><span class="dot" id="badgeDot" style="background:#8A9097"></span><span id="badgeText">IDLE</span></span>
+<button class="btn" type="button" id="startBtn" data-t="run.start" style="background:#FFFFFF">Start</button>
+<button class="btn btn-stop" type="button" id="stopBtn" data-t="run.stop">Stop</button>
+<button type="button" class="hbtn" id="logoutBtn" data-t-aria="auth.logout" data-t-title="auth.logout"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M7 3 H4 a1 1 0 0 0 -1 1 v10 a1 1 0 0 0 1 1 h3 M11 12.5 L14.5 9 L11 5.5 M14.5 9 H7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<div class="langsel" style="position:relative"></div>
+</div>
+</header>
+<div class="banner err" id="wsBanner" role="alert" hidden data-t="ui.ws_lost"></div>
+
+<!-- Benchmark -->
+<main class="wrap" data-view="benchmark">
+<section style="flex:999 1 600px;min-width:0;display:flex;flex-direction:column;gap:20px" data-t-aria="live.config">
+
+<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">
+<div class="field" style="flex:1 1 220px"><label class="lbl" for="runName" data-t="g.run_name">Run name</label><input id="runName" class="inp"></div>
+<div class="field" style="flex:0 1 140px"><label class="lbl" for="seed"><span data-t="g.seed">Seed</span> <span class="tip" data-t-title="g.seed.tip">i</span></label><input id="seed" class="inp mono" inputmode="numeric" value="1"></div>
+</div>
+
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2 class="h2" data-t="dut.title">Device under test</h2></div>
+<div style="display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:12px;align-items:end">
+<div class="field"><label class="lbl" for="device"><span data-t="dut.device">Device</span> <span class="tip" data-t-title="dut.device.tip">i</span></label><select id="device" class="inp"></select></div>
+<div class="field"><span class="lbl" data-t="dut.password_on_controller">Password on the controller</span><span id="pwState" style="min-height:36px;display:flex;align-items:center;font-size:13px;color:#23403C"></span></div>
+</div>
+<p class="small" style="margin:0;line-height:1.5" data-t="dut.device.note"></p>
+<fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">
+<legend class="lbl" style="padding:0;margin-bottom:8px" data-t="dut.role">DUT role</legend>
+<div class="seg" id="roleSeg"></div>
+<p class="note" id="roleNote"></p>
+</fieldset>
+<div class="grid4">
+<div class="field"><span class="lbl" data-t="ui.dut.detected">Detected platform</span><span class="mono" id="detected" style="min-height:36px;display:flex;align-items:center;font-size:13px;color:#23403C"></span></div>
+<div class="field"><label class="lbl" for="dutIp" data-t="dut.ip">DUT IP</label><input id="dutIp" class="inp mono"></div>
+<div class="field"><label class="lbl" for="dutAsn" data-t="dut.asn">DUT ASN</label><input id="dutAsn" class="inp mono" inputmode="numeric"></div>
+<div class="field"><label class="lbl" for="pollS" data-t="dut.poll_interval">Polling interval (s)</label><input id="pollS" class="inp mono" inputmode="numeric" value="10"></div>
+</div>
+</div>
+
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div style="display:flex;flex-direction:column;gap:4px"><h2 class="h2" data-t="dutcfg.title">DUT configuration</h2><span class="small" data-t="dutcfg.subtitle"></span></div><label style="display:flex;gap:8px;align-items:center;font-size:13px;font-weight:500;min-height:36px"><input id="configure" type="checkbox" checked style="accent-color:#0E6E66;width:18px;height:18px;margin:0"><span data-t="dutcfg.auto">Configure the DUT before each run</span></label></div>
+<fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">
+<legend class="lbl" style="padding:0;margin-bottom:8px" data-t="ui.dut.platform">Platform</legend>
+<div class="seg" id="platSeg"></div>
+<p class="note" id="platNote"></p>
+</fieldset>
+<div class="grid4" id="dutFields">
+<div class="field"><label class="lbl" for="sshHost"><span data-t="dutcfg.ssh_host">SSH address</span> <span class="tip" data-t-title="dutcfg.ssh_host.tip">i</span></label><input id="sshHost" class="inp mono"></div>
+<div class="field"><label class="lbl" for="sshPort" data-t="dutcfg.port">Port</label><input id="sshPort" class="inp mono" inputmode="numeric" value="22"></div>
+<div class="field"><label class="lbl" for="sshUser" data-t="dutcfg.user">User</label><input id="sshUser" class="inp mono"></div>
+<div class="field"><label class="lbl" for="auth" data-t="dutcfg.auth">Authentication</label><select id="auth" class="inp"><option value="password" data-t="dutcfg.auth.password"></option><option value="key" data-t="dutcfg.auth.key"></option></select></div>
+<div class="field" data-only="cisco"><label class="lbl" for="enable"><span data-t="dutcfg.enable">Enable secret</span> <span class="tip" data-t-title="dutcfg.enable.tip">i</span></label><input id="enable" class="inp" type="password" autocomplete="off"></div>
+<div class="field" data-only="linux"><span class="lbl" data-t="dutcfg.sudo">Use sudo</span><label style="display:flex;gap:8px;align-items:center;height:36px"><input id="sudo" type="checkbox" checked style="accent-color:#0E6E66;margin:0"><span data-t="dutcfg.sudo">Use sudo</span> <span class="tip" data-t-title="dutcfg.sudo.tip">i</span></label></div>
+<div class="field" data-only="bird"><label class="lbl" for="birdInc"><span data-t="dutcfg.bird_include">BIRD include file</span> <span class="tip" data-t-title="dutcfg.bird_include.tip">i</span></label><input id="birdInc" class="inp mono" value="/etc/bird/tgen.conf"></div>
+<div class="field"><label class="lbl" for="maxRoutes"><span data-t="dutcfg.max_routes">Route limit</span> <span class="tip" data-t-title="dutcfg.max_routes.tip">i</span></label><input id="maxRoutes" class="inp mono" inputmode="numeric"></div>
+<div class="field"><label class="lbl" for="guard"><span data-t="dutcfg.mem_guard">Memory guard (% free)</span> <span class="tip" data-t-title="dutcfg.mem_guard.tip">i</span></label><input id="guard" class="inp mono" inputmode="numeric"></div>
+<div class="field"><label class="lbl" for="mrai"><span data-t="dutcfg.mrai">MRAI</span> <span class="tip" data-t-title="dutcfg.mrai.tip">i</span></label><select id="mrai" class="inp"></select></div>
+<div class="field" id="mraiCustomBox" hidden><label class="lbl" for="mraiCustom" data-t="ui.mrai.custom_s">Custom MRAI (s)</label><input id="mraiCustom" class="inp mono" inputmode="numeric" value="5"></div>
+<div class="field"><label class="lbl" for="after" data-t="dutcfg.after">After the run</label><select id="after" class="inp"><option value="remove" data-t="dutcfg.after.remove"></option><option value="keep" data-t="dutcfg.after.keep"></option></select></div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+<button class="btn btn-sm" type="button" data-dut="test" data-t="dutcfg.btn.test">Test connection</button>
+<button class="btn btn-sm" type="button" data-dut="preview" data-t="dutcfg.btn.preview" aria-expanded="false" id="prevBtn">Preview config</button>
+<button class="btn btn-sm" type="button" data-dut="push" data-t="dutcfg.btn.push">Push now</button>
+<button class="btn btn-sm" type="button" data-dut="remove" data-t="dutcfg.btn.remove">Remove</button>
+<button class="btn btn-sm" type="button" data-dut="status" data-t="dutcfg.btn.status">Status</button>
+<span style="display:inline-flex;align-items:center;gap:8px;font-size:12px;flex:1 1 260px;min-width:0" role="status"><span class="dot" id="dutDot" style="background:#8A9097"></span><span class="mono" id="dutStatus" style="color:#23403C;overflow-wrap:anywhere"></span></span>
+</div>
+<div id="previewBox" hidden style="border:1px solid var(--line2);border-radius:8px;overflow:hidden">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;background:#F3F4F1;font-size:12px;color:#545A61"><span id="previewTitle"></span><span style="display:flex;gap:6px"><button class="btn btn-sm" type="button" id="copyCfg" data-t="dutcfg.preview.copy">Copy</button><button class="btn btn-sm" type="button" id="dlCfg" data-t="dutcfg.preview.download">Download</button></span></div>
+<pre class="mono" id="previewText" style="margin:0;padding:12px;font-size:12px;line-height:1.55;overflow-x:auto;white-space:pre;max-height:420px"></pre>
+</div>
+</div>
+
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2 class="h2" data-t="routers.title">Emulated routers</h2></div>
+<div class="grid4">
+<div class="field"><label class="lbl" for="rTotal" data-t="ui.routers.total">Routers (total)</label><input id="rTotal" class="inp mono" inputmode="numeric" value="60"></div>
+<div class="field"><label class="lbl" for="rPrefixes" data-t="ui.routers.prefixes">Prefixes per router</label><input id="rPrefixes" class="inp mono" inputmode="numeric" value="10000"></div>
+<div class="field"><label class="lbl" for="rPerUpd" data-t="scenario.per_update">Prefixes per UPDATE</label><input id="rPerUpd" class="inp mono" inputmode="numeric" value="0"></div>
+<div class="field"><label class="lbl" for="rHold" data-t="ui.routers.hold">Hold time (s)</label><input id="rHold" class="inp mono" inputmode="numeric" value="90"></div>
+</div>
+<p class="small" style="margin:0" id="rSplit"></p>
+<div class="tbl-box" id="routersBox">
+<table><thead><tr><th class="th" data-t="routers.col.router">Router</th><th class="th" data-t="routers.col.node">Node</th><th class="th" data-t="routers.col.asn">ASN</th><th class="th" data-t="routers.col.peer_ip">Peer IP</th><th class="th" data-t="routers.col.prefixes">Prefixes</th><th class="th" data-t="routers.col.session">Session</th></tr></thead>
+<tbody id="routersBody"></tbody></table>
+</div>
+<p class="small" style="margin:0" id="routersFoot"></p>
+</div>
+
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2 class="h2" data-t="scenario.title">Scenario</h2><div style="display:flex;gap:8px;align-items:center"><label class="lbl" for="preset" data-t="scenario.preset">Preset</label><select id="preset" class="inp" style="width:auto"></select></div></div>
+<ol class="phases" id="phases" data-t-aria="scenario.phases"></ol>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+<label class="lbl" for="newPhase" data-t="ui.phase.type">Phase type</label>
+<select id="newPhase" class="inp" style="width:auto"></select>
+<button class="btn btn-sm" type="button" id="addPhase" data-t="scenario.phase.add">Add phase</button>
+<button class="btn btn-sm" type="button" id="delPhase" data-t="scenario.phase.remove">Remove</button>
+</div>
+<div class="grid4" id="phaseFields"></div>
+</div>
+
+</section>
+
+<section style="flex:1 1 520px;min-width:0;display:flex;flex-direction:column;gap:16px" data-t-aria="live.title">
+<p class="small" id="runLine" style="margin:0"></p>
+<div style="display:flex;flex-wrap:wrap;gap:12px">
+<div class="kpi"><span class="lbl hint" tabindex="0"><span data-t="metric.sessions">Sessions</span><span class="tt" role="tooltip" data-t="metric.sessions.tip"></span></span><span class="kv" id="kSess">—</span><span class="small" id="kSessSub"></span></div>
+<div class="kpi"><span class="lbl hint" tabindex="0"><span data-t="metric.initial_conv">Initial convergence</span><span class="tt" role="tooltip" data-t="metric.initial_conv.tip"></span></span><span class="kv" id="kConv">—</span><span class="small" id="kConvSub"></span></div>
+<div class="kpi"><span class="lbl hint" tabindex="0"><span data-t="metric.latency_now">Latency p99 (now)</span><span class="tt" role="tooltip" data-t="metric.latency_now.tip"></span></span><span class="kv" id="kLat">—</span><span class="small" id="kLatSub"></span></div>
+<div class="kpi"><span class="lbl hint" tabindex="0"><span data-t="metric.dut_output">DUT output</span><span class="tt" role="tooltip" data-t="metric.dut_output.tip"></span></span><span class="kv" id="kOut">—</span><span class="small" id="kOutSub"></span></div>
+</div>
+
+<div class="card" style="gap:10px">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 class="h2" data-t="chart.latency_load">Propagation latency vs offered load</h2><div role="group" data-t-aria="chart.window" style="display:flex;gap:4px"><button type="button" class="zb zon" data-span="300" data-t="chart.min5">5 min</button><button type="button" class="zb" data-span="120" data-t="chart.min2">2 min</button><button type="button" class="zb" data-span="60" data-t="chart.min1">1 min</button></div></div>
+<div class="chart-host" id="latChart" role="img" data-t-aria="chart.latency_load.aria"></div>
+<div style="display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:12px;color:#545A61"><label style="display:flex;align-items:center;gap:8px"><span data-t="chart.time_cursor">Time cursor</span> <input type="range" id="curSlider" min="0" max="100" value="100" style="width:200px;accent-color:#0E6E66"></label><label style="display:flex;align-items:center;gap:8px"><span data-t="chart.window_slider">Window</span> <input type="range" id="winSlider" min="0" max="100" value="100" style="width:200px;accent-color:#0E6E66"></label></div>
+<p class="mono" id="readout" style="margin:0;font-size:12px;background:#F3F4F1;padding:7px 10px;border-radius:6px;min-height:1.5em"></p>
+<div style="display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:#545A61"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;height:3px;background:#0E6E66"></span>p50</span><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;height:3px;background:#C2410C"></span>p99</span><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;border-top:2px dashed #8A9097"></span><span data-t="chart.offered_right"></span></span></div>
+</div>
+
+<div class="card" style="gap:10px" id="portCard" hidden>
+<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px"><h2 class="h2"><span class="hint" tabindex="0"><span data-t="live.port">DUT port and link use</span><span class="tt" role="tooltip" data-t="live.port.tip"></span></span></h2><span class="mono small" id="portLine"></span></div>
+<div style="display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center">
+<div style="display:flex;flex-direction:column;gap:2px;flex:0 0 auto"><span class="kv" id="portUse">—</span><span class="small" id="portMbps"></span></div>
+<div style="display:flex;flex-direction:column;gap:6px;flex:1 1 260px;min-width:0">
+<span class="bar"><span class="fill" id="portBar" style="width:0%"></span><span class="m70"></span><span class="m90"></span></span>
+<svg viewBox="0 0 300 36" preserveAspectRatio="none" aria-hidden="true" style="width:100%;height:36px"><polyline id="portSpark" fill="none" stroke="#0E6E66" stroke-width="2" points=""/></svg>
+<span class="small" data-t="live.port.marks"></span>
+</div>
+</div>
+<span style="display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:500" id="portErrLine"><span class="dot" id="portErrDot"></span><span id="portErr"></span></span>
+</div>
+
+<div class="card" style="gap:10px">
+<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px"><h2 class="h2" data-t="live.generator_health">Generator health</h2><span class="small" data-t="live.generator_health.sub"></span></div>
+<div id="genHealth" style="display:grid;grid-template-columns:92px minmax(0,1fr) 56px 64px;gap:8px 12px;align-items:center;font-size:13px"></div>
+</div>
+
+<div class="card" style="gap:8px;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between">
+<div style="display:flex;flex-direction:column;gap:2px"><h2 class="h2" data-t="live.control_health">Control‑plane health</h2><span class="small" id="reserveLine"></span></div>
+<div style="display:flex;gap:18px;flex-wrap:wrap;font-size:13px"><span><span data-t="live.api">API</span> <b class="mono" id="cpApi">—</b></span><span><span data-t="live.live_delay">Live delay</span> <b class="mono" id="cpDelay">—</b></span><span id="cpState" style="font-weight:600"></span></div>
+</div>
+
+<div class="card" style="gap:8px">
+<h2 class="h2" data-t="live.events">Events</h2>
+<ul class="events" id="events" aria-live="polite"></ul>
+</div>
+</section>
+</main>
+
+<!-- placeholders for the later steps -->
+<main class="wrap" data-view="scheme" hidden><div class="card" style="flex:1 1 auto"><p style="margin:0" data-coming="P3c‑2"></p></div></main>
+<main class="wrap" data-view="traffic" hidden><div class="card" style="flex:1 1 auto"><p style="margin:0" data-coming="P6"></p></div></main>
+<main class="wrap" data-view="reports" hidden><div class="card" style="flex:1 1 auto"><p style="margin:0" data-coming="P3c‑3"></p></div></main>
+<main class="wrap" data-view="logs" hidden><div class="card" style="flex:1 1 auto"><p style="margin:0" data-coming="P5"></p></div></main>
+<main class="wrap" data-view="history" hidden><div class="card" style="flex:1 1 auto"><p style="margin:0" data-coming="P3c‑3"></p></div></main>
+<main class="wrap" data-view="settings" hidden>
+<div class="card" style="flex:1 1 auto">
+<h2 class="h2" data-t="ui.nodes.title">Node status</h2>
+<div class="tbl-box"><table><thead><tr><th class="th">Node</th><th class="th" data-t="settings.col.reachable">Reachable</th><th class="th" data-t="settings.col.agent">Agent version</th><th class="th" data-t="ui.nodes.state">Agent state</th><th class="th" data-t="ui.nodes.offset">Clock offset</th></tr></thead><tbody id="nodesBody"></tbody></table></div>
+<p class="small" style="margin:0" data-coming="P3c‑3"></p>
+</div>
+</main>
+</div>
+
+<dialog id="pwDialog">
+<form method="dialog" style="display:flex;flex-direction:column;gap:12px">
+<h2 class="h2" id="pwTitle"></h2>
+<p class="small" style="margin:0" data-t="ui.start.password_help"></p>
+<div class="field"><label class="lbl" for="pwDut" data-t="auth.password">Password</label><input id="pwDut" class="inp" type="password" autocomplete="off"></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" value="cancel" data-t="common.cancel">Cancel</button><button class="btn btn-primary" value="ok" id="pwOk" data-t="ui.start.go">Start run</button></div>
+</form>
+</dialog>
+</body>
+</html>

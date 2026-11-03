@@ -189,7 +189,16 @@ The run's maxima are stored with it, and shown in M6 and in the report header.
 
 **Additions to §3 found while building:**
 - `GET /api/runs/{id}/ticks`: the stored live ticks, so the UI can redraw a finished run.
-- `GET /api/runs/{id}/files`: list of the run folder.
+- `GET /api/runs/{id}/files`: list of the run folder (`routers.json` is written while preparing, for the routers table).
+- **P3c‑1 (2026‑11‑03):**
+  - `GET /api/i18n` (no login): `ui/i18n/labels.csv` as JSON.
+  - `POST /api/dut/{action}` `{dut, routers}`: the DUT buttons for any device, a profile or a custom one (`/api/duts/{profile}/{action}` stays).
+  - The scenario's `dut` block takes per‑run overrides: `ssh_port`, `max_routes`, `min_free_mem_pct`, `link_mbps`, `interface`, `ssh_legacy`, `sudo`, `bird_include`, and `enable` (Cisco enable secret, never stored). Inventory values are filled in; explicit fields win.
+  - The live tick also carries `routers` (`[name, node, state, held, sent, rx]`, live only, not stored), `dut_port` (interface, speed, duplex, `mbps`, `use_pct`, `errors` since the start; DUT polls read the port counters too), `dut_load`, each node's `temp_c`, and the controller's health.
+  - `/` serves the web interface (`ui/web`) and `/i18n/flags` the flags.
+- **Fixes found by the browser test:**
+  - The analysis worker is now spawned, not forked. A forked worker kept the listening port open after the controller stopped.
+  - A new live client no longer sees the last tick of a finished run.
 
 ## 10. Not in P3b
 

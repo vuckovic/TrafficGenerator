@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import concurrent.futures as cf
 import json
+import multiprocessing
 import os
 import shutil
 import threading
@@ -68,6 +69,8 @@ class Ctx:
     dut_poll_task: asyncio.Task | None = None
     dut_lock: threading.Lock = field(default_factory=threading.Lock)   # one SSH command at a time
     node_cpu: dict = field(default_factory=dict)         # node -> [pct, ...]
+    port_errors: dict = field(default_factory=dict)      # DUT port counter growth since the start (live, M9)
+    dut_load: dict = field(default_factory=dict)         # last DUT free memory / CPU (live)
 
 
 class Engine:
@@ -76,7 +79,10 @@ class Engine:
         self.client = httpx.AsyncClient()
         self.ctx: Ctx | None = None
         self.task: asyncio.Task | None = None
-        self.pool = cf.ProcessPoolExecutor(max_workers=1, initializer=os.nice, initargs=(10,))
+        # spawn, not fork: a forked worker would inherit the listening socket and keep the port
+        # open after the controller stops
+        self.pool = cf.ProcessPoolExecutor(max_workers=1, initializer=os.nice, initargs=(10,),
+                                           mp_context=multiprocessing.get_context("spawn"))
 
     def agents(self) -> list[Agent]:
         return [Agent(n, self.cfg.agent_token, self.client) for n in self.cfg.nodes]
@@ -195,32 +201,18 @@ class Engine:
                 raise RuntimeError(f"{a.node.name}: clock differs by {off} ms from the controller (chrony?)")
 
         # ---- DUT
+        from .dutspec import make_dut, resolve
         d = sc.dut
         inv = inventory.load()
-        prof = inv.get(d.profile) if d.profile else None
-        if d.profile and not prof:
-            raise RuntimeError(f"unknown DUT profile {d.profile}")
-        p = prof or {}
-        adapter = d.adapter or p.get("adapter")
-        dut_ip = d.ip or p.get("peer_ip")
-        if not dut_ip:
-            raise RuntimeError("DUT address missing (profile or dut.ip)")
-        asn = d.asn or p.get("asn") or 64500
-        role = d.role or p.get("role") or ("router" if adapter == "mikrotik" else "route_server")
-        mrai = d.mrai if d.mrai is not None else p.get("mrai_s")
-        c.dut_info = {"profile": d.profile, "label": p.get("label", adapter or "external"), "adapter": adapter,
-                      "ip": dut_ip, "asn": asn, "role": role, "mrai": mrai,
-                      "link_mbps": p.get("link_mbps", 1000), "min_free_mem_pct": p.get("min_free_mem_pct", 0)}
+        info = resolve(d, inv)
+        dut_ip, asn, role, adapter = info["ip"], info["asn"], info["role"], info["adapter"]
+        c.dut_info = {k: info[k] for k in ("profile", "label", "adapter", "ip", "asn", "role", "mrai", "link_mbps",
+                                           "min_free_mem_pct", "max_routes", "interface")}
         routes = sc.routers.total * sc.routers.prefixes
-        if p.get("max_routes") and routes > p["max_routes"]:
-            raise RuntimeError(f"{routes} routes is above the limit of {p['max_routes']} for {d.profile}")
+        if info["max_routes"] and routes > info["max_routes"]:
+            raise RuntimeError(f"{routes} routes is above the route limit of {info['max_routes']} for {info['label']}")
         if d.configure and adapter:
-            from tgen.dut import make
-            c.dut = make(adapter, d.ssh_host or p.get("ssh_host") or dut_ip, d.user or p.get("user"),
-                         port=p.get("ssh_port", 22),
-                         password=d.password or (os.environ.get(inventory.password_env(d.profile)) if d.profile else None),
-                         ssh_legacy=p.get("ssh_legacy", False),
-                         mrai=mrai)
+            c.dut = make_dut(info, d)
             res = await asyncio.to_thread(c.dut.resources)
             c.dut_info["resources"] = res
             self._event("dut", "info", f"DUT: {res.get('summary')}")
@@ -228,7 +220,7 @@ class Engine:
             if guard and res.get("free_pct") is not None and res["free_pct"] < guard:
                 raise RuntimeError(f"DUT has only {res['free_pct']} % memory free (guard {guard} %)")
             try:
-                c.dut_info["port_before"] = await asyncio.to_thread(c.dut.interface_info, dut_ip, p.get("interface"))
+                c.dut_info["port_before"] = await asyncio.to_thread(c.dut.interface_info, dut_ip, info["interface"])
             except Exception as e:  # noqa: BLE001
                 self._event("dut", "info", f"port check skipped: {e}")
         self.store.update_run(c.id, dut=c.dut_info)
@@ -247,6 +239,7 @@ class Engine:
             plans[a.node.name] = pl
             (c.dir / f"plan-{a.node.name}.json").write_text(json.dumps(pl))
         c.plans, c.meta = plans, meta
+        (c.dir / "routers.json").write_text(json.dumps(meta["routers"]))   # for the UI's routers table
         self._event("plan", "info", f"{sc.routers.total} routers x {sc.routers.prefixes} prefixes on "
                     + ", ".join(f"{k} {v}" for k, v in meta["router_counts"].items() if v))
 
@@ -375,7 +368,7 @@ class Engine:
         t = now_ms()
         agg = {"sessions": {}, "routes_held": 0, "converged": 0, "prefixes_sent": 0, "prefixes_withdrawn": 0,
                "nlri_rx": 0, "withdrawn_rx": 0, "bytes_rx": 0, "resets": 0, "planned_resets": 0, "looped_rx": 0}
-        nodes, lat = [], []
+        nodes, lat, routers = [], [], []
         for a, s in zip(c.agents, res):
             if isinstance(s, Exception):
                 nodes.append({"node": a.node.name, "error": str(s)[:120]})
@@ -390,7 +383,9 @@ class Engine:
             if cpu is not None:
                 c.node_cpu.setdefault(a.node.name, []).append(cpu)
             nodes.append({"node": a.node.name, "routers": len(s.get("per_router", [])), "cpu_pct": cpu,
-                          "send_lag_p99_ms": tot.get("send_lag_p99_ms")})
+                          "temp_c": s.get("node_temp_c"), "send_lag_p99_ms": tot.get("send_lag_p99_ms")})
+            for r in s.get("per_router", []):
+                routers.append([r["name"], a.node.name, r["state"], r.get("held", 0), r.get("sent", 0), r.get("rx", 0)])
             for key, gen, kind, ts in s["samples"]["tx"]:
                 c.tx[(key, gen, 1 if kind == 3 else kind)] = ts
             for key, gen, kind, ts in s["samples"]["rx"]:
@@ -410,22 +405,42 @@ class Engine:
                           "bytes_rx_s": rate("bytes_rx")},
                 "latency_ms": {"p50": _pct(lat, 0.5), "p99": _pct(lat, 0.99), "n": len(lat)},
                 "resets": agg["resets"], "planned_resets": agg["planned_resets"], "looped_rx": agg["looped_rx"],
-                "nodes": nodes}
+                "nodes": nodes, "routers": sorted(routers), "dut_port": self._port_live(c, rate("bytes_rx")),
+                "dut_load": c.dut_load or None}
         c.prev = {**agg, "t_ms": t}
         c.last = agg
         if agg["resets"] > (prev.get("resets", 0) if prev else 0):
             self._event("session", "warning", f"unexpected session resets: {agg['resets']}")
-        self.hub.publish(tick, data_t_ms=t)
         tick["controller"] = self.health.snapshot()
-        self.store.tick(c.id, t, tick)
+        self.hub.publish(tick, data_t_ms=t)
+        stored = {k: v for k, v in tick.items() if k != "routers"}   # per-router rows: live only (size)
+        self.store.tick(c.id, t, stored)
         with open(c.dir / "live.jsonl", "a") as f:
-            f.write(json.dumps(tick) + "\n")
+            f.write(json.dumps(stored) + "\n")
+
+    @staticmethod
+    def _port_live(c: Ctx, bytes_rx_s: float | None) -> dict | None:
+        """M9: DUT port and link use. Output in BGP Mb/s + ~6 % TCP/IP/Ethernet overhead."""
+        pb = c.dut_info.get("port_before")
+        speed = (pb or {}).get("speed_mbps") or c.dut_info.get("link_mbps")
+        if not pb and not c.dut:
+            return None
+        mbps = (bytes_rx_s or 0) * 8 / 1e6 * 1.06
+        return {"interface": (pb or {}).get("interface"), "speed_mbps": speed, "duplex": (pb or {}).get("duplex"),
+                "up": (pb or {}).get("up"), "mbps": round(mbps, 2), "use_pct": round(100 * mbps / speed, 2) if speed else None,
+                "errors": c.port_errors, "reported": bool(pb)}
 
     async def _dut_poll(self, c: Ctx) -> None:
         guard = c.dut_info.get("min_free_mem_pct") or 0
         rec = await asyncio.to_thread(self._dut_poll_sync, c, guard)
         with open(c.dir / "dut-sessions.jsonl", "a") as f:
             f.write(json.dumps(rec) + "\n")
+        if "port_errors" in rec:
+            if sum(rec["port_errors"].values()) > sum(c.port_errors.values()):
+                self._event("dut", "warning", "new DUT port errors: " + ", ".join(f"{k} +{v}" for k, v in rec["port_errors"].items()))
+            c.port_errors = rec["port_errors"]
+        if rec.get("free_pct") is not None:
+            c.dut_load = {"free_pct": rec["free_pct"], "cpu_load": rec.get("cpu_load"), "t": rec["t"]}
         free = rec.get("free_pct")
         if guard and free is not None and free < guard:
             self._event("guard", "error", f"DUT memory guard: {free} % free < {guard} %")
@@ -443,6 +458,11 @@ class Engine:
                 if guard:
                     ld = dut.load()
                     rec.update(free_pct=ld.get("free_pct"), cpu_load=ld.get("cpu_load"))
+                pb = c.dut_info.get("port_before")
+                if pb:   # live port errors (M9): one `show interfaces X` per poll
+                    from tgen.dut.cisco import interface_delta
+                    pa = dut.interface_info(c.dut_info["ip"], pb["interface"])
+                    rec["port_errors"] = interface_delta(pb, pa)
             except Exception as e:  # noqa: BLE001
                 rec["error"] = str(e)[:300]
             finally:

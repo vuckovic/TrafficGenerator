@@ -581,3 +581,46 @@ scheme.mrai.device,text,device default,подразумевано за уређ�
 scheme.mrai.routeros,text,RouterOS: no MRAI setting,RouterOS: нема подешавања MRAI
 scheme.export.csv,button,Export CSV,Извези CSV
 scheme.export.md,button,Export Markdown,Извези Markdown
+ui.login.title,heading,Log in,Пријава
+ui.login.sub,text,TrafficGenerator controller on {host},TrafficGenerator контролер на {host}
+ui.login.wrong,text,Wrong password.,Погрешна лозинка.
+ui.login.blocked,text,Too many failed logins from this address. Try again in {min} min.,Превише неуспелих пријава са ове адресе. Покушајте поново за {min} мин.
+ui.login.nopass,text,No admin password is set on the controller (tgen-controller set-password).,На контролеру није подешена администраторска лозинка (tgen-controller set-password).
+ui.no_run,text,"No run active. Set up the device, routers and scenario, then press Start.","Нема активног теста. Подесите уређај, рутере и сценарио, па притисните Покрени."
+ui.last_run,text,Last run {id}: {state},Последњи тест {id}: {state}
+ui.summary,link,Summary,Резиме
+ui.report_json,link,report.json,report.json
+ui.coming,text,This tab comes with {step}.,Ова картица стиже са {step}.
+ui.error,text,Error: {msg},Грешка: {msg}
+ui.ws_lost,text,Live connection lost — reconnecting…,Веза за приказ уживо је прекинута — поновно повезивање…
+ui.start.password_title,heading,Password for {device},Лозинка за {device}
+ui.start.password_help,text,Used for this run only and not stored.,Користи се само за овај тест и не чува се.
+ui.start.go,button,Start run,Покрени тест
+ui.start.busy,text,Another run is active.,Други тест је у току.
+ui.phase.withdraw,option,Withdraw,Повлачење
+ui.phase.type,label,Phase type,Врста фазе
+ui.flap.count,label,Routers,Рутери
+ui.flap.down,label,Down time (s),Време прекида (s)
+ui.step.add,label,Step: add (upd/s),Корак: додај (ажур./s)
+ui.step.every,label,Step every (s),Корак сваких (s)
+ui.mrai.custom_s,label,Custom MRAI (s),Прилагођени MRAI (s)
+ui.routers.total,label,Routers (total),Рутери (укупно)
+ui.routers.prefixes,label,Prefixes per router,Префикса по рутеру
+ui.routers.hold,label,Hold time (s),Hold време (s)
+ui.routers.split,text,Placement: {split},Распоред: {split}
+ui.routers.at_start,text,"The routers (AS numbers, addresses, prefixes) are generated when the run starts; the table fills in then.","Рутери (AS бројеви, адресе, префикси) генеришу се при покретању теста; табела се тада попуњава."
+ui.dut.detected,label,Detected platform,Препозната платформа
+ui.dut.not_tested,text,not tested yet — use Test connection,још није проверено — користите Провери везу
+ui.dut.status.ok,text,Connected · {summary} · {n} tgen neighbours,Повезано · {summary} · tgen суседа: {n}
+ui.dut.status.port,text,port {iface} {speed} Mb/s {duplex},порт {iface} {speed} Mb/s {duplex}
+ui.dut.status.sessions,text,{n} tgen sessions Established,tgen сесија Established: {n}
+ui.dut.status.pushed,text,{n} tgen neighbours configured,Конфигурисано tgen суседа: {n}
+ui.dut.working,text,working…,у току…
+ui.dut.platform,label,Platform,Платформа
+ui.nodes.title,heading,Node status,Стање чворова
+ui.nodes.offset,column,Clock offset,Одступање сата
+ui.nodes.state,column,Agent state,Стање агента
+ui.convergence.waiting,text,waiting for initial load,чека се почетно учитавање
+ui.updates_s,text,updates/s · offered {n},ажур./s · понуђено {n}
+ui.stopped,state,STOPPED,ЗАУСТАВЉЕНО
+ui.warn,state,WARN,УПОЗОРЕЊЕ
