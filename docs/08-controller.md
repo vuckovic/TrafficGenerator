@@ -184,7 +184,8 @@ The run's maxima are stored with it, and shown in M6 and in the report header.
   - stepped churn and a 2-router flap, then a user stop: agents stopped within 1 s, no unexpected resets;
   - a Cisco profile through the netmiko mock: config pushed with MRAI 0, polled, and removed afterwards; attribute checks INFO.
 - AC6 maxima in the test: API p95 104 ms (the scrypt login), live delay 3 ms, loop lag 3 ms.
-- **Not yet run on the cluster.** Deployment: `deploy/ansible/services.yml`, `deploy/systemd/tgen-controller.service`, `deploy/caddy/Caddyfile`, `deploy/controller.example.toml`.
+- **First cluster run 2026-11-03: PASS** (r-20261103-181240, ASR-920, 12 × 1000, MRAI 0): 12/12 Established, convergence 5.7 s, 0 missing, latency p50 2.98 s / p99 5.65 s, DUT output 26 052 prefixes/s; API p95 max 7.2 ms. The DUT's log read at the end clashed with the last poll on one SSH session; fixed (778a331).
+- Deployment: `deploy/ansible/services.yml`, `deploy/systemd/tgen-controller.service`, `deploy/caddy/Caddyfile`, `deploy/controller.example.toml`.
 
 **Additions to §3 found while building:**
 - `GET /api/runs/{id}/ticks`: the stored live ticks, so the UI can redraw a finished run.
