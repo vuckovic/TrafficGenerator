@@ -1,9 +1,10 @@
 # 04 — Web interface controls (for confirmation)
 
-Status: **FROZEN v1.1 (2026‑10‑20)**: v1.0 of 2026‑10‑19 plus G9, the U2 change and U8–U16, all confirmed · visual design LOCKED v1.1 (`docs/design/`) — Q1–Q6 answered (spec v0.4). **Every non‑obvious control gets a short help text (ⓘ tooltip); role and mode choices also show a visible explanation label; every metric (live tiles, tables, report verdict rows, figure values) shows a short explanation on hover and on keyboard focus.** **Every chart is interactive:** a cursor follows the mouse (or a slider, for keyboard use) and shows the exact value of each series at that point; time‑based charts have zoom levels and a window slider to move the time range left and right. Please mark each control: ✅ accept · ✏️ change (say how) · ❌ drop. A short reply is enough, e.g. *"all ✅ except C9 ❌, R3b ✏️ max 2 M"*.
+Status: **v1.2 additions PROPOSED (2026‑11‑03, DOC‑40)**: U0, U17, U18, M9 and the **Test scheme** tab (K1–K11), marked 🆕, wait for confirmation; everything else is **FROZEN v1.1 (2026‑10‑20)**: v1.0 of 2026‑10‑19 plus G9, the U2 change and U8–U16, all confirmed · visual design LOCKED v1.1 (`docs/design/`) — Q1–Q6 answered (spec v0.4). **Every non‑obvious control gets a short help text (ⓘ tooltip); role and mode choices also show a visible explanation label; every metric (live tiles, tables, report verdict rows, figure values) shows a short explanation on hover and on keyboard focus.** **Every chart is interactive:** a cursor follows the mouse (or a slider, for keyboard use) and shows the exact value of each series at that point; time‑based charts have zoom levels and a window slider to move the time range left and right. Please mark each control: ✅ accept · ✏️ change (say how) · ❌ drop. A short reply is enough, e.g. *"all ✅ except C9 ❌, R3b ✏️ max 2 M"*.
 
 **Layout** (tabs):
 1. **Benchmark** — set up the DUT, routers and scenario on the left; live view on the right.
+1a. 🆕 **Test scheme** — the standard test of one or more devices (test → smoke → rate series → scale), with instructions, comparison table and knee chart.
 2. **Traffic** — TCP/IP and BGP‑stateless data plane.
 3. **Reports** — run reports and comparison.
 4. **DUT logs** — upload and evaluate.
@@ -28,6 +29,7 @@ Status: **FROZEN v1.1 (2026‑10‑20)**: v1.0 of 2026‑10‑19 plus G9, the U2
 
 | ID | Control | Type | Default | Validation / notes |
 |---|---|---|---|---|
+| U0 🆕 | **Device** | dropdown, one entry per device in the inventory file: label · peering IP · port speed (e.g. *Cisco ASR‑920 · 10.100.0.200 · 1 Gb/s*), plus **BIRD stand‑in on a cluster node** and **Custom (enter by hand)**. Under it a read‑only note: *"Devices come from `deploy/duts.toml` on CMNODE01. To add or change a device, edit that file; the list is re‑read when the page is reloaded."* and whether a password for it is set on the controller | first device in the file | decision 2026‑11‑03: **the device list is edited only in the file**, never in the UI. Choosing a device fills U1 (its default role), U3, U8, U10, U11, U16, U17 and U18; the filled values can be changed for this run only (they are not written back). *Custom* leaves the fields empty |
 | U1 | **DUT role** | radio: **Route server** (default) · **Route reflector** · **Router (forwards traffic)** — with the explanation label below | Route server | Q1/Q5; sets session type, ASN handling, correctness checks and whether data‑plane tests are available |
 | U1a | Role explanation label (shown under U1, changes with the selection) | text | — | **Route server:** *"IXP route server. Every emulated router is a separate eBGP peer with its own AS number. The route server passes routes between peers without adding its own AS number and without changing the next hop. Control‑plane test only."* · **Route reflector:** *"iBGP route reflector. All emulated routers are clients in the DUT's AS; the AS numbers you set appear as origin AS in the AS_PATH. The reflector adds ORIGINATOR_ID and CLUSTER_LIST and keeps the next hop. Control‑plane test only."* · **Router (forwards traffic):** *"BGP router that sets itself as next hop. Routes are learned and re‑advertised, and data traffic between the emulated routers' prefixes is sent through the DUT, so forwarding, loss and data‑plane convergence can be measured."* |
 | U2 | Detected platform | read‑only: model and version read from the DUT (U14 Test connection), e.g. "RouterOS 7.11 · CRS106‑1C‑5S" | — | was a dropdown; the platform is now chosen in U8. Printed on the report; selects the log parser |
@@ -50,6 +52,8 @@ Status: **FROZEN v1.1 (2026‑10‑20)**: v1.0 of 2026‑10‑19 plus G9, the U2
 | U14 | Actions | buttons: **Test connection** · **Preview config** · **Push now** · **Remove** · **Status** + status line (model, version, CPU, free memory, tgen neighbours, Established) | — | Preview shows the exact text that will be sent; Push now is optional (a run pushes its own config) |
 | U15 | After the run | dropdown: remove neighbours · keep neighbours | remove | keep = for manual inspection; the next run replaces them |
 | U16 | Route limit | number (routes the DUT must hold) | 20 000 for MikroTik, empty (none) otherwise | Start is refused above it, with the reason |
+| U17 🆕 | **Memory guard** | number (% free memory) | from the device (ASR‑920 10 %, 1841 15 %, MikroTik 0 = off) | 0–50; 0 = off. During the run the controller reads the DUT's free memory with every poll (U7); below this value the run is **stopped** and the event says why. Help text: *"Protects a small device from running out of memory: the run stops before the DUT does."* |
+| U18 🆕 | Advertisement interval (MRAI) | dropdown: **device default** (shows its value, e.g. *IOS: 30 s*) · **0 s** · custom (s) | device default | Cisco only (pushed as `advertisement-interval`); other platforms show it disabled with the reason. Help text: *"How long the DUT may hold updates back to batch them. 0 measures raw processing speed; the default shows real‑world behaviour."* |
 
 ## R — Emulated routers (Benchmark tab)
 
@@ -91,6 +95,40 @@ Status: **FROZEN v1.1 (2026‑10‑20)**: v1.0 of 2026‑10‑19 plus G9, the U2
 | C10 | Thresholds | p99 latency limit for the knee (s) · convergence target (s) · allowed missing routes | 1 s · — · 0 | used in the report verdict |
 | C11 | Timeline preview | read‑only chart of planned phases and rates | — | updates live while editing |
 
+## K — Test scheme tab 🆕
+
+The standard comparison test of the test devices, the same as `tools/tgen_suite.py`. One device after another; one run at a time.
+
+| ID | Control | Type | Default | Notes |
+|---|---|---|---|---|
+| K1 | **How this test works** | instruction panel at the top of the tab, expanded on first visit, collapsible (text below) | expanded | also printed at the top of the suite report |
+| K2 | Devices | checklist of the inventory devices (as U0), each with its password field (not stored) and a **Test connection** button | none selected | ≥ 1; a device whose connection test fails cannot be started |
+| K3 | Steps | checkboxes: **1 Connection test** · **2 Smoke** · **3 Rate series** · **4 Scale** | all | each step shows its values from the device's file entry, read‑only (e.g. *series: 12 routers × 1 000 prefixes, rates 5 · 10 · 20 · 50 · 100 /s per router*) |
+| K4 | MRAI variants (rate series) | read‑only per device from the file (e.g. *device default 30 s, and 0 s*) | from file | each variant is a separate series |
+| K5 | Pause between runs | number (s) | 10 | 0–600; lets the DUT settle |
+| K6 | Stop on failure | checkbox | on | a failed connection test or smoke skips the rest of that device and continues with the next one (the CLI skips only after a failed connection test) |
+| K7 | Estimated duration | read‑only, per device and total | — | from the step sizes; updated as runs finish |
+| K8 | **Start scheme** · **Stop** | buttons | — | Stop ends the current run within 1 s and cancels the rest |
+| K9 | Progress | grid device × step: waiting · running (with link to the live view) · passed · failed (reason) · skipped | — | |
+| K10 | **Comparison table** | one row per device and MRAI variant: connection, smoke (convergence, missing), sustainable rate per router, knee, sustainable deliveries/s, max DUT output/s, largest scale passed, lowest free memory % | — | export CSV/Markdown; same as `suite.md` |
+| K11 | **Knee chart** | the three views of `tgen_knee_chart.py`: delivered vs offered (log–log), seconds still incomplete after the last send, sustained‑rate bars; one fixed colour per device, dashed = device MRAI | — | interactive (cursor values, zoom); export SVG/PNG/HTML |
+
+**K1 text (draft, English; Serbian in `labels.csv`):**
+
+> **What this test measures.** How fast each device can take in BGP routes and pass them on, where it stops keeping up (the *knee*), and how many routes it can hold. Every device gets exactly the same load, so the results can be compared side by side.
+>
+> **Before you start.** The devices are listed in `deploy/duts.toml` on CMNODE01 — add or change a device there. Each device needs SSH access and an existing `router bgp` with the AS from the file; enter its password above (it is used for this test only and not stored). The controller adds its own BGP neighbours (tagged `tgen`) before each run and removes them afterwards; nothing else on the device is changed. Do not run other tests at the same time.
+>
+> **The four steps, for each device in turn:**
+> 1. **Connection test** — logs in, reads model, software, CPU, free memory and the port's speed and error counters. Nothing is changed.
+> 2. **Smoke** — a small run (e.g. 12 routers × 1 000 prefixes): all sessions must come up, every route must arrive, nothing extra. If this fails, the device's other steps are skipped.
+> 3. **Rate series** — the same routers announce at increasing rates (prefixes per second per router). At each rate we measure how fast the device passes routes on. The **knee** is the first rate where the device falls behind: it delivers less than 90 % of what it is offered, or it is still sending more than 5 s (plus its MRAI) after the last route was sent. Cisco devices run the series twice: with their own advertisement interval (MRAI, real‑world behaviour) and with MRAI 0 (raw processing speed).
+> 4. **Scale** — more routers and prefixes at full speed, step by step, up to the device's route limit, watching its free memory. The step stops early if memory drops below the device's memory guard.
+>
+> **Reading the results.** *Sustainable rate* is the highest rate before the knee; *deliveries/s* counts every route copy the device sends to every peer, so it can be compared across sizes. A device whose port is nearly full (link use, M9) is limited by its link, not its CPU — check before comparing. Every run of the scheme also appears in History with its own report.
+>
+> **How long it takes.** It depends on the device's size and MRAI — from a few minutes to well over half an hour per device; the estimate is shown below and updated as runs finish.
+
 ## T — Traffic tab (data plane)
 
 | ID | Control | Type | Default | Validation / notes |
@@ -125,6 +163,7 @@ Status: **FROZEN v1.1 (2026‑10‑20)**: v1.0 of 2026‑10‑19 plus G9, the U2
 | M6a | Control‑plane health | CMNODE01 reserve in use (CPU / RAM / link), API response time, live‑update delay; amber/red when the reservation is at risk | AC6; the scenario pauses automatically when red |
 | M7 | Data plane | rate chart (L2/L1), per‑node table, sink loss/latency | when traffic is running |
 | M8 | Events | scrolling list: session changes, NOTIFICATIONs, warnings, safety refusals | |
+| M9 🆕 | **DUT port and link use** | tile: port name, speed and duplex (e.g. *Gi0/0/23 · 1000 Mb/s full*); **link use %** = DUT output (BGP Mb/s incl. TCP/IP overhead) ÷ port speed, with a sparkline; port error counters (input errors, CRC, drops) since the start of the run | amber ≥ 70 %, red ≥ 90 %; any new error turns the tile amber and adds an event. Help text: *"Shows whether a slow result is the device or its link: a 100 Mb/s port can be full long before the CPU is."* Hidden when the platform cannot report its port |
 
 ## X — Reports tab
 
