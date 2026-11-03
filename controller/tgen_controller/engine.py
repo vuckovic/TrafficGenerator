@@ -11,6 +11,7 @@ import concurrent.futures as cf
 import json
 import os
 import shutil
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -65,6 +66,7 @@ class Ctx:
     dut: object = None
     dut_info: dict = field(default_factory=dict)
     dut_poll_task: asyncio.Task | None = None
+    dut_lock: threading.Lock = field(default_factory=threading.Lock)   # one SSH command at a time
     node_cpu: dict = field(default_factory=dict)         # node -> [pct, ...]
 
 
@@ -155,9 +157,16 @@ class Engine:
             result_state, error = "failed", f"{e.__class__.__name__}: {e}"
             self._event("run", "error", error)
         finally:
-            for t in (poller, deadline, c.dut_poll_task):
+            for t in (poller, deadline):
                 if t:
                     t.cancel()
+            if c.dut_poll_task and not c.dut_poll_task.done():
+                # a DUT command in a thread cannot be cancelled: let it finish before the
+                # final reads use the same SSH session
+                try:
+                    await asyncio.wait_for(asyncio.shield(c.dut_poll_task), 150)
+                except Exception:  # noqa: BLE001
+                    pass
             await self._finish(c, result_state, error)
 
     async def _deadline(self, c: Ctx) -> None:
@@ -413,24 +422,32 @@ class Engine:
             f.write(json.dumps(tick) + "\n")
 
     async def _dut_poll(self, c: Ctx) -> None:
-        dut, guard = c.dut, c.dut_info.get("min_free_mem_pct") or 0
-        rec: dict = {"t": round(time.time(), 3)}
-        try:
-            dut.call_timeout = 15
-            sess, est = await asyncio.to_thread(dut.sessions)
-            rec.update(established=est, raw=sess)
-            if guard:
-                ld = await asyncio.to_thread(dut.load)
-                rec.update(free_pct=ld.get("free_pct"), cpu_load=ld.get("cpu_load"))
-                if ld.get("free_pct") is not None and ld["free_pct"] < guard:
-                    self._event("guard", "error", f"DUT memory guard: {ld['free_pct']} % free < {guard} %")
-                    await self.stop(c.id, f"DUT memory guard ({ld['free_pct']} % free)")
-        except Exception as e:  # noqa: BLE001
-            rec["error"] = str(e)[:300]
-        finally:
-            dut.call_timeout = None
+        guard = c.dut_info.get("min_free_mem_pct") or 0
+        rec = await asyncio.to_thread(self._dut_poll_sync, c, guard)
         with open(c.dir / "dut-sessions.jsonl", "a") as f:
             f.write(json.dumps(rec) + "\n")
+        free = rec.get("free_pct")
+        if guard and free is not None and free < guard:
+            self._event("guard", "error", f"DUT memory guard: {free} % free < {guard} %")
+            await self.stop(c.id, f"DUT memory guard ({free} % free)")
+
+    @staticmethod
+    def _dut_poll_sync(c: Ctx, guard: float) -> dict:
+        dut = c.dut
+        rec: dict = {"t": round(time.time(), 3)}
+        with c.dut_lock:
+            try:
+                dut.call_timeout = 15
+                sess, est = dut.sessions()
+                rec.update(established=est, raw=sess)
+                if guard:
+                    ld = dut.load()
+                    rec.update(free_pct=ld.get("free_pct"), cpu_load=ld.get("cpu_load"))
+            except Exception as e:  # noqa: BLE001
+                rec["error"] = str(e)[:300]
+            finally:
+                dut.call_timeout = None
+        return rec
 
     # ------------------------------------------------------------------ finish
     async def _finish(self, c: Ctx, state: str, error: str | None) -> None:
@@ -469,7 +486,12 @@ class Engine:
         self._state(state)
 
     def _dut_finish(self, c: Ctx) -> None:
+        with c.dut_lock:
+            self._dut_finish_locked(c)
+
+    def _dut_finish_locked(self, c: Ctx) -> None:
         dut = c.dut
+        dut.call_timeout = None
         for name, fn in (("dut-bgp.log", dut.log), ("dut-resources-end.json", lambda: json.dumps(dut.resources()))):
             try:
                 (c.dir / name).write_text(fn())
