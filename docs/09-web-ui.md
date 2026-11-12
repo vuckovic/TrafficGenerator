@@ -78,3 +78,16 @@ Requested by the user after the first cluster test: pressing Start gave no visib
 Reported by the user: a five‑digit latency made the *Latency p99 (now)* value wrap to a second line, which pushed the chart and everything below it down and back up.
 - **Fix:** every KPI tile is at least 190 px wide, enough for "999 999 ms" on one line (10 monospace characters at 24 px), and the value never wraps. The small line under the value always reserves two lines. The tiles sit two by two in the live column on a 1440 px screen, or four in a row when there is room.
 - **Browser test:** puts "999 999 ms" into the tiles at 1440, 1280, 1024 and 390 px and checks that each stays on one line and the chart does not move.
+
+## 9. P3c‑2 Test scheme — plan (2026‑11‑12)
+
+The confirmed controls K1–K11 (doc 04 v1.2), plus **K12 Test network topology** (proposed 2026‑11‑12, at the user's request; design on the canvas, *Test scheme* artboards, English and Serbian).
+
+- **Scheme runner (controller):**
+  - `POST /api/schemes` `{devices: [{profile, password?, enable?}], steps: [test, smoke, series, scale], pause_s, stop_on_failure}` → `202 {id}`;
+  - `GET /api/schemes/{id}`: progress grid, comparison rows and knee‑chart series;
+  - `POST /api/schemes/{id}/stop`; `GET /api/schemes` (history).
+  - It runs the same steps as `tools/tgen_suite.py` as ordinary runs (each one appears in History), one at a time, with the device sizes and MRAI variants from `deploy/duts.toml` and the knee rule from `tools/tgen/knee.py`.
+  - Passwords are kept in memory for the scheme only.
+- **Topology (K12):** `GET /api/topology` (no secrets): nodes with management and test addresses and roles, devices with BGP and SSH addresses, model, AS and port, gateway, public address, emulated‑router range. The page draws it as one SVG and highlights the device in the running step.
+- **Open point:** the physical wiring between the Super6C board port ETH0 and the three devices (one lab switch? which ports?) is drawn as "Lab switch" until confirmed.
