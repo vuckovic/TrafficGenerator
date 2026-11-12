@@ -800,7 +800,7 @@ cmp.lat_ann,label,Announce latency p50 / p99,Кашњење оглашавања
 cmp.lat_wd,label,Withdraw latency p50 / p99,Кашњење повлачења p50 / p99
 cmp.min_mem,label,Lowest free DUT memory,Најмање слободне меморије DUT‑а
 cmp.verdict,label,Verdict,Оцена
-fig.time,label,time since the start of the run (m:ss),време од почетка теста (m:ss)
+fig.time,label,time since the start of the run,време од почетка теста
 fig.latency,label,latency,кашњење
 fig.offered_s,label,offered updates/s,понуђено ажурирања/s
 fig.phase_zoom,label,Zoom to a phase,Увећај фазу
