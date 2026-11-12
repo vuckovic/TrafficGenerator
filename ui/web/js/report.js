@@ -152,7 +152,8 @@ export function renderReport() {
   const dut = (rep && rep.dut) || r.dut || sc.dut || {};
   [["dut.role", dut.role ? t("dut.role." + dut.role) : null], ["DUT", [dut.label, dut.ip, dut.asn ? "AS " + dut.asn : null].filter(Boolean).join(" · ")],
     ["MRAI", dut.mrai === null || dut.mrai === undefined ? null : num(dut.mrai) + " s"], ["dutcfg.mem_guard", dut.min_free_mem_pct ? dut.min_free_mem_pct + " %" : null],
-    ["live.port", dut.interface ? `${dut.interface}${dut.link_mbps ? " · " + num(dut.link_mbps) + " Mb/s" : ""}` : (dut.link_mbps ? num(dut.link_mbps) + " Mb/s" : null)]]
+    ["live.port", dut.interface ? `${dut.interface}${dut.link_mbps ? " · " + num(dut.link_mbps) + " Mb/s" : ""}` : (dut.link_mbps ? num(dut.link_mbps) + " Mb/s" : null)],
+    ["snmp.report", snmpLine(dut.snmp, rep && rep.dut_snmp)]]
     .filter(([, v]) => v).forEach(([k, v]) => db.append(el("tr", {}, el("td", { class: "td", text: k.includes(".") ? t(k) : k }), el("td", { class: "td mono", style: "white-space:normal", text: v }))));
   // events and files
   const ev = $("repEvents"); ev.innerHTML = "";
@@ -165,6 +166,21 @@ export function renderReport() {
   });
   const fl = $("repFiles"); fl.innerHTML = "";
   R.files.forEach((x) => fl.append(el("a", { href: `/api/runs/${r.id}/files/${encodeURIComponent(x.name)}`, target: "_blank", class: "mono", text: x.name })));
+}
+
+function snmpLine(cfg, s) {
+  if (!cfg) return null;
+  if (cfg.error) return t("snmp.report.skipped", { why: cfg.error });
+  const sys = cfg.system || {};
+  const parts = [`${cfg.host}:${cfg.port}`, sys.name];
+  if (s) {
+    parts.push(t("snmp.report.polls", { n: s.answered, m: s.polls }));
+    if (s.cpu_max !== null && s.cpu_max !== undefined) parts.push("CPU max " + num(s.cpu_max) + " %");
+    if (s.free_mem_min !== null && s.free_mem_min !== undefined) parts.push(t("snmp.report.mem_min", { pct: num(s.free_mem_min, 1) }));
+    if (s.in_mbps_max !== null && s.in_mbps_max !== undefined) parts.push(`${s.interface || ""} in max ${num(s.in_mbps_max, 1)} Mb/s`);
+    if (s.in_updates_s_max !== null && s.in_updates_s_max !== undefined) parts.push(t("snmp.report.upd", { n: num(s.in_updates_s_max) }));
+  }
+  return parts.filter(Boolean).join(" · ");
 }
 
 async function regenerate() {

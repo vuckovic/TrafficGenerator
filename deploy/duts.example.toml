@@ -31,6 +31,10 @@
 #   device_mrai_s    the device's own MRAI when mrai_s is unset (IOS: 30 s for eBGP). The
 #                    knee rule and timeouts allow for it: a DUT that holds updates back for
 #                    MRAI seconds is batching, not falling behind
+#   snmp             true: poll the device over SNMP v2c during runs (U5, read-only). The
+#                    community is a secret: TGEN_DUT_SNMP_<PROFILE> in /etc/tgen/dut-passwords.env
+#                    (e.g. TGEN_DUT_SNMP_ASR920=...), or typed in the page for one run
+#   snmp_host        SNMP address (default: peer_ip); snmp_port (default 161)
 #   [x.smoke]        quick check: routers, prefixes
 #   [x.series]       rate series: routers, prefixes, rates (prefixes/s per router);
 #                    mrai = ["default", 0]: one series per advertisement interval (suite)

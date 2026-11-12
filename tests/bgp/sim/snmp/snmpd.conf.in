@@ -1,0 +1,8 @@
+# snmpd for the tests (tests/controller): read-only v2c on loopback, fake BGP MIBs via bgp_pass.py
+agentAddress udp:@ADDR@:@PORT@
+rocommunity @COMMUNITY@ 127.0.0.0/8
+rocommunity @COMMUNITY@ 10.0.0.0/8
+sysName tgen-snmp-test
+sysDescr tgen test agent (net-snmp)
+pass .1.3.6.1.2.1.15 @DIR@/bgp_pass.py
+pass .1.3.6.1.4.1.9.9.187 @DIR@/bgp_pass.py

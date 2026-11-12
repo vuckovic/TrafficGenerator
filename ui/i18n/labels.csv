@@ -854,7 +854,7 @@ fig.f9.up,text,up,успостављена
 fig.f9.down,text,down,пала
 fig.f9.down_planned,text,down (planned),пала (планирано)
 fig.f9.dut_est,text,DUT: {n} established,DUT: успостављено {n}
-fig.f10.cap,text,"Free memory and CPU of the DUT from its polls (every 10 s), with its established sessions (right).","Слободна меморија и CPU DUT‑а из његових очитавања (на 10 s), уз успостављене сесије (десно)."
+fig.f10.cap,text,"Free memory and CPU of the DUT from its polls (SSH, or SNMP when SSH gives none), with its established sessions (right).","Слободна меморија и CPU DUT‑а из његових очитавања (SSH, или SNMP када их SSH не даје), уз успостављене сесије (десно)."
 fig.f10.none,text,"No DUT polls in this run (the DUT was not configured by the controller, or polling was off).",Нема очитавања DUT‑а у овом тесту (DUT није подесио контролер или је очитавање искључено).
 fig.f10.mem,label,free memory,слободна меморија
 fig.f10.sessions,label,sessions,сесије
@@ -915,3 +915,25 @@ dl.ev.error,text,Error,Грешка
 dl.ev.config,text,Configuration,Конфигурација
 dl.ev.other,text,Other,Остало
 report.dutlog.open,button,DUT log,Лог DUT‑а
+snmp.enable,label,"SNMP polling (v2c, read‑only)","SNMP очитавање (v2c, само читање)"
+snmp.enable.tip,tooltip,"During the run the controller reads the DUT's CPU, memory, the port towards the generator and BGP counters over SNMP v2c, every polling interval. Read‑only; works without SSH too.","Током теста контролер преко SNMP v2c, у сваком интервалу очитавања, чита CPU, меморију, порт према генератору и BGP бројаче DUT‑а. Само читање; ради и без SSH‑а."
+snmp.community,label,Community,Community
+snmp.community.set,text,set on the controller,подешено на контролеру
+snmp.host,label,SNMP address,SNMP адреса
+snmp.test,button,Test SNMP,Тестирај SNMP
+snmp.hint,text,"SNMP address: host or host:port (default: the DUT IP, port 161). The community is kept in memory for this run only. For unattended test schemes set TGEN_DUT_SNMP_<PROFILE> in /etc/tgen/dut-passwords.env.","SNMP адреса: host или host:port (подразумевано: IP DUT‑а, порт 161). Community се чува у меморији само за овај тест. За тест шеме без надзора подесите TGEN_DUT_SNMP_<PROFILE> у /etc/tgen/dut-passwords.env."
+snmp.no_tools,text,The net-snmp tools are not installed on the controller (package snmp).,Алати net-snmp нису инсталирани на контролеру (пакет snmp).
+snmp.free_mem,text,{pct} % memory free,слободно {pct} % меморије
+snmp.port,text,port {name},порт {name}
+snmp.bgp,text,BGP {n}/{m} of our peers Established,BGP: Established {n}/{m} наших суседа
+snmp.no_bgp,text,no BGP4‑MIB,нема BGP4‑MIB
+snmp.report,label,SNMP (U5),SNMP (U5)
+snmp.report.skipped,text,not polled: {why},није очитавано: {why}
+snmp.report.polls,text,{n}/{m} polls answered,одговорено {n}/{m} очитавања
+snmp.report.mem_min,text,free memory min {pct} %,најмање слободне меморије {pct} %
+snmp.report.upd,text,max {n} updates/s received,највише {n} примљених ажурирања/s
+fig.f10s,heading,DUT port and BGP over SNMP,Порт и BGP DUT‑а преко SNMP‑а
+fig.f10s.cap,text,"Traffic on the DUT port {iface} (IF‑MIB, 64‑bit counters) and BGP updates per second the DUT received from our peers (BGP4‑MIB, right), from the SNMP polls.","Саобраћај на порту DUT‑а {iface} (IF‑MIB, 64‑битни бројачи) и BGP ажурирања у секунди која је DUT примио од наших суседа (BGP4‑MIB, десно), из SNMP очитавања."
+fig.f10s.in,label,port in,порт улаз
+fig.f10s.out,label,port out,порт излаз
+fig.f10s.upd,label,updates/s received,примљено ажурирања/s

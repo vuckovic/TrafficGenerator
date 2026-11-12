@@ -79,6 +79,11 @@ class Ctx:
     node_cpu: dict = field(default_factory=dict)         # node -> [pct, ...]
     port_errors: dict = field(default_factory=dict)      # DUT port counter growth since the start (live, M9)
     dut_load: dict = field(default_factory=dict)         # last DUT free memory / CPU (live)
+    snmp: object = None                                  # U5: tgen.snmp.Session (holds the community in memory)
+    snmp_peers: set = field(default_factory=set)
+    snmp_task: asyncio.Task | None = None
+    snmp_last: dict = field(default_factory=dict)
+    snmp_failing: bool = False
 
 
 class Engine:
@@ -193,6 +198,12 @@ class Engine:
             for t in (poller, deadline):
                 if t:
                     t.cancel()
+            if c.snmp_task and not c.snmp_task.done():
+                try:
+                    await asyncio.wait_for(asyncio.shield(c.snmp_task), 60)
+                except Exception:  # noqa: BLE001
+                    pass
+            c.snmp = None                                   # drops the community with the session
             if c.dut_poll_task and not c.dut_poll_task.done():
                 # a DUT command in a thread cannot be cancelled: let it finish before the
                 # final reads use the same SSH session
@@ -255,6 +266,8 @@ class Engine:
                 c.dut_info["port_before"] = await asyncio.to_thread(c.dut.interface_info, dut_ip, info["interface"])
             except Exception as e:  # noqa: BLE001
                 self._event("dut", "info", f"port check skipped: {e}")
+        if info["snmp"]:
+            await self._snmp_start(c, d, info)
         self.store.update_run(c.id, dut=c.dut_info)
 
         # ---- plan
@@ -271,6 +284,7 @@ class Engine:
             plans[a.node.name] = pl
             (c.dir / f"plan-{a.node.name}.json").write_text(json.dumps(pl))
         c.plans, c.meta = plans, meta
+        c.snmp_peers = {r["ip"] for r in meta["routers"]}
         (c.dir / "routers.json").write_text(json.dumps(meta["routers"]))   # for the UI's routers table
         self._event("plan", "info", f"{sc.routers.total} routers x {sc.routers.prefixes} prefixes on "
                     + ", ".join(f"{k} {v}" for k, v in meta["router_counts"].items() if v))
@@ -382,7 +396,7 @@ class Engine:
 
     # ------------------------------------------------------------------ live
     async def _poll(self, c: Ctx) -> None:
-        last_dut = 0.0
+        last_dut = last_snmp = 0.0
         while True:
             t0 = time.monotonic()
             try:
@@ -393,6 +407,10 @@ class Engine:
                     (c.dut_poll_task is None or c.dut_poll_task.done()):
                 last_dut = time.monotonic()
                 c.dut_poll_task = asyncio.create_task(self._dut_poll(c))
+            if c.snmp and time.monotonic() - last_snmp >= (c.sc.dut.poll_s or 10) and \
+                    (c.snmp_task is None or c.snmp_task.done()):
+                last_snmp = time.monotonic()
+                c.snmp_task = asyncio.create_task(self._snmp_poll(c))
             await asyncio.sleep(max(0.05, TICK_S - (time.monotonic() - t0)))
 
     async def _tick(self, c: Ctx) -> None:
@@ -438,7 +456,7 @@ class Engine:
                 "latency_ms": {"p50": _pct(lat, 0.5), "p99": _pct(lat, 0.99), "n": len(lat)},
                 "resets": agg["resets"], "planned_resets": agg["planned_resets"], "looped_rx": agg["looped_rx"],
                 "nodes": nodes, "routers": sorted(routers), "dut_port": self._port_live(c, rate("bytes_rx")),
-                "dut_load": c.dut_load or None}
+                "dut_load": c.dut_load or None, "dut_snmp": c.snmp_last or None}
         c.prev = {**agg, "t_ms": t}
         c.last = agg
         if agg["resets"] > (prev.get("resets", 0) if prev else 0):
@@ -462,6 +480,45 @@ class Engine:
                 "up": (pb or {}).get("up"), "mbps": round(mbps, 2), "use_pct": round(100 * mbps / speed, 2) if speed else None,
                 "errors": c.port_errors, "reported": bool(pb)}
 
+    async def _snmp_start(self, c: Ctx, d, info: dict) -> None:
+        """U5: check the agent answers before the run; a failure only skips the polling."""
+        from tgen import snmp
+        from .dutspec import snmp_community
+        c.dut_info["snmp"] = {"host": info["snmp_host"], "port": info["snmp_port"]}
+        comm = snmp_community(d)
+        if not comm:
+            self._event("dut", "warning", "SNMP polling skipped: no community (U5)")
+            c.dut_info["snmp"]["error"] = "no community"
+            return
+        s = snmp.Session(info["snmp_host"], comm, port=info["snmp_port"])
+        try:
+            sysinfo = await asyncio.to_thread(s.system)
+        except snmp.SnmpError as e:
+            self._event("dut", "warning", f"SNMP polling skipped: {e}")
+            c.dut_info["snmp"]["error"] = str(e)[:200]
+            return
+        c.snmp = s
+        c.dut_info["snmp"]["system"] = {k: (v or "")[:200] if isinstance(v, str) else v for k, v in sysinfo.items()}
+        self._event("dut", "info", f"SNMP v2c: {sysinfo.get('name')} — {(sysinfo.get('descr') or '').splitlines()[0][:120]}")
+
+    async def _snmp_poll(self, c: Ctx) -> None:
+        from tgen.snmp import SnmpError
+        try:
+            rec = await asyncio.to_thread(c.snmp.poll, c.dut_info.get("interface"), c.snmp_peers or None)
+        except SnmpError as e:
+            rec = {"t": round(time.time(), 3), "errors": [str(e)[:200]]}
+        with open(c.dir / "dut-snmp.jsonl", "a") as f:
+            f.write(json.dumps(rec) + "\n")
+        bad = bool(rec.get("errors")) and rec.get("cpu_pct") is None and rec.get("if") is None
+        if bad != c.snmp_failing:
+            c.snmp_failing = bad
+            self._event("dut", "warning" if bad else "info", ("SNMP poll failed: " + "; ".join(rec["errors"]))[:300]
+                        if bad else "SNMP polling answers again")
+        if not bad:
+            c.snmp_last = {k: rec.get(k) for k in ("t", "cpu_pct", "free_mem_pct", "if", "bgp")}
+            if not c.dut_load.get("src") == "ssh" and rec.get("free_mem_pct") is not None:
+                c.dut_load = {"free_pct": rec["free_mem_pct"], "cpu_load": rec.get("cpu_pct"), "t": rec["t"], "src": "snmp"}
+
     async def _dut_poll(self, c: Ctx) -> None:
         guard = c.dut_info.get("min_free_mem_pct") or 0
         rec = await asyncio.to_thread(self._dut_poll_sync, c, guard)
@@ -472,7 +529,7 @@ class Engine:
                 self._event("dut", "warning", "new DUT port errors: " + ", ".join(f"{k} +{v}" for k, v in rec["port_errors"].items()))
             c.port_errors = rec["port_errors"]
         if rec.get("free_pct") is not None:
-            c.dut_load = {"free_pct": rec["free_pct"], "cpu_load": rec.get("cpu_load"), "t": rec["t"]}
+            c.dut_load = {"free_pct": rec["free_pct"], "cpu_load": rec.get("cpu_load"), "t": rec["t"], "src": "ssh"}
         free = rec.get("free_pct")
         if guard and free is not None and free < guard:
             self._event("guard", "error", f"DUT memory guard: {free} % free < {guard} %")
@@ -635,6 +692,20 @@ def analyse(rdir: str, cpu: dict, dut_info: dict, health_max: dict, state: str,
     def jl(name: str) -> list:
         f = d / name
         return [json.loads(x) for x in f.read_text().splitlines() if x.strip()] if f.exists() else []
+    snmp_rows = jl("dut-snmp.jsonl")
+    if snmp_rows:   # U5 summary
+        ok = [r for r in snmp_rows if "cpu_pct" in r or "if" in r]
+
+        def col(f):
+            return [v for v in (f(r) for r in ok) if v is not None]
+        cpu_, mem_ = col(lambda r: r.get("cpu_pct")), col(lambda r: r.get("free_mem_pct"))
+        inm = col(lambda r: (r.get("if") or {}).get("in_mbps"))
+        upd = col(lambda r: (r.get("bgp") or {}).get("in_updates_s"))
+        last_if = next((r["if"] for r in reversed(ok) if r.get("if")), None) or {}
+        rep["dut_snmp"] = {"polls": len(snmp_rows), "answered": len(ok), "cpu_max": max(cpu_, default=None),
+                           "free_mem_min": min(mem_, default=None), "in_mbps_max": max(inm, default=None),
+                           "in_updates_s_max": max(upd, default=None), "interface": last_if.get("name"),
+                           "in_err_end": last_if.get("in_err"), "discards_end": last_if.get("discards")}
     try:   # DUT log events (P5): parsed, aligned, evaluated -> dut-events.json, an INFO row, F9
         from tgen.dutlog import evaluate, gate_line
         rep["dut_log"] = evaluate(d, meta, results, phases or [], jl("live.jsonl"), adapter=dut_info.get("adapter"))
@@ -645,7 +716,7 @@ def analyse(rdir: str, cpu: dict, dut_info: dict, health_max: dict, state: str,
     (d / "report.json").write_text(json.dumps(rep, indent=1))
     try:   # figures F1-F12 for the report page (P4); a failure here never loses the report
         from tgen.figures import build
-        figs = build(meta, results, jl("live.jsonl"), jl("dut-sessions.jsonl"), phases or [], events or [])
+        figs = build(meta, results, jl("live.jsonl"), jl("dut-sessions.jsonl"), phases or [], events or [], snmp_rows)
         figs["f12"]["node_cpu_p95"] = cpu
         de = d / "dut-events.json"
         if de.exists():   # F9 DUT log lane: t (aligned), router, event, severity, detail

@@ -49,6 +49,9 @@ def load(p: Path | None = None) -> dict[str, dict]:
             raise InventoryError(f"{p} [{name}]: adapter must be one of {sorted(ADAPTERS)}")
         if not d.get("peer_ip"):
             raise InventoryError(f"{p} [{name}]: peer_ip missing")
+        if any(k in d for k in ("snmp_community", "community", "password")):
+            raise InventoryError(f"{p} [{name}]: no secrets in the inventory: use TGEN_DUT_PASSWORD_* / TGEN_DUT_SNMP_* "
+                                 "in /etc/tgen/dut-passwords.env")
         if d.get("role", "router") not in ROLES:
             raise InventoryError(f"{p} [{name}]: role must be one of {sorted(ROLES)}")
         d = dict(d)

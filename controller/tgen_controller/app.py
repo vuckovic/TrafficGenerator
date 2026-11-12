@@ -64,6 +64,7 @@ class Limits(BaseModel):
 class DutAction(BaseModel):
     password: str | None = None
     enable: str | None = None
+    snmp_community: str | None = Field(None, max_length=64)
     routers: int = Field(60, ge=1, le=600)
     role: str | None = None
 
@@ -74,7 +75,7 @@ class DutRequest(BaseModel):
     routers: int = Field(60, ge=1, le=600)
 
 
-DUT_ACTIONS = ("test", "preview", "push", "remove", "status")
+DUT_ACTIONS = ("test", "preview", "push", "remove", "status", "snmp")
 
 
 class SchemeDevice(BaseModel):
@@ -228,9 +229,12 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
     async def duts():
         from tgen import inventory
         safe = ("label", "adapter", "peer_ip", "ssh_host", "user", "asn", "role", "link_mbps", "max_routes",
-                "min_free_mem_pct", "ssh_legacy", "interface", "mrai_s", "device_mrai_s", "smoke", "series", "scale")
+                "min_free_mem_pct", "ssh_legacy", "interface", "mrai_s", "device_mrai_s", "smoke", "series", "scale",
+                "snmp", "snmp_host", "snmp_port")
+        from tgen.snmp import available, community_env
         return {name: {k: v for k, v in p.items() if k in safe} | {
-                    "password_set": bool(os.environ.get(inventory.password_env(name)))}
+                    "password_set": bool(os.environ.get(inventory.password_env(name))),
+                    "snmp_set": bool(os.environ.get(community_env(name))), "snmp_tools": available()}
                 for name, p in inventory.load().items()}
 
     def _dut_guard(action: str) -> None:
@@ -242,7 +246,7 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
     @app.post("/api/duts/{profile}/{action}", dependencies=S)
     async def dut_action(profile: str, action: str, body: DutAction):
         _dut_guard(action)
-        d = Dut(profile=profile, role=body.role, password=body.password, enable=body.enable)
+        d = Dut(profile=profile, role=body.role, password=body.password, enable=body.enable, snmp_community=body.snmp_community)
         return await asyncio.to_thread(_dut_action, d, action, body.routers) | {"profile": profile}
 
     @app.post("/api/dut/{action}", dependencies=S)
@@ -500,8 +504,10 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
             await hub.serve(ws)
 
     def _dut_action(d: Dut, action: str, routers: int) -> dict:
-        from .dutspec import action as dut_action
+        from .dutspec import action as dut_action, snmp_test
         try:
+            if action == "snmp":
+                return snmp_test(d)
             return dut_action(d, action, routers, str(cfg.raw.get("cluster_env") or REPO / "deploy" / "cluster.env"))
         except ValueError as e:
             raise HTTPException(422, str(e))

@@ -89,6 +89,16 @@
 <div class="field"><label class="lbl" for="dutAsn" data-t="dut.asn">DUT ASN</label><input id="dutAsn" class="inp mono" inputmode="numeric"></div>
 <div class="field"><label class="lbl" for="pollS" data-t="dut.poll_interval">Polling interval (s)</label><input id="pollS" class="inp mono" inputmode="numeric" value="10"></div>
 </div>
+<fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px" id="snmpBox">
+<legend style="padding:0;margin-bottom:8px;display:flex;gap:8px;align-items:center;font-size:13px;font-weight:500"><input id="snmpOn" type="checkbox" style="accent-color:#0E6E66;width:18px;height:18px;margin:0" aria-describedby="snmpHint"><label for="snmpOn" data-t="snmp.enable">SNMP polling (v2c, read‑only)</label> <span class="tip" data-t-title="snmp.enable.tip">i</span></legend>
+<div class="grid4" id="snmpFields">
+<div class="field"><label class="lbl" for="snmpComm" data-t="snmp.community">Community</label><input id="snmpComm" class="inp" type="password" autocomplete="off" maxlength="64"></div>
+<div class="field"><label class="lbl" for="snmpHost" data-t="snmp.host">SNMP address</label><input id="snmpHost" class="inp mono"></div>
+<div class="field" style="justify-content:flex-end"><button class="btn btn-sm" type="button" id="snmpTest" data-t="snmp.test" style="height:36px">Test</button></div>
+</div>
+<span style="display:flex;align-items:center;gap:8px;font-size:12px;min-width:0" role="status"><span class="dot" id="snmpDot" style="background:#8A9097;flex:none"></span><span class="mono" id="snmpStatus" style="color:#23403C;overflow-wrap:anywhere"></span></span>
+<p class="small" id="snmpHint" style="margin:0"></p>
+</fieldset>
 </div>
 
 <div class="card">

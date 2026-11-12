@@ -60,6 +60,11 @@ class Dut(BaseModel):
     ssh_legacy: bool | None = None
     sudo: bool | None = None
     bird_include: str | None = None
+    # U5: SNMP v2c polling, read-only; community from the request (never stored) or TGEN_DUT_SNMP_<PROFILE>
+    snmp: bool | None = None
+    snmp_host: str | None = None
+    snmp_port: int | None = Field(None, ge=1, le=65535)
+    snmp_community: str | None = Field(None, exclude=True, max_length=64)
 
 
 class Routers(BaseModel):

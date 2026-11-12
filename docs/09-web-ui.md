@@ -169,3 +169,17 @@ Spec §12 figures, controls X1–X4 (doc 04), the locked report design (F2, F3, 
 - **Comparison (X4):** *Compare…* picks 2–5 finished runs → `#reports/compare:<id>,<id>…`: side‑by‑side metrics (device, role, size, sessions, convergence, withdraw, latencies, output, missing/extra, resets, lowest free memory, verdict; CSV) and overlaid F2, F3, F5, F10.
 - **Texts** in English and Serbian Cyrillic (`fig.*`, `cmp.*`).
 - **Tests:** `test_e2e.py` (figures.json for every run, F2 reaches 100 %, session events), `ui_e2e.py` (F1–F12 on the page, cursor, zoom, legend, heatmap, timeline, SVG export, HTML export, print layout screenshot, comparison of 3+ runs). All pass. Screenshots: `docs/web-ui/report-figures-en.png`, `compare-en.png`.
+
+## 13. P5 DUT logs and SNMP as built (2026‑11‑13)
+
+Full description in doc 10. In the page:
+
+- **DUT logs tab** (`#logs/<run>`, `ui/web/js/dutlogs.js`): log files with upload and removal, platform and
+  clock offset with *Apply and evaluate*, summary tiles, first error, events by phase, unexpected downs with
+  cause, agreement, events table with search and filters and an *Unclassified lines* tab. Report page: *DUT log* button.
+- **F9** gets the DUT log lane: DUT events shifted to our clock (green up, amber warnings, red errors), readout
+  "DUT R03 Session down — hold time expired".
+- **U5** on the Benchmark tab (Device under test card): SNMP checkbox, community, address, *Test SNMP*, status line.
+- **F10** draws SNMP CPU and memory when the SSH polls give none; new **F10b** "DUT port and BGP over SNMP":
+  port in/out Mb/s and BGP updates/s received from our peers (right axis). The report's DUT table gets an SNMP line.
+- Labels `dl.*`, `snmp.*`, `fig.f10s*` in English and Serbian Cyrillic.

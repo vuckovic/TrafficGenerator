@@ -224,9 +224,12 @@ function pickDevice(name) {
     $("dutIp").value = p.peer_ip || ""; $("dutAsn").value = p.asn || 64500; $("sshHost").value = p.ssh_host || p.peer_ip || "";
     $("sshPort").value = p.ssh_port || 22; $("sshUser").value = p.user || ""; $("maxRoutes").value = p.max_routes || "";
     $("guard").value = p.min_free_mem_pct || 0; $("auth").value = "password"; S.mraiMode = "default";
+    $("snmpOn").checked = !!p.snmp; $("snmpHost").value = p.snmp_host ? p.snmp_host + (p.snmp_port && p.snmp_port !== 161 ? ":" + p.snmp_port : "") : "";
   } else {
     $("dutIp").value = ""; $("dutAsn").value = 64500; $("sshHost").value = ""; $("sshUser").value = ""; $("maxRoutes").value = ""; $("guard").value = 0;
+    $("snmpOn").checked = false; $("snmpHost").value = "";
   }
+  $("snmpComm").value = ""; $("snmpStatus").textContent = ""; $("snmpDot").style.background = "#8A9097";
   S.dutResult = null;
   renderDut();
 }
@@ -268,6 +271,7 @@ function renderDut() {
   const res = S.dutResult;
   $("detected").textContent = res && res.resources ? (res.resources.summary || "").split(",")[0] : t("ui.dut.not_tested");
   renderBadge();
+  renderSnmp();
   splitLine();
 }
 
@@ -287,7 +291,11 @@ function dutSpec(password, enable) {
     mrai: mraiValue(), configure: $("configure").checked, keep_config: $("after").value === "keep",
     poll_s: intOr("pollS", 10), max_routes: $("maxRoutes").value.trim() ? intOr("maxRoutes") : null,
     min_free_mem_pct: intOr("guard", 0),
+    snmp: $("snmpOn").checked, snmp_host: null,
   };
+  const sh = /^\s*([^\s:]+)(?::(\d{1,5}))?\s*$/.exec($("snmpHost").value);   // "host" or "host:port"
+  if (sh) { d.snmp_host = sh[1]; if (sh[2]) d.snmp_port = Number(sh[2]); }
+  if ($("snmpOn").checked && $("snmpComm").value) d.snmp_community = $("snmpComm").value;
   if (p) d.profile = S.device;
   if (["bird-ssh", "frr"].includes(S.platform)) { d.sudo = $("sudo").checked; if (S.platform === "bird-ssh") d.bird_include = $("birdInc").value.trim() || null; }
   if (password) d.password = password;
@@ -312,6 +320,32 @@ function askPassword(okLabel) {
 }
 
 let sessionPw = null;   // kept in this page's memory only, for the buttons and the next run
+function renderSnmp() {
+  const p = dutProfile(), on = $("snmpOn").checked;
+  $("snmpFields").querySelectorAll("input, button").forEach((x) => { x.dataset.forceDisabled = on ? "0" : "1"; x.disabled = !on || runActive(); });
+  $("snmpComm").placeholder = p && p.snmp_set ? t("snmp.community.set") : "";
+  $("snmpHost").placeholder = $("dutIp").value.trim();
+  const tools = Object.values(S.duts)[0];
+  $("snmpHint").textContent = tools && tools.snmp_tools === false ? t("snmp.no_tools") : on ? t("snmp.hint") : "";
+}
+
+async function snmpTest() {
+  const st = $("snmpStatus"), dot = $("snmpDot");
+  st.textContent = t("ui.dut.working"); dot.style.background = "#8A9097"; $("snmpTest").disabled = true;
+  try {
+    const r = await post("/api/dut/snmp", { dut: dutSpec(null, null) });
+    if (!r.ok) throw new Error(r.error || "failed");
+    const p = r.poll || {}, b = p.bgp || {};
+    dot.style.background = "#1E7B3A";
+    st.textContent = [r.system.name, (r.system.descr || "").split("\n")[0].slice(0, 60),
+      p.cpu_pct !== null && p.cpu_pct !== undefined ? "CPU " + num(p.cpu_pct) + " %" : null,
+      p.free_mem_pct !== null && p.free_mem_pct !== undefined ? t("snmp.free_mem", { pct: num(p.free_mem_pct) }) : null,
+      p.if ? t("snmp.port", { name: p.if.name }) : null,
+      b.peers !== undefined ? t("snmp.bgp", { n: b.established, m: b.peers }) : t("snmp.no_bgp")].filter(Boolean).join(" · ");
+  } catch (e) { dot.style.background = "#B42318"; st.textContent = t("dutcfg.status.failed") + ": " + e.message; }
+  $("snmpTest").disabled = !$("snmpOn").checked || runActive();
+}
+
 async function dutButton(action) {
   const status = $("dutStatus"), dot = $("dutDot");
   let pw = null;
@@ -383,7 +417,8 @@ function loadScenario(sc, name) {
   if (d.role) S.role = d.role;
   const setv = (id, v) => { if (v !== undefined && v !== null) $(id).value = v; };
   setv("dutIp", d.ip); setv("dutAsn", d.asn); setv("sshHost", d.ssh_host); setv("sshPort", d.ssh_port); setv("sshUser", d.user);
-  setv("maxRoutes", d.max_routes); setv("guard", d.min_free_mem_pct); setv("pollS", d.poll_s);
+  setv("maxRoutes", d.max_routes); setv("guard", d.min_free_mem_pct); setv("pollS", d.poll_s); setv("snmpHost", d.snmp_host ? d.snmp_host + (d.snmp_port && d.snmp_port !== 161 ? ":" + d.snmp_port : "") : null);
+  if (d.snmp !== undefined && d.snmp !== null) $("snmpOn").checked = !!d.snmp;
   $("configure").checked = d.configure !== false; $("after").value = d.keep_config ? "keep" : "remove";
   S.mraiMode = d.mrai === null || d.mrai === undefined ? "default" : d.mrai === 0 ? "0" : "custom";
   if (S.mraiMode === "custom") $("mraiCustom").value = d.mrai;
@@ -681,6 +716,8 @@ function wire() {
   initDutLogs({ phaseName: (p) => phaseName(p) });
   initSettings({ busy: () => runActive() || schemeActive() });
   $("device").addEventListener("change", (e) => pickDevice(e.target.value));
+  $("snmpOn").addEventListener("change", renderSnmp);
+  $("snmpTest").addEventListener("click", snmpTest);
   $("auth").addEventListener("change", renderDut);
   $("mrai").addEventListener("change", (e) => { S.mraiMode = e.target.value; renderDut(); });
   $("rTotal").addEventListener("input", splitLine);

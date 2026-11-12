@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import shutil
 import os
 import subprocess
 import sys
@@ -78,6 +79,12 @@ def main() -> int:
         subprocess.run(["ip", "addr", "replace", f"{DUT_IP}/32", "dev", "lo"], check=True)
         (work / "bird.conf").write_text(bird_config(meta, DUT_IP, DUT_ASN, multihop=True, log_file=str(work / "bird.log")))
         subprocess.run(["bird", "-c", str(work / "bird.conf"), "-s", str(work / "bird.ctl"), "-P", str(work / "bird.pid")], check=True)
+        snmp_on = bool(shutil.which("snmpd") and shutil.which("snmpget"))
+        if snmp_on:   # U5: net-snmp agent with fake BGP MIBs for our peers
+            (work / "snmpd.conf").write_text((SIM / "snmp" / "snmpd.conf.in").read_text().replace("@ADDR@", "127.0.0.1")
+                                             .replace("@PORT@", "11162").replace("@COMMUNITY@", "ui-ro-community").replace("@DIR@", str(SIM / "snmp")))
+            procs.append(subprocess.Popen(["snmpd", "-f", "-C", "-c", str(work / "snmpd.conf"), "-Lf", str(work / "snmpd.log")],
+                                          env=os.environ | {"TGEN_SNMP_PEERS": ",".join(r_["ip"] for r_ in meta["routers"])}))
         for n in NODES:
             log = open(work / f"agent-{n}.log", "w")
             procs.append(subprocess.Popen([args.agent, "serve", "--listen", f"127.0.0.1:{ports[n]}", "--token-file", str(work / "token")],
@@ -139,6 +146,13 @@ def main() -> int:
             pg.select_option("#preset", "quick_check")
             pg.click("#phases li:nth-child(3) button")
             pg.fill("#pf_dur", "8"); pg.press("#pf_dur", "Tab")
+            check(pg.is_disabled("#snmpComm") and pg.is_disabled("#snmpTest"), "U5 SNMP fields off by default")
+            if snmp_on:
+                pg.check("#snmpOn"); pg.fill("#snmpComm", "ui-ro-community"); pg.fill("#snmpHost", "127.0.0.1:11162"); pg.fill("#pollS", "2")
+                pg.click("#snmpTest")
+                pg.wait_for_function("document.getElementById('snmpStatus').textContent.includes('tgen-snmp-test') || document.getElementById('snmpStatus').textContent.includes('failed')", timeout=30000)
+                check("tgen-snmp-test" in pg.inner_text("#snmpStatus") and "12/12" in pg.inner_text("#snmpStatus"), "U5 Test SNMP: " + pg.inner_text("#snmpStatus")[:100])
+                pg.screenshot(path=str(shots / "benchmark-snmp-en.png"), full_page=True)
             check("8 s" in pg.inner_text("#phases li:nth-child(3)"), "phase parameter edited")
             pg.click("#startBtn")
             pg.wait_for_selector("#runStrip:not([hidden])", timeout=3000)
@@ -287,9 +301,10 @@ def main() -> int:
             check(pg.locator("#repKey tr").count() >= 8 and pg.locator("#repLat tr").count() == 2 and pg.locator("#repNodes tr").count() == 6, "key figures, latency, nodes")
             check(pg.locator("#repPhases tr").count() == 4 and pg.locator("#repEvents li").count() >= 3, "phases and events")
             check("report.json" in pg.inner_text("#repFiles"), "run files listed")
-            pg.wait_for_function("document.querySelectorAll('#repFigs section.fig').length === 12")
+            pg.wait_for_function("document.querySelectorAll('#repFigs section.fig').length >= 12")
             figs = pg.locator("#repFigs section.fig").evaluate_all("els => els.map(e => e.dataset.fig)")
-            check(figs == [f"F{i}" for i in range(1, 13)], f"P4 figures F1-F12 on the report page {figs}")
+            want = [f"F{i}" for i in range(1, 11)] + (["F10b"] if snmp_on else []) + ["F11", "F12"]
+            check(figs == want, f"P4 figures F1-F12 on the report page {figs}")
             check(pg.locator("#repFigs section[data-fig=F2] svg path").count() >= 2 and "all receivers" in pg.inner_text("#repFigs section[data-fig=F2] .fig-read"), "F2 convergence curve with readout")
             r0 = pg.inner_text("#repFigs section[data-fig=F3] .fig-read")
             pg.locator("#repFigs section[data-fig=F3] input[type=range]").fill("900")
@@ -335,6 +350,9 @@ def main() -> int:
             pg.screenshot(path=str(shots / "report-en.png"), full_page=True)
             # P5: DUT logs tab (L1-L6), opened from the report
             check(pg.locator("#repFigs section[data-fig=F9]").count() == 1, "F9 present")
+            if snmp_on:
+                check(pg.locator("#repFigs section[data-fig=F10b] svg path").count() >= 2, "F10b SNMP port and BGP figure")
+                check("polls answered" in pg.inner_text("#repDut"), "U5 SNMP line in the report: " + pg.inner_text("#repDut")[-120:])
             pg.click("#repDutLog"); pg.wait_for_selector("[data-view=logs]:not([hidden])")
             pg.wait_for_function(f"document.getElementById('dlRun').value === '{rid_rep}' && document.querySelectorAll('#dlFiles tr').length >= 1")
             check("No DUT log" in pg.inner_text("#dlFiles"), "L2 a run without a DUT log (custom DUT) says so")

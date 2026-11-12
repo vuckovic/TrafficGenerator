@@ -36,7 +36,7 @@ Status: **FROZEN v1.3 (2026‑11‑12)**: v1.2 plus G10 run strip and K12 test n
 | U2 | Detected platform | read‑only: model and version read from the DUT (U14 Test connection), e.g. "RouterOS 7.11 · CRS106‑1C‑5S" | — | was a dropdown; the platform is now chosen in U8. Printed on the report; selects the log parser |
 | U3 | DUT IP and ASN | IPv4 + ASN | from cluster config | in RR mode all routers use this ASN |
 | U4 | DUT config export | button: download a neighbour config for the selected platform | — | BIRD, FRR, RouterOS 7, IOS‑XE |
-| U5 | SNMP polling (Q3: option) | checkbox + version (v2c / v3) + community or v3 user/auth/priv | off | read‑only; "Test" button |
+| U5 | SNMP polling (Q3: option) | checkbox + community (password field) + SNMP address (`host` or `host:port`) + "Test SNMP" | off | read‑only. **As built (P5, 2026‑11‑13): v2c only** (Dule, 2026‑11‑12: "SNMP v2c now"; v3 user/auth/priv later). Community kept in memory for the run, or `TGEN_DUT_SNMP_<PROFILE>` on the controller; profiles may set `snmp`, `snmp_host`, `snmp_port`. Polled at the U7 interval; feeds F10 and F10b (doc 10 §6) |
 | U6 | SSH polling (Q3: option) | checkbox + host, user, password/key, platform command set | off | read‑only; "Test" button |
 | U7 | Polling interval | number (s) | 5 (SSH session list during a run: 10) | 1–60; on small DUTs every SSH poll costs CPU |
 
@@ -188,6 +188,8 @@ The standard comparison test of the test devices, the same as `tools/tgen_suite.
 | L4 | Time offset | auto (match session‑up events) · manual (± s, time zone) | auto | the offset used is shown |
 | L5 | Parsed events | table: time · neighbour · event · detail · severity; filters; "unclassified" lines tab | — | |
 | L6 | Log summary | counts by event type and phase; first error under load; agreement with observed sessions | — | flows into the report (F9) |
+
+L1–L6 built in P5 (2026‑11‑13), layout like the report page (Dule, 2026‑11‑12); details in doc 10 §5. Uploaded files can be removed again; the report has a *DUT log* button that opens this tab for its run.
 
 ## H — History
 

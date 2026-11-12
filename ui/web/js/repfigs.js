@@ -114,6 +114,13 @@ export function renderFigures(host, f, phaseName) {
         { name: t("fig.f10.sessions"), color: C.grey, dash: "4 3", axis: "r", step: true, pts: r10.map((r) => [r[0], r[3]]) }],
       xfmt: mmss, yfmt: (v) => num(v) + " %", y2fmt: (v) => num(v), y2int: true, ymin: 0, ymax: 100, xlabel: t("fig.time"), ylabel: "%", y2label: t("fig.f10.sessions") }));
   } else add(note("F10", t("fig.f10"), t("fig.f10.none")));
+  const s10 = f.f10.snmp || [];
+  if (s10.some((r) => r[1] !== null || r[3] !== null)) {   // U5: the DUT port and BGP counters over SNMP
+    add(lineFig({ fid: "F10b", name: "F10b-dut-snmp", title: t("fig.f10s"), caption: t("fig.f10s.cap", { iface: f.f10.snmp_if || "—" }), zoom: true, phases, y2: true,
+      series: [{ name: t("fig.f10s.in"), color: C.teal, pts: s10.map((r) => [r[0], r[1]]) }, { name: t("fig.f10s.out"), color: C.blue, dash: "4 3", pts: s10.map((r) => [r[0], r[2]]) },
+        { name: t("fig.f10s.upd"), color: C.orange, axis: "r", pts: s10.map((r) => [r[0], r[3]]) }],
+      xfmt: mmss, yfmt: (v) => num(v, 1), y2fmt: (v) => num(v), ymin: 0, xlabel: t("fig.time"), ylabel: "Mb/s", y2label: t("fig.f10s.upd") }));
+  }
 
   add(note("F11", t("fig.f11"), t("fig.f11.none")));
 

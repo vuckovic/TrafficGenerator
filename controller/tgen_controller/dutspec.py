@@ -37,7 +37,39 @@ def resolve(d, inv: dict | None = None) -> dict:
         "min_free_mem_pct": pick("min_free_mem_pct", "min_free_mem_pct", 0) or 0,
         "interface": d.interface or p.get("interface"), "ssh_legacy": pick("ssh_legacy", "ssh_legacy", False),
         "sudo": d.sudo, "bird_include": d.bird_include,
+        "snmp": bool(d.snmp if d.snmp is not None else p.get("snmp", False)),
+        "snmp_host": d.snmp_host or p.get("snmp_host") or ip, "snmp_port": pick("snmp_port", "snmp_port", 161),
     }
+
+
+def snmp_community(d) -> str | None:
+    """U5: from the request, else the controller's TGEN_DUT_SNMP_<PROFILE> environment; never stored."""
+    from tgen.snmp import community_env
+    if d.snmp_community:
+        return d.snmp_community
+    if d.profile:
+        return os.environ.get(community_env(d.profile)) or None
+    return None
+
+
+def snmp_test(d, routers_ips: set[str] | None = None) -> dict:
+    """U5 Test button: system group and one poll (no rates yet)."""
+    from tgen import snmp
+    info = resolve(d)
+    out: dict = {"action": "snmp", "host": info["snmp_host"], "port": info["snmp_port"]}
+    comm = snmp_community(d)
+    if not comm:
+        return out | {"ok": False, "error": "no SNMP community: enter it, or set " +
+                      (snmp.community_env(d.profile) if d.profile else "TGEN_DUT_SNMP_<PROFILE>") + " for the controller"}
+    try:
+        s = snmp.Session(info["snmp_host"], comm, port=info["snmp_port"])
+        out["system"] = s.system()
+        p = s.poll(info["interface"], routers_ips)
+        out["poll"] = {k: v for k, v in p.items() if k != "t"}
+        out["ok"] = True
+    except snmp.SnmpError as e:
+        out.update(ok=False, error=str(e))
+    return out
 
 
 def password(d) -> str | None:

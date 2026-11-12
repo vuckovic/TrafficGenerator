@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import os
 import subprocess
 import sys
@@ -34,6 +35,7 @@ from tgen_controller.engine import make_plan  # noqa: E402
 from tgen_controller.scenario import Scenario  # noqa: E402
 from tgen_controller.settings import load  # noqa: E402
 
+SNMP_COMMUNITY = "e2e-ro-community"
 TOKEN = "e2e-token-0123456789abcdef"
 PASSWORD = "e2e-admin-password"
 DUT_IP, DUT_ASN, PORT = "10.100.0.9", 64500, 18080
@@ -115,6 +117,15 @@ def main() -> int:
         (work / "bird.conf").write_text(bird_config(meta, DUT_IP, DUT_ASN, multihop=True, log_file=str(work / "bird.log")))
         subprocess.run(["bird", "-c", str(work / "bird.conf"), "-s", str(work / "bird.ctl"), "-P", str(work / "bird.pid")],
                        check=True)
+        # --- SNMP agent for U5 (net-snmp with fake BGP MIBs for our peers), if installed
+        snmp_port = None
+        if shutil.which("snmpd") and shutil.which("snmpget"):
+            snmp_port = 11161
+            (work / "snmpd.conf").write_text((SIM / "snmp" / "snmpd.conf.in").read_text().replace("@ADDR@", "127.0.0.1")
+                                             .replace("@PORT@", str(snmp_port)).replace("@COMMUNITY@", SNMP_COMMUNITY)
+                                             .replace("@DIR@", str(SIM / "snmp")))
+            procs.append(subprocess.Popen(["snmpd", "-f", "-C", "-c", str(work / "snmpd.conf"), "-Lf", str(work / "snmpd.log")],
+                                          env=os.environ | {"TGEN_SNMP_PEERS": ",".join(r_["ip"] for r_ in meta["routers"])}))
 
         # --- agents and controller
         for n in NODES:
@@ -154,7 +165,10 @@ def main() -> int:
         live = Live(c.cookies["tgen_session"])
         live.start()
         check(live.ready.wait(5), "WebSocket connected with the session cookie")
-        r = c.post("/api/runs", json={"scenario": quick.model_dump()})
+        body = quick.model_dump()
+        if snmp_port:   # U5: poll the SNMP agent every 2 s, community only in the request
+            body["dut"] |= {"snmp": True, "snmp_host": "127.0.0.1", "snmp_port": snmp_port, "snmp_community": SNMP_COMMUNITY, "poll_s": 2}
+        r = c.post("/api/runs", json={"scenario": body})
         check(r.status_code == 202, f"run accepted ({r.status_code})")
         rid = r.json()["id"]
         run = wait_state(c, rid, ("done", "failed", "stopped"), 240)
@@ -186,6 +200,28 @@ def main() -> int:
               and len(fj["f8"]["rows"]) == args.routers and len(fj["f9"]["phases"]) == 4 and len(fg.content) < 400_000,
               f"figure data: F2 reaches {max(fj['f2']['all']) if fj else None} %, {len(fg.content)} bytes")
         check(any(e[2] == "up" for e in fj.get("f9", {}).get("sessions", [])), "session events from the agents (F9)")
+        if snmp_port:
+            sn = [json.loads(x) for x in c.get(f"/api/runs/{rid}/files/dut-snmp.jsonl").text.splitlines() if x.strip()]
+            check(len(sn) >= 3 and all(x.get("if") and x["bgp"]["established"] == args.routers for x in sn),
+                  f"U5 SNMP polls during the run ({len(sn)}, {sn[-1].get('bgp') if sn else None})")
+            ds = c.get(f"/api/runs/{rid}/report").json().get("dut_snmp") or {}
+            check(ds.get("answered", 0) >= 3 and ds.get("in_mbps_max") is not None, f"U5 SNMP summary in the report {ds}")
+            check(len(fj["f10"]["snmp"]) >= 3 and fj["f10"]["source"] == "snmp" and fj["f10"]["rows"], "F10 from SNMP, F10b port and BGP")
+            everything = json.dumps(c.get(f"/api/runs/{rid}").json()) + c.get(f"/api/runs/{rid}/files/scenario.json").text \
+                + "".join(c.get(f"/api/runs/{rid}/files/{f}").text for f in ("meta.json", "report.json", "dut-snmp.jsonl"))
+            check(SNMP_COMMUNITY not in everything and SNMP_COMMUNITY not in (work / "controller.log").read_text(),
+                  "SNMP community not stored")
+            t_ok = c.post("/api/dut/snmp", json={"dut": {"ip": DUT_IP, "snmp": True, "snmp_host": "127.0.0.1",
+                                                          "snmp_port": snmp_port, "snmp_community": SNMP_COMMUNITY}}).json()
+            check(t_ok["ok"] and t_ok["system"]["name"] == "tgen-snmp-test" and t_ok["poll"]["bgp"]["established"] == args.routers,
+                  "U5 Test button: system and one poll")
+            t_bad = c.post("/api/dut/snmp", json={"dut": {"ip": DUT_IP, "snmp_host": "127.0.0.1", "snmp_port": snmp_port,
+                                                           "snmp_community": "wrong"}}).json()
+            check(not t_bad["ok"] and "no answer" in t_bad["error"], "U5 wrong community reported")
+            t_none = c.post("/api/dut/snmp", json={"dut": {"ip": DUT_IP}}).json()
+            check(not t_none["ok"] and "community" in t_none["error"], "U5 missing community reported")
+        else:
+            print("  SKIP  U5 SNMP: snmpd not installed")
         check(c.get(f"/api/runs/{rid}/files/..%2Fcontroller.db").status_code == 404, "no path traversal")
         check(len(c.get(f"/api/runs/{rid}/ticks").json()) >= 5, "ticks stored in SQLite")
         st = [n["state"] for n in c.get("/api/cluster").json()["nodes"]]
@@ -357,7 +393,7 @@ def main() -> int:
         check(c.post("/api/nodes/CMNODE09/restart").status_code == 404, "restart of an unknown node refused")
         check(c.post("/api/nodes/CMNODE06/restart").status_code == 200, "agent restart accepted (S1)")
         try:
-            rc = procs[5].wait(timeout=10)
+            rc = next(p for p in procs if f"127.0.0.1:{ports['CMNODE06']}" in p.args).wait(timeout=10)
         except subprocess.TimeoutExpired:
             rc = None
         check(rc == 75, f"agent exited with 75 for systemd to restart it ({rc})")

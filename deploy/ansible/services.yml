@@ -81,7 +81,7 @@
     - name: Python packages and Caddy (Debian packages, no pip)
       ansible.builtin.apt:
         name: [python3-fastapi, python3-uvicorn, python3-httpx, python3-pydantic, python3-websockets,
-               python3-netmiko, caddy]
+               python3-netmiko, snmp, caddy]   # snmp: net-snmp tools for U5 (SNMP v2c polling)
         state: present
     - name: Controller and tools
       ansible.builtin.copy:

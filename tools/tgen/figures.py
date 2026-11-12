@@ -37,7 +37,7 @@ def _pctl(sorted_v: list[float], q: float):
 
 
 def build(meta: dict, results: list[dict], ticks: list[dict], dut_polls: list[dict],
-          phases: list[dict], events: list[dict]) -> dict:
+          phases: list[dict], events: list[dict], snmp: list[dict] | None = None) -> dict:
     t = meta["timing"]
     t0 = t["establish_at"]                       # ms
     ann = t["announce_at"]
@@ -193,6 +193,16 @@ def build(meta: dict, results: list[dict], ticks: list[dict], dut_polls: list[di
         c = p.get("cpu_load")
         m = re.search(r"(\d+(?:\.\d+)?)", str(c)) if c is not None else None
         f10.append([_r(p["t"] - t0 / 1000, 2), p.get("free_pct"), float(m.group(1)) if m else None, p.get("established")])
-    out["f10"] = {"rows": _thin(f10), "cols": ["t", "free_mem_pct", "cpu_pct", "established"]}
+    # SNMP (U5): resources when the SSH polls have none, and the port and BGP counters
+    sn = [p for p in (snmp or []) if "if" in p or "cpu_pct" in p]
+    src = "ssh" if any(r[1] is not None or r[2] is not None for r in f10) else ("snmp" if sn else None)
+    if src != "ssh" and sn:
+        f10 = [[_r(p["t"] - t0 / 1000, 2), p.get("free_mem_pct"), p.get("cpu_pct"), (p.get("bgp") or {}).get("established")]
+               for p in sn]
+    srows = [[_r(p["t"] - t0 / 1000, 2), (p.get("if") or {}).get("in_mbps"), (p.get("if") or {}).get("out_mbps"),
+              (p.get("bgp") or {}).get("in_updates_s"), (p.get("bgp") or {}).get("accepted_prefixes")] for p in sn]
+    out["f10"] = {"rows": _thin(f10), "cols": ["t", "free_mem_pct", "cpu_pct", "established"], "source": src,
+                  "snmp": _thin(srows), "snmp_cols": ["t", "in_mbps", "out_mbps", "in_updates_s", "accepted_prefixes"],
+                  "snmp_if": next(((p.get("if") or {}).get("name") for p in reversed(sn) if p.get("if")), None)}
     out["f11"] = None    # data-plane convergence: P6
     return out
