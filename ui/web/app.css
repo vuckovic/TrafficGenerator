@@ -137,10 +137,12 @@ main.wrap.col{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:20p
 .fig-cap{margin:0}
 .fig[data-fig=F9],.fig[data-fig=F7]{grid-column:1/-1}
 .fig-empty .fig-body{min-height:0}
+.fig .td,.fig .th{padding:6px 8px}
 @media print{
   header.top,.runstrip,.banner,.noprint,[data-view] .btn,.fig-ctl,.fig-tools,#repErr{display:none!important}
   body{background:#FFFFFF}main.wrap{padding:0;max-width:none}
   .card{break-inside:avoid;border-color:#BBB}.figgrid{grid-template-columns:1fr 1fr;gap:10px}
   .fig[data-fig=F9],.fig[data-fig=F7]{grid-column:1/-1}
   textarea{border:0;resize:none}
+  .events{max-height:none;overflow:visible}.tbl-box{overflow:visible}
 }

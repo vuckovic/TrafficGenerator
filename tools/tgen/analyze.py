@@ -49,8 +49,10 @@ def analyze(meta: dict, results: list[dict]) -> dict:
         "not_converged": not_conv[:20],
         "send_window_s": s(last_send - first_send) if first_send else None,
         # paced runs: how long after our last announcement every receiver was complete (the DUT's lag)
+        # None when later phases sent more after convergence (e.g. re-announcements after a flap)
         "after_last_send_s": (s(max(r["t_converged"] for r in routers) - last_send)
-                              if last_send and len(conv) == n and n else None),
+                              if last_send and len(conv) == n and n
+                              and max(r["t_converged"] for r in routers) >= last_send else None),
     }
 
     def latency(tx_key: str, rx_key: str) -> dict:

@@ -47,7 +47,7 @@ export function renderFigures(host, f, phaseName) {
     const s3 = [];
     if (a3.n) s3.push({ name: t("fig.f3.announce"), color: C.teal, pts: a3.pts });
     if (w3.n) s3.push({ name: t("fig.f3.withdraw"), color: C.violet, pts: w3.pts });
-    add(lineFig({ fid: "F3", name: "F3-latency-cdf", title: t("fig.f3"), caption: t("fig.f3.cap", { n: num(a3.n) }), xlog: true, series: s3, cursorLabel: t("fig.f3.cursor"),
+    add(lineFig({ fid: "F3", name: "F3-latency-cdf", title: t("fig.f3"), caption: t("fig.f3.cap", { n: num(a3.n) }), xlog: true, zeroBefore: true, series: s3, cursorLabel: t("fig.f3.cursor"),
       xfmt: (v) => (v >= 1000 ? num(v / 1000) + " s" : num(v, v < 1 ? 2 : 0) + " ms"), yfmt: (v) => num(v, 1), ymin: 0, ymax: 1, xlabel: t("fig.f3.x"), ylabel: t("fig.f3.y"),
       marks: [a3.p50 ? { x: a3.p50, label: "p50", color: C.teal } : null, a3.p99 ? { x: a3.p99, label: "p99", color: C.orange } : null].filter(Boolean),
       cursorAt: a3.p50 || undefined,
@@ -56,7 +56,7 @@ export function renderFigures(host, f, phaseName) {
 
   // F4 latency over time vs offered load
   const r4 = f.f4.rows;
-  add(lineFig({ fid: "F4", name: "F4-latency-load", title: t("fig.f4"), caption: t("fig.f4.cap"), zoom: true, phases, y2: true, logToggle: true,
+  add(lineFig({ fid: "F4", name: "F4-latency-load", title: t("fig.f4"), caption: t("fig.f4.cap"), zoom: true, phases, y2: true, logToggle: true, gap: 5,
     series: [{ name: "p50", color: C.teal, pts: r4.map((r) => [r[0], r[1]]) }, { name: "p99", color: C.orange, pts: r4.map((r) => [r[0], r[2]]) },
       { name: t("chart.offered"), color: C.grey, dash: "4 3", axis: "r", pts: r4.map((r) => [r[0], r[3]]) }],
     xfmt: mmss, yfmt: (v) => num(v, v < 1 ? 2 : 0) + " ms", y2fmt: (v) => short(v) + "/s", xlabel: t("fig.time"), ylabel: t("fig.latency"), y2label: t("fig.offered_s"),
@@ -65,7 +65,7 @@ export function renderFigures(host, f, phaseName) {
   // F5 throughput knee (stepped-load runs)
   if (f.f5.stepped) {
     const p5 = f.f5.pts;
-    add(lineFig({ fid: "F5", name: "F5-knee", title: t("fig.f5"), caption: t("fig.f5.cap"), y2: true, diag: true,
+    add(lineFig({ fid: "F5", name: "F5-knee", title: t("fig.f5"), caption: t("fig.f5.cap"), y2: true, diag: true, xlog: true, ylog: true,
       series: [{ name: t("fig.f5.delivered"), color: C.teal, pts: p5.map((p) => [p[0], p[1]]), dots: true },
         { name: "p99", color: C.orange, axis: "r", pts: p5.map((p) => [p[0], p[2]]) }],
       cursorLabel: t("fig.f5.cursor"), xfmt: short, yfmt: short, y2fmt: (v) => num(v) + " ms", xlabel: t("fig.f5.x"), ylabel: t("fig.f5.y"), y2label: "p99",
@@ -83,12 +83,13 @@ export function renderFigures(host, f, phaseName) {
 
   // F8 correctness
   const k8 = card("F8", t("fig.f8"), t("fig.f8.cap"));
-  const bad = f.f8.rows.filter((r) => r[3] || r[4] || r[5]);
+  const bad = f.f8.rows.filter((r) => r[3] || r[4]);
   const tot = f.f8.rows.reduce((a, r) => [a[0] + r[1], a[1] + r[2], a[2] + r[3], a[3] + r[4], a[4] + r[5]], [0, 0, 0, 0, 0]);
   k8.body.append(el("p", { class: bad.length ? "bad" : "ok", style: "margin:0;font-weight:600", text: bad.length ? t("fig.f8.bad", { n: bad.length }) : t("fig.f8.ok", { n: f.f8.rows.length }) }));
   const tb = el("tbody");
-  (bad.length ? bad : f.f8.rows.slice(0, 6)).forEach((r) => tb.append(el("tr", {}, ...r.map((v, i) => el("td", { class: "td mono" + (i >= 3 && v ? " bad" : ""), text: i ? num(v) : v })))));
-  tb.append(el("tr", {}, el("td", { class: "td", style: "font-weight:600", text: t("fig.total") }), ...tot.map((v, i) => el("td", { class: "td mono" + (i >= 2 && v ? " bad" : ""), style: "font-weight:600", text: num(v) }))));
+  (bad.length ? bad.slice(0, 30) : f.f8.rows.slice(0, 6)).forEach((r) => tb.append(el("tr", {}, ...r.map((v, i) => el("td", { class: "td mono" + ((i === 3 || i === 4) && v ? " bad" : ""), text: i ? num(v) : v })))));
+  if (!bad.length && f.f8.rows.length > 6) tb.append(el("tr", {}, el("td", { class: "td small", colspan: "6", text: t("fig.f8.more", { n: f.f8.rows.length - 6 }) })));
+  tb.append(el("tr", {}, el("td", { class: "td", style: "font-weight:600", text: t("fig.total") }), ...tot.map((v, i) => el("td", { class: "td mono" + ((i === 2 || i === 3) && v ? " bad" : ""), style: "font-weight:600", text: num(v) }))));
   k8.body.append(el("div", { class: "tbl-box" }, el("table", {}, el("thead", {}, el("tr", {}, ...["fig.f8.router", "fig.f8.expected", "fig.f8.received", "fig.f8.missing", "fig.f8.extra", "fig.f8.looped"].map((x) => el("th", { class: "th", text: t(x) })))), tb)));
   k8.tools.append(el("button", { class: "btn btn-sm noprint", type: "button", text: "CSV", onclick: () => download([f.f8.cols.join(",")].concat(f.f8.rows.map((r) => r.join(","))).join("\n") + "\n", "text/csv", "F8-correctness.csv") }));
   add(k8.sec);
@@ -115,7 +116,7 @@ export function renderFigures(host, f, phaseName) {
 
   // F12 generator health
   const nodes = Object.keys(f.f12.nodes || {});
-  add(lineFig({ fid: "F12", name: "F12-generator", title: t("fig.f12"), caption: t("fig.f12.cap"), zoom: true, phases, y2: true,
+  add(lineFig({ fid: "F12", name: "F12-generator", title: t("fig.f12"), caption: t("fig.f12.cap"), zoom: true, phases, y2: true, gap: 5,
     series: [...nodes.map((n, i) => ({ name: n, color: PALETTE[i % PALETTE.length], pts: pairs(f.f12.t, f.f12.nodes[n]) })),
       { name: t("fig.f12.lag"), color: C.ink, dash: "2 3", axis: "r", pts: pairs(f.f12.t, f.f12.send_lag_p99_ms) }],
     xfmt: mmss, yfmt: (v) => num(v) + " %", y2fmt: (v) => num(v, 1) + " ms", ymin: 0, ymax: 100, xlabel: t("fig.time"), ylabel: t("fig.f12.y"), y2label: t("fig.f12.lag"),
@@ -131,11 +132,11 @@ export function renderCompare(host, runs) {
   host.append(lineFig({ fid: "F2", name: "compare-F2", title: t("fig.f2"), caption: t("fig.cmp.f2"),
     series: runs.filter((r) => r.f).map((r, i) => ({ name: lbl(r), color: col(i), pts: pairs(r.f.f2.t, r.f.f2.all) })),
     xfmt: (v) => secs(v), yfmt: (v) => num(v) + " %", ymin: 0, ymax: 102, xlabel: t("fig.f2.x"), ylabel: t("fig.f2.y") }));
-  host.append(lineFig({ fid: "F3", name: "compare-F3", title: t("fig.f3"), caption: t("fig.cmp.f3"), xlog: true, cursorLabel: t("fig.f3.cursor"),
+  host.append(lineFig({ fid: "F3", name: "compare-F3", title: t("fig.f3"), caption: t("fig.cmp.f3"), xlog: true, zeroBefore: true, cursorLabel: t("fig.f3.cursor"),
     series: runs.filter((r) => r.f && r.f.f3.announce.n).map((r, i) => ({ name: lbl(r), color: col(i), pts: r.f.f3.announce.pts })),
     xfmt: (v) => (v >= 1000 ? num(v / 1000) + " s" : num(v, v < 1 ? 2 : 0) + " ms"), yfmt: (v) => num(v, 1), ymin: 0, ymax: 1, xlabel: t("fig.f3.x"), ylabel: t("fig.f3.y") }));
   const k5 = runs.filter((r) => r.f && r.f.f5.stepped);
-  host.append(k5.length ? lineFig({ fid: "F5", name: "compare-F5", title: t("fig.f5"), caption: t("fig.cmp.f5"), diag: true, cursorLabel: t("fig.f5.cursor"),
+  host.append(k5.length ? lineFig({ fid: "F5", name: "compare-F5", title: t("fig.f5"), caption: t("fig.cmp.f5"), diag: true, xlog: true, ylog: true, cursorLabel: t("fig.f5.cursor"),
     series: k5.map((r, i) => ({ name: lbl(r), color: col(runs.indexOf(r)), dots: true, pts: r.f.f5.pts.map((p) => [p[0], p[1]]) })),
     xfmt: short, yfmt: short, xlabel: t("fig.f5.x"), ylabel: t("fig.f5.y") }) : note("F5", t("fig.f5"), t("fig.f5.none")));
   const k10 = runs.filter((r) => r.f && r.f.f10.rows.length);

@@ -111,9 +111,10 @@ export function lineFig(o) {
   const fx = (v, a, b) => o.xlog ? L + (Math.log10(v) - Math.log10(a)) / (Math.log10(b) - Math.log10(a)) * (R - L) : L + (v - a) / (b - a || 1) * (R - L);
   const inv = (px, a, b) => o.xlog ? Math.pow(10, Math.log10(a) + (px - L) / (R - L) * (Math.log10(b) - Math.log10(a))) : a + (px - L) / (R - L) * (b - a);
   function valAt(s, x) {
-    const p = s.pts; if (!p.length) return null;
+    const p = s.pts.filter((q) => q[1] !== null && q[1] !== undefined); if (!p.length) return null;
     let i = 0; while (i < p.length && p[i][0] < x) i++;
-    if (i === 0) return p[0][0] <= x ? p[0][1] : null;
+    if (i === 0) return p[0][0] <= x ? p[0][1] : (o.zeroBefore ? 0 : null);
+    if (o.gap && p[i] && p[i][0] - p[i - 1][0] > o.gap && x - p[i - 1][0] > o.gap / 2 && p[i][0] - x > o.gap / 2) return null;
     if (i >= p.length) return p[p.length - 1][1];
     if (s.step) return p[i - 1][1];
     const [x0, y0] = p[i - 1], [x1, y1] = p[i];
@@ -151,19 +152,24 @@ export function lineFig(o) {
     (o.diag ? [1] : []).forEach(() => { const lo = Math.max(a, ya), hi = Math.min(b, yb); if (hi > lo) s += `<line x1="${fx(lo, a, b).toFixed(1)}" y1="${fy(lo).toFixed(1)}" x2="${fx(hi, a, b).toFixed(1)}" y2="${fy(hi).toFixed(1)}" stroke="${C.grey}" stroke-dasharray="2 4"/>`; });
     vis.forEach(({ s: se }) => {
       const f = se.axis === "r" ? fy2 : fy;
-      const pts = se.pts.filter((p) => p[1] !== null && p[1] !== undefined && (!o.xlog || p[0] > 0));
+      // nulls and long gaps (no samples) break the line instead of joining far-apart points
+      const pts = se.pts.filter((p) => !o.xlog || p[0] > 0);
       // include one point either side of the window so lines reach the edges
       const iw = pts.findIndex((p) => p[0] >= a), jw = pts.findIndex((p) => p[0] > b);
       const seg = pts.slice(Math.max(0, iw - 1), jw < 0 ? pts.length : jw + 1);
       if (!seg.length) return;
-      let d = "";
-      seg.forEach((p, i) => {
+      let d = "", pen = false, prev = null;
+      seg.forEach((p) => {
+        if (p[1] === null || p[1] === undefined) { pen = false; return; }
+        if (pen && o.gap && !se.step && p[0] - prev[0] > o.gap) pen = false;
         const x = Math.min(R, Math.max(L, fx(p[0], a, b))), y = f(p[1]);
-        if (se.step && i) d += ` L${x.toFixed(1)},${f(seg[i - 1][1]).toFixed(1)}`;
-        d += `${i ? " L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`;
+        if (se.step && pen) d += ` L${x.toFixed(1)},${f(prev[1]).toFixed(1)}`;
+        d += `${pen ? " L" : " M"}${x.toFixed(1)},${y.toFixed(1)}`;
+        pen = true; prev = p;
       });
+      if (!d) return;
       s += `<path d="${d}" fill="none" stroke="${se.color}" stroke-width="${se.width || 2.2}" ${se.dash ? `stroke-dasharray="${se.dash}"` : ""} stroke-linejoin="round"/>`;
-      if (se.dots) seg.forEach((p) => { s += p[2] ? `<circle cx="${fx(p[0], a, b).toFixed(1)}" cy="${f(p[1]).toFixed(1)}" r="5.5" fill="#FFFFFF" stroke="${C.red}" stroke-width="2"/>` : `<circle cx="${fx(p[0], a, b).toFixed(1)}" cy="${f(p[1]).toFixed(1)}" r="3.2" fill="${se.color}"/>`; });
+      if (se.dots) seg.filter((p) => p[1] !== null && p[1] !== undefined).forEach((p) => { s += p[2] ? `<circle cx="${fx(p[0], a, b).toFixed(1)}" cy="${f(p[1]).toFixed(1)}" r="5.5" fill="#FFFFFF" stroke="${C.red}" stroke-width="2"/>` : `<circle cx="${fx(p[0], a, b).toFixed(1)}" cy="${f(p[1]).toFixed(1)}" r="3.2" fill="${se.color}"/>`; });
     });
     (o.marks || []).forEach((m) => { if (m.x < a || m.x > b) return; const x = fx(m.x, a, b); s += `<line x1="${x.toFixed(1)}" y1="${T}" x2="${x.toFixed(1)}" y2="${B}" stroke="${m.color || C.ink}" stroke-dasharray="2 3"/><text x="${(x + 4).toFixed(1)}" y="${B - 6}" fill="${m.color || C.ink}">${esc(m.label)}</text>`; });
     const cx = fx(st.cur, a, b);
