@@ -117,3 +117,5 @@ K12 approved by the user on 2026‑11‑12 ("this is it"); doc 04 is now v1.3.
   - `tests/controller/test_e2e.py` run 4: a full scheme on the Cisco mock (test, smoke, 2‑rate series, 2‑step scale = 5 runs), 409 for a second scheme and for a single run, progress, comparison, knee series, no password stored, live messages; then a scheme stopped during its smoke.
   - `tests/controller/ui_e2e.py`: the scheme page in the browser (topology, instructions, password check, Test, estimate, start, strip, highlight, progress, comparison, three chart views, CSV and SVG export, Serbian, phone width).
   - `tests/controller/test_units.py`: comparison and knee tables, scheme store, restart.
+  - Results 2026‑11‑12: test_e2e all pass, ui_e2e 66 checks pass, units 13 pass. Screenshots: `docs/web-ui/scheme-*.png`.
+- **Jira / Confluence:** DOC‑49 (done), DOC‑50 (execute the cluster test plan); Confluence page *TrafficGenerator — Test plan: Web interface P3c‑2 (Test scheme tab)*, 34 tests.
