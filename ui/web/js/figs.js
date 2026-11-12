@@ -126,7 +126,7 @@ export function lineFig(o) {
     const inWin = (s) => s.pts.filter((p) => p[0] >= a && p[0] <= b && p[1] !== null && p[1] !== undefined);
     const yv = vis.filter(({ s }) => s.axis !== "r").flatMap(({ s }) => inWin(s).map((p) => p[1]));
     const y2v = vis.filter(({ s }) => s.axis === "r").flatMap(({ s }) => inWin(s).map((p) => p[1]));
-    let ya = o.ymin ?? 0, yb = o.ymax ?? Math.max(...yv, 0) * 1.1 || 1;
+    let ya = o.ymin ?? 0, yb = o.ymax ?? (Math.max(...yv, 0) * 1.1 || 1);
     if (st.ylog) { const pos = yv.filter((v) => v > 0); ya = pos.length ? Math.pow(10, Math.floor(Math.log10(Math.min(...pos)))) : 0.1; yb = pos.length ? Math.pow(10, Math.ceil(Math.log10(Math.max(...pos) * 1.01))) : 10; if (yb <= ya) yb = ya * 10; }
     const y2a = 0, y2b = Math.max(...y2v, 0) * 1.15 || 1;
     const fy = (v) => st.ylog ? B - (Math.log10(Math.max(v, ya)) - Math.log10(ya)) / (Math.log10(yb) - Math.log10(ya)) * (B - T) : B - (v - ya) / (yb - ya || 1) * (B - T);
