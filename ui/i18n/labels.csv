@@ -624,3 +624,15 @@ ui.convergence.waiting,text,waiting for initial load,чека се почетн�
 ui.updates_s,text,updates/s · offered {n},ажур./s · понуђено {n}
 ui.stopped,state,STOPPED,ЗАУСТАВЉЕНО
 ui.warn,state,WARN,УПОЗОРЕЊЕ
+ui.strip.starting,text,Starting the run…,Покретање теста…
+ui.strip.preparing,text,"Preparing: checking the agents, configuring the DUT, loading the plans…","Припрема: провера агената, конфигурисање DUT‑а, учитавање планова…"
+ui.strip.running,text,Running — phase {n} of {m}: {phase},У току — фаза {n} од {m}: {phase}
+ui.strip.finishing,text,Collecting the results and analysing…,Прикупљање резултата и анализа…
+ui.strip.done,text,Run finished.,Тест је завршен.
+ui.strip.failed,text,Run failed: {error},Тест није успео: {error}
+ui.strip.stopped,text,Run stopped.,Тест је заустављен.
+ui.strip.start_failed,text,The run did not start: {error},Тест није покренут: {error}
+ui.strip.elapsed,text,elapsed {t},протекло {t}
+ui.strip.live,link,Live view,Приказ уживо
+ui.strip.close,button,Close,Затвори
+ui.starting,button,Starting…,Покреће се…

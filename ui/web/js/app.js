@@ -108,6 +108,56 @@ function stateWord(st) {
   return t({ created: "state.arming", preparing: "state.arming", running: "state.running", finishing: "state.analysing",
     done: "state.done", failed: "state.error", stopped: "ui.stopped" }[st] || "state.idle");
 }
+function fmtElapsed(ms) { const s = Math.max(0, Math.floor(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
+function renderStrip() {
+  const box = $("runStrip"), r = S.run, st = S.strip || {};
+  box.className = "runstrip";
+  let text = null, spin = false, segs = [], time = "", links = [], closable = false;
+  if (st.starting) { text = t("ui.strip.starting"); spin = true; }
+  else if (st.startError) { text = t("ui.strip.start_failed", { error: st.startError }); box.classList.add("err"); closable = true; }
+  else if (r && !S.stripClosed && (RUN_ACTIVE.includes(r.state) || S.stripRun === r.id)) {
+    const n = (S.runPhases || []).length, cur = S.lastTick && S.lastTick.phase ? S.lastTick.phase.idx : -1;
+    const since = r.started_ms || r.created_ms;
+    time = since ? t("ui.strip.elapsed", { t: fmtElapsed((r.ended_ms || Date.now()) - since) }) : "";
+    if (r.state === "created" || r.state === "preparing") { text = t("ui.strip.preparing"); spin = true; }
+    else if (r.state === "running") {
+      const p = (S.runPhases || [])[Math.max(0, cur)];
+      text = t("ui.strip.running", { n: Math.max(1, cur + 1), m: n, phase: p ? phaseName(p) : "" }); spin = true;
+      segs = (S.runPhases || []).map((x, i) => (i < cur ? "done" : i === cur ? "cur" : ""));
+    } else if (r.state === "finishing") { text = t("ui.strip.finishing"); spin = true; segs = (S.runPhases || []).map(() => "done"); }
+    else if (r.state === "done") {
+      text = t("ui.strip.done"); box.classList.add("done"); closable = true; segs = (S.runPhases || []).map(() => "done");
+      links = [[t("ui.summary"), `/api/runs/${r.id}/files/summary.txt`], [t("ui.report_json"), `/api/runs/${r.id}/report`]];
+    } else if (r.state === "failed") { text = t("ui.strip.failed", { error: r.error || "" }); box.classList.add("err"); closable = true; }
+    else if (r.state === "stopped") { text = t("ui.strip.stopped"); box.classList.add("stopped"); closable = true; }
+    if (RUN_ACTIVE.includes(r.state)) S.stripRun = r.id;
+    if (location.hash && location.hash !== "#benchmark" && RUN_ACTIVE.includes(r.state)) links.push([t("ui.strip.live"), "#benchmark"]);
+  }
+  box.hidden = text === null;
+  document.title = (st.starting || (r && RUN_ACTIVE.includes(r.state)) ? "● " : "") + "TrafficGenerator";
+  if (text === null) return;
+  $("stripText").textContent = text; $("stripTime").textContent = time;
+  $("stripSpin").hidden = !spin; $("stripClose").hidden = !closable;
+  const sl = $("stripLinks"); sl.innerHTML = "";
+  links.forEach(([l, h], i) => { if (i) sl.append(" · "); sl.append(el("a", { href: h, target: h.startsWith("#") ? null : "_blank", text: l })); });
+  const sg = $("stripSegs"); sg.innerHTML = ""; sg.hidden = !segs.length;
+  segs.forEach((c) => sg.append(el("span", { class: c })));
+}
+
+// fallback when the live connection is down: the strip and badge still follow the run
+async function pollRun() {
+  if (!S.run || !RUN_ACTIVE.includes(S.run.state) || (S.ws && S.ws.readyState === 1 && S.lastTickAt && Date.now() - S.lastTickAt < 4000)) return;
+  try {
+    const r = await get(`/api/runs/${S.run.id}`);
+    const was = S.run.state; Object.assign(S.run, r);
+    S.phaseAt = Object.fromEntries((r.phases || []).map((p) => [p.idx, p]));
+    const running = (r.phases || []).filter((p) => !p.end_ms).map((p) => p.idx);
+    const idx = running.length ? Math.min(...running) : (r.phases || []).length - 1;
+    if (!S.lastTick || !S.lastTickAt || Date.now() - S.lastTickAt > 4000) S.lastTick = Object.assign({}, S.lastTick || {}, { phase: { idx, type: (S.runPhases[idx] || {}).type } });
+    if (was !== r.state) { r.events && (S.events = r.events.slice(-200)); renderAll(); } else { renderBadge(); renderEvents(); }
+  } catch (e) { /* login page or network */ }
+}
+
 function runActive() { return S.run && RUN_ACTIVE.includes(S.run.state); }
 
 function renderBadge() {
@@ -130,7 +180,8 @@ function renderBadge() {
     else if (st === "stopped") { s = t("ui.stopped") + " · " + clock; }
   }
   txt.textContent = s;
-  $("startBtn").disabled = runActive();
+  renderStrip();
+  $("startBtn").disabled = runActive() || !!(S.strip && S.strip.starting);
   $("stopBtn").disabled = !runActive();
   $$("[data-view=benchmark] section:first-child :is(input,select,button)").forEach((x) => {
     if (x.closest("#previewBox") || x.dataset.dut === "preview" || x.dataset.dut === "status" || x.dataset.dut === "test") return;
@@ -393,6 +444,8 @@ async function start() {
     pw = sessionPw || await askPassword(t("ui.start.go"));
     if (pw === null) return;
   }
+  const sb = $("startBtn"); sb.disabled = true; sb.textContent = t("ui.starting");
+  S.strip = { starting: true }; S.stripClosed = false; renderStrip();
   try {
     const scenario = {
       name: $("runName").value.trim() || "run", dut: dutSpec(pw, $("enable").value || null),
@@ -401,10 +454,16 @@ async function start() {
     };
     const r = await post("/api/runs", { scenario });
     S.ticks = []; S.routers = []; S.routerState = {}; S.events = []; S.lastTick = null; S.portSpark = [];
+    S.stripClosed = false; S.strip = null;
     await loadRun(r.id);
     renderAll();
   } catch (e) {
-    addEvent({ t_ms: Date.now(), kind: "run", severity: "error", text: e.status === 409 ? t("ui.start.busy") : t("ui.error", { msg: e.message }) });
+    const msg = e.status === 409 ? t("ui.start.busy") : e.message;
+    S.strip = { startError: msg };
+    addEvent({ t_ms: Date.now(), kind: "run", severity: "error", text: t("ui.strip.start_failed", { error: msg }) });
+  } finally {
+    sb.textContent = t("run.start"); if (S.strip && S.strip.starting) S.strip = null;
+    renderBadge();
   }
 }
 async function stop() { if (S.run) { try { await post(`/api/runs/${S.run.id}/stop`); } catch (e) { addEvent({ t_ms: Date.now(), severity: "error", text: e.message }); } } }
@@ -442,7 +501,7 @@ async function onMessage(m) {
   if (m.type === "tick") {
     if (!S.run || m.run !== S.run.id) { await loadRun(m.run); }
     S.ticks.push(m); if (S.ticks.length > 7200) S.ticks.shift();
-    S.lastTick = m;
+    S.lastTick = m; S.lastTickAt = Date.now();
     (m.routers || []).forEach(([name, node, state, held]) => { S.routerState[name] = { state, held }; });
     if (S.run && RUN_ACTIVE.includes(S.run.state)) S.run.state = m.state;   // never revive a finished run
     renderLive(); renderRouters(); renderBadge();
@@ -594,6 +653,8 @@ function wire() {
   $("logoutBtn").addEventListener("click", async () => { try { await post("/api/logout"); } catch (e) { /* ignore */ } sessionPw = null; showLogin(); });
   setInterval(() => { renderBadge(); }, 1000);
   setInterval(idleHealth, 5000);
+  setInterval(pollRun, 2000);
+  $("stripClose").addEventListener("click", () => { S.stripClosed = true; S.strip = null; renderStrip(); });
 }
 
 boot();

@@ -85,3 +85,18 @@ dialog::backdrop{background:rgba(22,25,29,.45)}
 .uplot{font-family:'IBM Plex Mono',monospace}
 .u-legend{display:none}
 @media (max-width:600px){header.top nav a{padding:12px 8px}header.top nav a[aria-current=page]{padding:11px 8px 9px}.runctl{margin-left:0!important;justify-content:flex-start!important}.badge{white-space:normal}}
+/* run strip: what is happening after Start */
+.runstrip{position:sticky;top:0;z-index:25;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:10px 28px;background:#E3F1EF;color:#0A3F3A;border-bottom:1px solid #B9DDD8;font-size:14px}
+.runstrip.done{background:#E6F4EA;color:#14532D;border-color:#BFE3C9}
+.runstrip.err{background:#FDECEA;color:#7A1A12;border-color:#F3C2BC}
+.runstrip.stopped{background:#F3F4F1;color:#3A4047;border-color:#D9DCD6}
+.runstrip .small{color:inherit;opacity:.85}
+.spin{width:18px;height:18px;border-radius:50%;border:3px solid rgba(14,110,102,.25);border-top-color:#0E6E66;animation:spin 0.9s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:2.5s}}
+.segs{display:flex;gap:3px;height:6px;max-width:640px}
+.segs span{flex:1 1 0;border-radius:3px;background:rgba(14,110,102,.18)}
+.segs span.done{background:#0E6E66}
+.segs span.cur{background:repeating-linear-gradient(90deg,#0E6E66 0 6px,#5FD3C5 6px 12px);background-size:24px 6px;animation:march 1s linear infinite}
+@keyframes march{to{background-position:24px 0}}
+@media (max-width:600px){.runstrip{padding:10px 16px}}

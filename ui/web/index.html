@@ -52,6 +52,15 @@
 </div>
 </header>
 <div class="banner err" id="wsBanner" role="alert" hidden data-t="ui.ws_lost"></div>
+<div class="runstrip" id="runStrip" role="status" aria-live="polite" hidden>
+<span class="spin" id="stripSpin" aria-hidden="true"></span>
+<span id="stripIcon" aria-hidden="true" hidden></span>
+<span style="display:flex;flex-direction:column;gap:6px;flex:1 1 320px;min-width:0">
+<span style="display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline"><b id="stripText"></b><span class="mono small" id="stripTime"></span><span id="stripLinks" class="small"></span></span>
+<span class="segs" id="stripSegs" aria-hidden="true"></span>
+</span>
+<button class="btn btn-sm" type="button" id="stripClose" data-t="ui.strip.close" hidden>Close</button>
+</div>
 
 <!-- Benchmark -->
 <main class="wrap" data-view="benchmark">
