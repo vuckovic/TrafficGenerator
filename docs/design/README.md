@@ -1,4 +1,4 @@
-# UI design — LOCKED v1.2 (2026‑11‑03)
+# UI design — LOCKED v1.3 (2026‑11‑12)
 
 Approved reference for the web interface look and behaviour. The P3 implementation follows it.
 Changes go through a new design version, not ad hoc.
@@ -36,6 +36,10 @@ Sample values in the preview are illustrative, not measured.
 
 Measured with IBM Plex at 1440 px: English 64 px high, Serbian 64 px; at 1280 px only Serbian wraps. |
 | Prefix pool sample | `10.0.0.0/8 · /24–/28` (spec §18 change of 2026‑10‑19). |
+
+## v1.3 (2026‑11‑12)
+
+- **G10 run strip** and **K12 test network topology** (Test scheme artboards), approved by the user on 2026‑11‑12 ("this is it").
 
 ## v1.2 additions (locked 2026‑11‑03, approved by the user; controls frozen in docs/04 v1.2, DOC‑40)
 | Area | Change |

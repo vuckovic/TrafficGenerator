@@ -79,6 +79,7 @@ class Engine:
         self.client = httpx.AsyncClient()
         self.ctx: Ctx | None = None
         self.task: asyncio.Task | None = None
+        self.owner: str | None = None   # a test scheme that holds the engine (P3c-2): no other runs meanwhile
         # spawn, not fork: a forked worker would inherit the listening socket and keep the port
         # open after the controller stops
         self.pool = cf.ProcessPoolExecutor(max_workers=1, initializer=os.nice, initargs=(10,),
@@ -88,9 +89,11 @@ class Engine:
         return [Agent(n, self.cfg.agent_token, self.client) for n in self.cfg.nodes]
 
     # ------------------------------------------------------------------ public
-    async def start(self, sc: Scenario) -> str:
+    async def start(self, sc: Scenario, owner: str | None = None) -> str:
         if self.task and not self.task.done():
             raise Busy(f"run {self.ctx.id} is {self.ctx.state}")
+        if self.owner and owner != self.owner:
+            raise Busy(f"test scheme {self.owner} is running")
         rid = time.strftime("r-%Y%m%d-%H%M%S")
         rdir = self.cfg.runs_dir / rid
         rdir.mkdir(parents=True)

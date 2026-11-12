@@ -11,5 +11,11 @@ session_hours = 12
 max_duration_s = 3600                         # hard limit for any run
 clock_tolerance_ms = 50                       # agents' clocks vs the controller (chrony)
 
+# Test network topology on the Test scheme page (K12); nothing here is secret
+public_url = "https://bgp.elfak.net:8443"     # how the web interface is reached from outside
+# gateway = "192.168.100.1"                   # default: MGMT_GW from cluster.env
+# board_switch = "DeskPi Super6C"
+# lab_switch = "Cisco SG… ports 1-4"          # set once the wiring is confirmed (hides the note)
+
 # [agents]                                    # override an agent's host:port (tests)
 # CMNODE01 = "127.0.0.1:7701"

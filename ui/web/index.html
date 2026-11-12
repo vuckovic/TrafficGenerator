@@ -204,7 +204,83 @@
 </main>
 
 <!-- placeholders for the later steps -->
-<main class="wrap" data-view="scheme" hidden><div class="card" style="flex:1 1 auto"><p style="margin:0" data-coming="P3c‑2"></p></div></main>
+<main class="wrap col" data-view="scheme" hidden>
+<div style="display:flex;flex-direction:column;gap:6px;max-width:900px"><h1 style="margin:0;font-size:24px;font-weight:700" data-t="scheme.title">Test scheme</h1><p style="margin:0;color:#545A61;line-height:1.5" data-t="scheme.sub"></p></div>
+
+<section class="card k1" aria-labelledby="k1h" style="background:#F8FBFA;border-color:#C7E3DF">
+<div class="row-sb"><h2 class="h2" id="k1h" style="font-size:17px" data-t="scheme.k1.title">How this test works</h2><button class="btn btn-sm" type="button" id="k1Toggle" aria-expanded="true" aria-controls="k1body"></button></div>
+<div id="k1body" style="display:flex;flex-wrap:wrap;gap:20px 32px;align-items:flex-start">
+<div style="flex:1 1 380px;min-width:0;display:flex;flex-direction:column;gap:12px">
+<p><b data-t="scheme.k1.what.lead"></b> <span data-t="scheme.k1.what"></span></p>
+<p><b data-t="scheme.k1.before.lead"></b> <span data-t="scheme.k1.before"></span></p>
+<p><b data-t="scheme.k1.read.lead"></b> <span data-t="scheme.k1.read"></span></p>
+<p><b data-t="scheme.k1.time.lead"></b> <span data-t="scheme.k1.time"></span></p>
+</div>
+<div style="flex:1 1 420px;min-width:0;display:flex;flex-direction:column;gap:8px">
+<p><b data-t="scheme.k1.steps.lead"></b></p>
+<ol style="margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px">
+<li><b data-t="scheme.k1.step1.name"></b> — <span data-t="scheme.k1.step1"></span></li>
+<li><b data-t="scheme.k1.step2.name"></b> — <span data-t="scheme.k1.step2"></span></li>
+<li><b data-t="scheme.k1.step3.name"></b> — <span data-t="scheme.k1.step3"></span></li>
+<li><b data-t="scheme.k1.step4.name"></b> — <span data-t="scheme.k1.step4"></span></li>
+</ol>
+</div>
+</div>
+</section>
+
+<section class="card" aria-labelledby="k12h">
+<div class="row-sb"><h2 class="h2" id="k12h"><span class="hint" tabindex="0"><span data-t="scheme.topo.title">Test network topology</span><span class="tt" role="tooltip" data-t="scheme.topo.tip"></span></span></h2>
+<div style="display:flex;gap:8px"><button class="btn btn-sm" type="button" id="topoSvg" data-t="scheme.export.svg">SVG</button><button class="btn btn-sm" type="button" id="topoPng" data-t="scheme.export.png">PNG</button></div></div>
+<div class="topo-box" id="topoBox"></div>
+<ul class="legend" id="topoLegend"></ul>
+</section>
+
+<div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+<section class="card" aria-labelledby="k2h" style="flex:999 1 640px;min-width:0">
+<div class="row-sb" style="align-items:baseline"><h2 class="h2" id="k2h" data-t="scheme.devices">Devices</h2><span class="small" data-t="scheme.devices.note"></span></div>
+<div class="tbl-box"><table>
+<thead><tr><th class="th"><span class="sr" data-t="scheme.col.dev"></span></th><th class="th" data-t="scheme.col.dev"></th><th class="th" data-t="scheme.col.port"></th><th class="th" data-t="scheme.col.pw"></th><th class="th" data-t="scheme.col.conn"></th></tr></thead>
+<tbody id="schDevs"></tbody></table></div>
+<h3 class="lbl" style="margin:6px 0 0" data-t="scheme.sizes"></h3>
+<div class="tbl-box"><table style="font-size:12px">
+<thead><tr><th class="th" data-t="scheme.col.dev"></th><th class="th" data-t="scheme.col.smoke"></th><th class="th" data-t="scheme.col.series"></th><th class="th" data-t="scheme.col.mrai"></th><th class="th" data-t="scheme.col.scale"></th></tr></thead>
+<tbody id="schSizes"></tbody></table></div>
+</section>
+
+<section class="card" aria-labelledby="k3h" style="flex:1 1 340px;min-width:0">
+<h2 class="h2" id="k3h" data-t="scheme.steps">Steps</h2>
+<div id="schSteps" style="display:flex;flex-direction:column"></div>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end">
+<div class="field"><label class="lbl" for="schPause" data-t="scheme.pause"></label><input id="schPause" class="inp mono" inputmode="numeric" value="30"></div>
+<label style="display:flex;gap:8px;align-items:center;min-height:36px;font-size:13px;font-weight:500"><input type="checkbox" id="schStopFail" checked style="accent-color:#0E6E66;width:18px;height:18px;margin:0"><span data-t="scheme.stop_on_failure"></span> <span class="hint tip" tabindex="0">i<span class="tt" role="tooltip" data-t="scheme.stop_on_failure.tip"></span></span></label>
+</div>
+<div class="est"><span class="lbl" data-t="scheme.estimate"></span><span id="schEst" style="font-size:14px">—</span><span class="small" id="schEstPer"></span></div>
+<p class="small bad" id="schErr" role="alert" hidden style="margin:0"></p>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" type="button" id="schStart" style="flex:1 1 140px" data-t="scheme.start">Start scheme</button><button class="btn btn-stop" type="button" id="schStop" style="flex:1 1 140px" data-t="scheme.stop" disabled>Stop scheme</button></div>
+</section>
+</div>
+
+<section class="card" aria-labelledby="k9h">
+<div class="row-sb"><h2 class="h2" id="k9h" data-t="scheme.progress">Progress</h2><span class="small mono" id="schLast"></span></div>
+<div class="tbl-box"><table>
+<thead><tr><th class="th" data-t="scheme.col.dev"></th><th class="th" data-t="scheme.progress.col.conn"></th><th class="th" data-t="scheme.progress.col.smoke"></th><th class="th" data-t="scheme.progress.col.series_device"></th><th class="th" data-t="scheme.progress.col.series_zero"></th><th class="th" data-t="scheme.progress.col.scale"></th></tr></thead>
+<tbody id="schProg"></tbody></table></div>
+</section>
+
+<section class="card" aria-labelledby="k10h">
+<div class="row-sb"><h2 class="h2" id="k10h" data-t="scheme.compare">Comparison</h2><div style="display:flex;gap:8px"><button class="btn btn-sm" type="button" id="cmpCsv" data-t="scheme.export.csv"></button><button class="btn btn-sm" type="button" id="cmpMd" data-t="scheme.export.md"></button></div></div>
+<div class="tbl-box"><table><thead><tr id="cmpHead"></tr></thead><tbody id="cmpBody"></tbody></table></div>
+</section>
+
+<section class="card" aria-labelledby="k11h">
+<div class="row-sb"><h2 class="h2" id="k11h" data-t="scheme.knee">Knee chart</h2>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><div role="group" id="kneeViews" style="display:flex;gap:4px;flex-wrap:wrap"></div><button class="btn btn-sm" type="button" id="kneeSvg" data-t="scheme.export.svg">SVG</button><button class="btn btn-sm" type="button" id="kneePng" data-t="scheme.export.png">PNG</button></div></div>
+<div id="kneeBox" style="position:relative;max-width:1100px"></div>
+<label id="kneeCurBox" style="display:flex;align-items:center;gap:8px;font-size:12px;color:#545A61;flex-wrap:wrap"><span data-t="scheme.knee.cursor"></span> <input type="range" id="kneeCur" min="1" max="4.477" step="0.01" value="3" style="width:260px;max-width:100%;accent-color:#0E6E66"><span class="mono" id="kneeCurLbl"></span></label>
+<ul class="mono readout" id="kneeRead"></ul>
+<div class="small" id="kneeLegend" style="display:flex;gap:8px 18px;flex-wrap:wrap;align-items:center"></div>
+</section>
+</main>
 <main class="wrap" data-view="traffic" hidden><div class="card" style="flex:1 1 auto"><p style="margin:0" data-coming="P6"></p></div></main>
 <main class="wrap" data-view="reports" hidden><div class="card" style="flex:1 1 auto"><p style="margin:0" data-coming="P3c‑3"></p></div></main>
 <main class="wrap" data-view="logs" hidden><div class="card" style="flex:1 1 auto"><p style="margin:0" data-coming="P5"></p></div></main>

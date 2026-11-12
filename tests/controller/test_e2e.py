@@ -249,6 +249,60 @@ def main() -> int:
         t = c.post("/api/duts/sim-asr/test", json={}).json()
         check(t.get("ok") and t.get("tgen_neighbours") == 0, f"tgen neighbours removed after the run ({t.get('tgen_neighbours')})")
 
+        # --- run 4: a test scheme (P3c-2) on the Cisco mock: test, smoke, rate series, scale ladder
+        print("run 4: test scheme on the Cisco mock", flush=True)
+        live = Live(c.cookies["tgen_session"])
+        live.start()
+        live.ready.wait(5)
+        pl = c.post("/api/schemes/plan", json={"devices": ["sim-asr"], "steps": ["test", "smoke", "series", "scale"],
+                                              "pause_s": 2}).json()
+        check(pl["sim-asr"]["estimate_total_s"] > 0 and pl["sim-asr"]["scale"] == [[12, 500], [24, 500]], "scheme plan and estimate")
+        topo = c.get("/api/topology").json()
+        check(len(topo["nodes"]) == 6 and topo["nodes"][0]["controller"] and topo["devices"][0]["bgp_ip"] == "10.100.0.111"
+              and "password" not in json.dumps(topo), "topology: nodes, devices, no secrets")
+        r = c.post("/api/schemes", json={"devices": [{"profile": "sim-asr", "password": "dummy"}],
+                                         "steps": ["test", "smoke", "series", "scale"], "pause_s": 2, "stop_on_failure": True})
+        check(r.status_code == 202, f"scheme accepted ({r.status_code} {r.text[:200]})")
+        sid = r.json()["id"]
+        check(c.post("/api/schemes", json={"devices": [{"profile": "sim-asr"}]}).status_code == 409, "second scheme refused (409)")
+        time.sleep(3)
+        check(c.post("/api/runs", json={"scenario": sc3.model_dump()}).status_code == 409, "single run refused during a scheme")
+        t0 = time.time()
+        while time.time() - t0 < 900:
+            sd = c.get(f"/api/schemes/{sid}").json()
+            if sd["state"] != "running":
+                break
+            time.sleep(3)
+        live.stop = True
+        live.join(3)
+        check(sd["state"] == "done", f"scheme done ({sd['state']}, {sd.get('error')})")
+        pg = sd["progress"]["sim-asr"]
+        check({k: v["state"] for k, v in pg.items()} == {"conn": "passed", "smoke": "passed", "series_device": "passed",
+                                                          "series_zero": "na", "scale": "passed"},
+              "progress grid: " + ", ".join(f"{k}={v['state']} {v['detail']}" for k, v in pg.items()))
+        res = sd["results"]["sim-asr"]
+        check(len(res["series"]["default"]["rows"]) >= 1 and all("past_knee" in x for x in res["series"]["default"]["rows"]),
+              "series rows judged by the knee rule")
+        check(len(res["scale"]) == 2 and sd["compare"][0]["largest_scale"] == "24 × 500", f"scale ladder {sd['compare'][0].get('largest_scale')}")
+        check(len(sd["runs"]) == 5 and all(c.get(f"/api/runs/{x}").json()["state"] == "done" for x in sd["runs"]),
+              f"every scheme step is a run in History ({len(sd['runs'])})")
+        check(sd["knee"] and sd["knee"][0]["points"], "knee chart series")
+        check("dummy" not in json.dumps(sd) and "dummy" not in json.dumps(c.get("/api/schemes").json()), "scheme stores no password")
+        check(any(m.get("type") == "scheme" for _, m in live.msgs), "scheme progress streamed on /ws/live")
+        # stop a scheme in its smoke run
+        sid2 = c.post("/api/schemes", json={"devices": [{"profile": "sim-asr", "password": "dummy"}],
+                                            "steps": ["smoke", "scale"], "pause_s": 0}).json()["id"]
+        time.sleep(8)
+        check(c.post(f"/api/schemes/{sid2}/stop").status_code == 200, "scheme stop accepted")
+        t0 = time.time()
+        while time.time() - t0 < 120 and c.get(f"/api/schemes/{sid2}").json()["state"] == "running":
+            time.sleep(1)
+        sd2 = c.get(f"/api/schemes/{sid2}").json()
+        check(sd2["state"] == "stopped" and sd2["progress"]["sim-asr"]["scale"]["state"] == "skipped",
+              f"scheme stopped, rest skipped ({sd2['state']})")
+        check(c.post("/api/runs", json={"scenario": sc3.model_dump()}).status_code == 202, "single runs allowed again")
+        wait_state(c, c.get("/api/runs").json()[0]["id"], ("done", "failed", "stopped"), 240)
+
         # --- lock-out last: it blocks this address
         for _ in range(5):
             c.post("/api/login", json={"password": "wrong"})

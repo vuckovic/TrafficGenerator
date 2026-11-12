@@ -62,3 +62,46 @@ def make_dut(info: dict, d):
     if getattr(d, "enable", None) and hasattr(dut, "secret"):
         dut.secret = d.enable
     return dut
+
+
+def action(d, action: str, routers: int, cluster_env: str) -> dict:
+    """The DUT buttons (U14) and the scheme's connection test: test, preview, push, remove, status.
+    Raises ValueError for a request that cannot be resolved."""
+    import contextlib
+    from tgen.dut import DutError
+    from tgen_dut import plan_meta
+
+    info = resolve(d)
+    if not info["adapter"]:
+        raise ValueError("no platform: choose one (U8)")
+    ip, asn, role = info["ip"], info["asn"], info["role"]
+    dut = make_dut(info, d)
+
+    class A:  # what plan_meta() reads from the CLI arguments
+        seed, dut_ip, dut_asn, config = 1, ip, asn, cluster_env
+    A.routers, A.role = routers, role
+    out: dict = {"action": action, "platform": dut.platform, "ip": ip, "role": role}
+    try:
+        if action == "preview":
+            out["config"] = dut.render(plan_meta(A), ip, asn, role)
+        elif action == "test":
+            out["resources"] = dut.resources()
+            out["tgen_neighbours"] = dut.count()
+            with contextlib.suppress(DutError, NotImplementedError):
+                out["port"] = dut.interface_info(ip, info["interface"])
+        elif action == "push":
+            out["neighbours"] = dut.push(dut.render(plan_meta(A), ip, asn, role), routers)
+        elif action == "remove":
+            dut.remove()
+            out["tgen_neighbours"] = dut.count()
+        elif action == "status":
+            out["sessions"], out["established"] = dut.sessions()
+        out["ok"] = True
+    except (DutError, OSError, NotImplementedError) as e:
+        out.update(ok=False, error=str(e)[:1000])
+    finally:
+        close = getattr(dut, "close", None)
+        if close:
+            close()
+    out["notes"] = dut.notes
+    return out

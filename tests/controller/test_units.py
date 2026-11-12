@@ -118,3 +118,33 @@ def test_store(tmp_path):
     assert s.fail_unfinished() == ["r1"] and s.run("r1")["state"] == "failed"
     s.delete_run("r1")
     assert s.run("r1") is None and not s.ticks("r1")
+
+
+def test_scheme_tables_and_store(tmp_path):
+    """K10 comparison and K11 knee series from scheme results; schemes stored and failed on restart."""
+    from tgen_controller.scheme import SchemeRunner
+
+    class Hub:
+        def publish(self, m):
+            self.last = m
+
+    st = Store(tmp_path / "c.db")
+    r = SchemeRunner(None, st, Hub(), None)
+    rows = [{"rate": 5, "offered_deliveries_s": 660, "output_s": 655, "after_last_send_s": 0.9, "past_knee": False},
+            {"rate": 8, "offered_deliveries_s": 1056, "output_s": 870, "after_last_send_s": 7.8, "past_knee": True}]
+    r.doc = {"id": "s-1", "state": "running", "created_ms": 1, "devices": ["mt"], "current": None, "plan": {"mt": {"estimate_s": {
+        "test": 15, "smoke": 60, "series": 100, "scale": 100}, "series": {"mrai": ["default"]}}},
+        "progress": {"mt": {c: {"state": "passed"} for c in ("conn", "smoke", "series_device", "series_zero", "scale")}},
+        "results": {"mt": {"label": "MikroTik", "test": {"ok": True},
+                           "smoke": {"convergence_s": 6.2, "missing": 0, "output_s": 1050, "min_free_mem_pct": 40},
+                           "series": {"default": {"mrai": "default", "mrai_s": 0, "rows": rows, "sustainable_rate": 5, "knee_rate": 8,
+                                                  "sustainable_deliveries_s": 660, "max_output_s": 870, "top_rate": 15}},
+                           "scale": [{"state": "done", "gate_ok": True, "size": "20 × 1000", "output_s": 900, "min_free_mem_pct": 38}]}}}
+    r._save()
+    c = r.doc["compare"][0]
+    assert (c["sustainable_rate"], c["knee_rate"], c["largest_scale"], c["max_output_s"], c["min_free_mem_pct"]) == (5, 8, "20 × 1000", 1050, 38)
+    k = r.doc["knee"][0]
+    assert k["points"] == [[660, 655, 0.9, False], [1056, 870, 7.8, True]] and k["limit_s"] == 5
+    assert r.hub.last["type"] == "scheme" and st.scheme("s-1")["compare"][0]["knee_rate"] == 8
+    assert st.fail_unfinished_schemes() == ["s-1"] and st.scheme("s-1")["state"] == "failed"
+    assert st.schemes()[0]["id"] == "s-1"

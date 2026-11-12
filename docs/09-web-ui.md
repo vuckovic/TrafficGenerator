@@ -2,7 +2,7 @@
 
 The browser interface at `https://bgp.elfak.net:8443`. It follows the frozen controls (doc 04 v1.2) and the locked design (`docs/design/`, v1.2), and talks only to the controller API (doc 08).
 
-Status: confirmed 2026‑11‑03. **P3c‑1 built** (2026‑11‑03): login, header, Benchmark tab, live view; browser test `tests/controller/ui_e2e.py` passes. P3c‑2 and P3c‑3 to follow.
+Status: confirmed 2026‑11‑03. **P3c‑1 built** (2026‑11‑03): login, header, Benchmark tab, live view. **P3c‑2 built** (2026‑11‑12): Test scheme tab with the scheme runner and the network topology (§10). Browser test `tests/controller/ui_e2e.py` passes. P3c‑3 to follow.
 
 ## 1. How it is built and served
 
@@ -91,3 +91,29 @@ The confirmed controls K1–K11 (doc 04 v1.2), plus **K12 Test network topology*
   - Passwords are kept in memory for the scheme only.
 - **Topology (K12):** `GET /api/topology` (no secrets): nodes with management and test addresses and roles, devices with BGP and SSH addresses, model, AS and port, gateway, public address, emulated‑router range. The page draws it as one SVG and highlights the device in the running step.
 - **Open point:** the physical wiring between the Super6C board port ETH0 and the three devices (one lab switch? which ports?) is drawn as "Lab switch" until confirmed.
+
+K12 approved by the user on 2026‑11‑12 ("this is it"); doc 04 is now v1.3.
+
+## 10. P3c‑2 as built (2026‑11‑12)
+
+- **Controller** (`controller/tgen_controller/scheme.py`, `app.py`, `store.py`):
+  - `SchemeRunner` runs, for each chosen device in turn: connection test → smoke → rate series (one per MRAI variant in `deploy/duts.toml`, rates from the file, stops after the first rate past the knee, `tools/tgen/knee.py`) → scale ladder (stops at the first step that does not pass; timeouts from the measured delivery rate, as `tgen_suite.py`). Each step is an ordinary run (`establish → announce at the rate → withdraw`), so it appears in History with its own report.
+  - A failed connection test or smoke skips the rest of that device when *Stop on failure* is on; the scheme goes on with the next device.
+  - While a scheme runs, single runs and Push / Remove are refused (409). Stop scheme stops the running test within the usual 1.5 s and skips the rest. A controller restart marks an unfinished scheme failed.
+  - Stored in SQLite (`schemes` table, one JSON document per scheme): plan, progress grid, results per device, comparison rows (K10), knee‑chart series (K11). **Passwords are not stored**: they are kept in memory for the scheme only, or come from `TGEN_DUT_PASSWORD_<PROFILE>` on the controller.
+  - Progress is published on `/ws/live` as `{type: "scheme", scheme: {...}}` after every change.
+- **API:**
+  - `POST /api/schemes/plan {devices, steps, pause_s}`: sizes from the file and the estimate (K3, K7);
+  - `POST /api/schemes {devices: [{profile, password?, enable?}], steps, pause_s, stop_on_failure}` → `202 {id}`;
+  - `GET /api/schemes` (list), `GET /api/schemes/{id}`, `POST /api/schemes/{id}/stop`;
+  - `GET /api/topology`: nodes (management and test address, controller, agent port), devices (BGP and SSH address, platform, AS, port, link speed), both subnets, gateway, public address, first emulated‑router address. No secrets.
+  - `/api/health` also shows the active scheme.
+- **Web page** (`ui/web/js/scheme.js`, view in `index.html`):
+  - K1 instructions (can be hidden); K12 topology as one SVG built from `/api/topology`, the device under test highlighted (*testing now*, *waiting*, *done*), export SVG / PNG; K2 devices with password field and Test button; sizes and MRAI variants from the file; K3 steps, K5 pause, K6 stop on failure, K7 estimate (remaining and total, per device); K8 Start / Stop scheme; K9 progress grid with a link to the live view or to each run's summary; K10 comparison with CSV and Markdown export; K11 knee chart in three views (delivered vs offered log–log, time after last send with the limits, sustained bars), cursor and slider with readings, export SVG / PNG.
+  - The run strip (G10) shows *Test scheme <id>: <device> · <step>* above the current run, and *Test scheme finished / stopped / failed* with a link to the results. The header Stop button stops the scheme.
+  - All texts in English and Serbian Cyrillic (`scheme.*`, `ui.strip.scheme*`). Step details come from the controller as data and are translated on the page.
+- **Settings** (optional, `controller.toml`): `public_url`, `gateway`, `board_switch`, `lab_switch` (once set, the "wiring not confirmed" note disappears).
+- **Tests:**
+  - `tests/controller/test_e2e.py` run 4: a full scheme on the Cisco mock (test, smoke, 2‑rate series, 2‑step scale = 5 runs), 409 for a second scheme and for a single run, progress, comparison, knee series, no password stored, live messages; then a scheme stopped during its smoke.
+  - `tests/controller/ui_e2e.py`: the scheme page in the browser (topology, instructions, password check, Test, estimate, start, strip, highlight, progress, comparison, three chart views, CSV and SVG export, Serbian, phone width).
+  - `tests/controller/test_units.py`: comparison and knee tables, scheme store, restart.

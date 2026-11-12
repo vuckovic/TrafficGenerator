@@ -640,3 +640,57 @@ ui.port.duplex,text,{d}‑duplex,{d} дуплекс
 ui.port.up,state,up,активан
 ui.port.down,state,down,неактиван
 ui.node,column,Node,Чвор
+scheme.topo.title,heading,Test network topology,Топологија тестне мреже
+scheme.topo.tip,tooltip,"The lab as configured: the six cluster nodes (emulated routers, agents, controller), the devices under test and the gateway. Generated from cluster.env, controller.toml and deploy/duts.toml; the device being tested now is highlighted.","Лабораторија онако како је подешена: шест чворова кластера (емулирани рутери, агенти, контролер), уређаји који се тестирају и мрежни излаз. Генерише се из cluster.env, controller.toml и deploy/duts.toml; уређај који се тренутно тестира је истакнут."
+scheme.topo.gw,label,Faculty router,Рутер факултета
+scheme.topo.gw_ip,label,gateway {ip},мрежни излаз {ip}
+scheme.topo.public,label,Internet: {url} → {node},Интернет: {url} → {node}
+scheme.topo.lab,label,Lab switch,Лабораторијски свич
+scheme.topo.lab2,label,"test and management, untagged","тестна и управљачка мрежа, без VLAN ознака"
+scheme.topo.board,label,{name} on‑board switch,{name} свич на плочи
+scheme.topo.board2,label,1 Gb/s per node,1 Gb/s по чвору
+scheme.topo.eth0,label,board port ETH0,порт плоче ETH0
+scheme.topo.ctl,label,controller · web UI,контролер · веб интерфејс
+scheme.topo.agent,label,agent :{port},агент :{port}
+scheme.topo.mgmt,label,mgmt,упр.
+scheme.topo.test,label,test,тест
+scheme.topo.now,state,testing now,тестира се
+scheme.topo.waiting,state,waiting,чека
+scheme.topo.done,state,done,готово
+scheme.topo.leg1,text,Test network {net}: BGP sessions between the emulated routers and the device under test.,Тестна мрежа {net}: BGP сесије између емулираних рутера и уређаја који се тестира.
+scheme.topo.leg2,text,"Management {net}: SSH to the devices, agents, web interface. Both subnets share the same wire, untagged.","Управљачка мрежа {net}: SSH до уређаја, агенти, веб интерфејс. Обе подмреже деле исти кабл, без VLAN ознака."
+scheme.topo.leg3,text,"Emulated routers: {ip} and up, added as /32 on the nodes' eth0 for each run and removed afterwards.","Емулирани рутери: {ip} и даље, додају се као /32 на eth0 чворова за сваки тест и уклањају после теста."
+scheme.topo.wiring,text,The wiring between the board port ETH0 and the devices is drawn as one lab switch until it is confirmed.,Веза између порта плоче ETH0 и уређаја приказана је као један лабораторијски свич док се не потврди.
+scheme.topo.aria,label,Network topology of the test lab,Топологија мреже тестне лабораторије
+scheme.export.svg,button,SVG,SVG
+scheme.export.png,button,PNG,PNG
+scheme.state.skipped,state,Skipped,Прескочено
+scheme.state.stopped,state,Stopped,Заустављено
+scheme.test,button,Test,Провери
+scheme.testing,state,testing…,провера…
+scheme.pw_env,label,set on the controller,подешена на контролеру
+scheme.no_devices,text,No devices in deploy/duts.toml.,Нема уређаја у deploy/duts.toml.
+scheme.pick_one,text,Choose at least one device and one step.,Изаберите бар један уређај и један корак.
+scheme.need_pw,text,Enter the password of {dev} (or set TGEN_DUT_PASSWORD_{env} on the controller).,Унесите лозинку за {dev} (или подесите TGEN_DUT_PASSWORD_{env} на контролеру).
+scheme.per_device,text,per device: {list},по уређају: {list}
+scheme.detail.rate,text,{r} /s ({i} of {n}),{r} /s ({i} од {n})
+scheme.detail.missing,text,{s} s · {m} missing,{s} s · недостаје {m}
+scheme.detail.stopped,text,stopped,заустављено
+scheme.detail.no_run,text,no run completed,ниједан тест није завршен
+scheme.detail.limit,text,no step within the route limit,ниједан корак у оквиру ограничења рута
+scheme.detail.first_failed,text,first step failed,први корак није прошао
+scheme.detail.skip_conn,text,connection test failed,провера везе није прошла
+scheme.detail.skip_smoke,text,smoke failed,брзи тест није прошао
+scheme.mrai.device_s,text,device default ({s} s),подразумевано за уређај ({s} s)
+scheme.mrai.zero,text,0 s,0 s
+scheme.last,text,Scheme {id} · {state} · {when},Шема {id} · {state} · {when}
+scheme.none_yet,text,No scheme has run yet: results appear here.,Ниједна шема још није покренута: резултати се приказују овде.
+scheme.empty_chart,text,The knee chart fills in as the rate series finish.,Графикон се попуњава како се серије брзина завршавају.
+scheme.stop_confirm,text,Stop the test scheme? The running test is stopped and the remaining steps are skipped.,"Зауставити шему? Текући тест се зауставља, а преостали кораци се прескачу."
+scheme.started,text,Test scheme {id} started.,Шема {id} је покренута.
+ui.strip.scheme,text,Test scheme {id}: {dev} · {step},Шема {id}: {dev} · {step}
+ui.strip.scheme_done,text,Test scheme finished.,Шема је завршена.
+ui.strip.scheme_stopped,text,Test scheme stopped.,Шема је заустављена.
+ui.strip.scheme_failed,text,Test scheme failed: {error},Шема није успела: {error}
+ui.strip.scheme_link,link,results,резултати
+ui.start.scheme_busy,text,A test scheme is running: single runs wait until it ends.,Шема тестирања је у току: појединачни тестови чекају њен крај.

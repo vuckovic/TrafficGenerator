@@ -64,7 +64,7 @@ def _stop_on_signal(signum, _frame):
 
 def load_env(path: Path) -> dict:
     script = f"""source {shlex.quote(str(path))}
-for v in NODE_COUNT MGMT_PREFIX MGMT_HOST_BASE MGMT_IFACE TRAFFIC_PREFIX TRAFFIC_HOST_BASE SSH_USER; do
+for v in NODE_COUNT MGMT_PREFIX MGMT_HOST_BASE MGMT_IFACE MGMT_CIDR MGMT_GW TRAFFIC_PREFIX TRAFFIC_HOST_BASE TRAFFIC_CIDR SSH_USER AGENT_PORT; do
   printf '%s=%s\\n' "$v" "${{!v}}"; done
 printf 'NODE_HOSTNAMES=%s\\n' "${{NODE_HOSTNAMES[*]}}"
 printf 'NODE_RAM_GB=%s\\n' "${{NODE_RAM_GB[*]}}"

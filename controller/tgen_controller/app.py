@@ -19,6 +19,7 @@ from .engine import Busy, Engine
 from .health import Health
 from .live import Hub
 from .scenario import PRESETS, Dut, Scenario
+from .scheme import STEPS, SchemeError, SchemeRunner
 from .settings import Settings, load
 from .store import Store, now_ms
 
@@ -43,12 +44,33 @@ class DutRequest(BaseModel):
 DUT_ACTIONS = ("test", "preview", "push", "remove", "status")
 
 
+class SchemeDevice(BaseModel):
+    profile: str
+    password: str | None = None    # kept in memory for the scheme only
+    enable: str | None = None
+
+
+class SchemeRequest(BaseModel):
+    """K2-K6: devices in order, steps, pause between runs, stop a device on failure."""
+    devices: list[SchemeDevice] = Field(min_length=1, max_length=20)
+    steps: list[str] = list(STEPS)
+    pause_s: float = Field(30, ge=0, le=600)
+    stop_on_failure: bool = True
+
+
+class SchemePlanRequest(BaseModel):
+    devices: list[str] = Field(min_length=1, max_length=20)
+    steps: list[str] = list(STEPS)
+    pause_s: float = Field(30, ge=0, le=600)
+
+
 def create_app(cfg: Settings | None = None) -> FastAPI:
     cfg = cfg or load()
     health = Health()
     hub = Hub(health)
     store = Store(cfg.db_path)
     engine = Engine(cfg, store, health, hub)
+    schemes = SchemeRunner(engine, store, hub, cfg)
     lockout = auth.Lockout()
     started = time.time()
 
@@ -56,9 +78,12 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI):
         for rid in store.fail_unfinished():   # §4.3: a restart during a run fails it
             store.event(rid, "run", "error", "controller restarted during the run")
+        store.fail_unfinished_schemes()
         mon = asyncio.create_task(health.loop_monitor())
         yield
         mon.cancel()
+        if schemes.active():
+            schemes.stop_flag.set()
         if engine.ctx and engine.task and not engine.task.done():
             await engine.stop(engine.ctx.id, "controller shutting down")
             with contextlib.suppress(Exception):
@@ -69,6 +94,7 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
     app = FastAPI(title="tgen-controller", version=__version__, lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url="/api/openapi.json")
     app.state.cfg, app.state.engine, app.state.store, app.state.health, app.state.hub = cfg, engine, store, health, hub
+    app.state.schemes = schemes
 
     @app.middleware("http")
     async def timing(request: Request, call_next):
@@ -114,7 +140,8 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
         c = engine.ctx
         return {"version": __version__, "uptime_s": round(time.time() - started), "health": health.snapshot(),
                 "violations": health.violations(), "run_max": health.run_max,
-                "run": {"id": c.id, "state": c.state} if c else None}
+                "run": {"id": c.id, "state": c.state} if c else None,
+                "scheme": {"id": schemes.doc["id"], "state": schemes.doc["state"]} if schemes.doc else None}
 
     @app.get("/api/cluster", dependencies=S)
     async def cluster():
@@ -136,8 +163,8 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
     def _dut_guard(action: str) -> None:
         if action not in DUT_ACTIONS:
             raise HTTPException(404, f"unknown action {action}")
-        if action in ("push", "remove") and engine.task and not engine.task.done():
-            raise HTTPException(409, "a run is active")
+        if action in ("push", "remove") and (engine.task and not engine.task.done() or schemes.active()):
+            raise HTTPException(409, "a run or test scheme is active")
 
     @app.post("/api/duts/{profile}/{action}", dependencies=S)
     async def dut_action(profile: str, action: str, body: DutAction):
@@ -149,6 +176,66 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
     async def dut_action_any(action: str, body: DutRequest):
         _dut_guard(action)
         return await asyncio.to_thread(_dut_action, body.dut, action, body.routers)
+
+    # ---------------------------------------------------------- test scheme (P3c-2, K1-K12)
+    @app.post("/api/schemes/plan", dependencies=S)
+    async def scheme_plan(body: SchemePlanRequest):
+        from tgen import inventory
+        inv = inventory.load()
+        bad = [n for n in body.devices if n not in inv]
+        if bad:
+            raise HTTPException(422, "unknown devices: " + ", ".join(bad))
+        return SchemeRunner.plan(inv, body.devices, body.steps, body.pause_s)
+
+    @app.post("/api/schemes", status_code=202, dependencies=S)
+    async def scheme_start(body: SchemeRequest):
+        try:
+            sid = await schemes.start([d.model_dump() | {"password": d.password, "enable": d.enable} for d in body.devices],
+                                      body.steps, body.pause_s, body.stop_on_failure)
+        except SchemeError as e:
+            raise HTTPException(409 if "running" in str(e) or "active" in str(e) else 422, str(e))
+        return {"id": sid}
+
+    @app.get("/api/schemes", dependencies=S)
+    async def scheme_list():
+        return [{k: d.get(k) for k in ("id", "state", "created_ms", "ended_ms", "devices", "steps", "error")}
+                for d in store.schemes(50)]
+
+    @app.get("/api/schemes/{sid}", dependencies=S)
+    async def scheme_get(sid: str):
+        d = schemes.doc if schemes.doc and schemes.doc["id"] == sid else store.scheme(sid)
+        if not d:
+            raise HTTPException(404, "no such scheme")
+        return d
+
+    @app.post("/api/schemes/{sid}/stop", dependencies=S)
+    async def scheme_stop(sid: str):
+        if not (schemes.doc and schemes.doc["id"] == sid and await schemes.stop()):
+            raise HTTPException(409, "scheme is not running")
+        return {"ok": True}
+
+    @app.get("/api/topology", dependencies=S)
+    async def topology():
+        return _topology()
+
+    def _topology() -> dict:
+        """K12: the lab as configured (cluster.env, controller.toml, duts.toml). No secrets."""
+        from tgen import inventory
+        from tgen_p2 import load_env
+        env = load_env(Path(cfg.raw.get("cluster_env") or REPO / "deploy" / "cluster.env"))
+        devs = [{"profile": n, "label": p["label"], "adapter": p["adapter"], "bgp_ip": p["peer_ip"],
+                 "ssh_ip": p["ssh_host"], "asn": p.get("asn", 64500), "interface": p.get("interface"),
+                 "link_mbps": p.get("link_mbps"), "role": p.get("role")} for n, p in inventory.load().items()]
+        return {"nodes": [{"name": n.name, "mgmt_ip": n.mgmt_ip, "test_ip": n.traffic_ip,
+                           "controller": n.name == cfg.controller_node, "agent_port": int(env.get("AGENT_PORT") or 7700)}
+                          for n in cfg.nodes],
+                "devices": devs,
+                "mgmt_net": f'{env.get("MGMT_PREFIX", "192.168.100")}.0/{env.get("MGMT_CIDR", 24)}',
+                "test_net": f'{env.get("TRAFFIC_PREFIX", "10.100.0")}.0/{env.get("TRAFFIC_CIDR", 24)}',
+                "gateway": cfg.raw.get("gateway") or env.get("MGMT_GW") or None,
+                "public": cfg.raw.get("public_url"), "board_switch": cfg.raw.get("board_switch", "DeskPi Super6C"),
+                "router_first_ip": f'{env.get("TRAFFIC_PREFIX", "10.100.0")}.20',
+                "lab_switch": cfg.raw.get("lab_switch")}
 
     @app.get("/api/i18n")
     async def i18n():
@@ -232,49 +319,11 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
             await hub.serve(ws)
 
     def _dut_action(d: Dut, action: str, routers: int) -> dict:
-        """Same as tools/tgen_dut.py, for the UI's DUT buttons (U14)."""
-        from tgen.dut import DutError
-        from tgen_dut import plan_meta
-        from .dutspec import make_dut, resolve
-
+        from .dutspec import action as dut_action
         try:
-            info = resolve(d)
+            return dut_action(d, action, routers, str(cfg.raw.get("cluster_env") or REPO / "deploy" / "cluster.env"))
         except ValueError as e:
             raise HTTPException(422, str(e))
-        if not info["adapter"]:
-            raise HTTPException(422, "no platform: choose one (U8)")
-        ip, asn, role = info["ip"], info["asn"], info["role"]
-        dut = make_dut(info, d)
-
-        class A:  # what plan_meta() reads from the CLI arguments
-            seed, dut_ip, dut_asn = 1, ip, asn
-            config = str(cfg.raw.get("cluster_env") or REPO / "deploy" / "cluster.env")
-        A.routers, A.role = routers, role
-        out: dict = {"action": action, "platform": dut.platform, "ip": ip, "role": role}
-        try:
-            if action == "preview":
-                out["config"] = dut.render(plan_meta(A), ip, asn, role)
-            elif action == "test":
-                out["resources"] = dut.resources()
-                out["tgen_neighbours"] = dut.count()
-                with contextlib.suppress(DutError, NotImplementedError):
-                    out["port"] = dut.interface_info(ip, info["interface"])
-            elif action == "push":
-                out["neighbours"] = dut.push(dut.render(plan_meta(A), ip, asn, role), routers)
-            elif action == "remove":
-                dut.remove()
-                out["tgen_neighbours"] = dut.count()
-            elif action == "status":
-                out["sessions"], out["established"] = dut.sessions()
-            out["ok"] = True
-        except (DutError, OSError, NotImplementedError) as e:
-            out.update(ok=False, error=str(e)[:1000])
-        finally:
-            close = getattr(dut, "close", None)
-            if close:
-                close()
-        out["notes"] = dut.notes
-        return out
 
     _i18n_cache: dict = {}
 

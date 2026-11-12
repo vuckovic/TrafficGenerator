@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS phases (run_id TEXT, idx INTEGER, type TEXT, params T
   PRIMARY KEY (run_id, idx));
 CREATE TABLE IF NOT EXISTS events (run_id TEXT, t_ms INTEGER, kind TEXT, severity TEXT, text TEXT);
 CREATE TABLE IF NOT EXISTS ticks (run_id TEXT, t_ms INTEGER, data TEXT);
+CREATE TABLE IF NOT EXISTS schemes (id TEXT PRIMARY KEY, state TEXT, created_ms INTEGER, data TEXT);
 CREATE INDEX IF NOT EXISTS events_run ON events (run_id, t_ms);
 CREATE INDEX IF NOT EXISTS ticks_run ON ticks (run_id, t_ms);
 """
@@ -63,6 +64,26 @@ class Store:
         for rid in ids:
             self.update_run(rid, state="failed", error="controller restarted during the run", ended_ms=now_ms())
         return ids
+
+    # test schemes (P3c-2): one JSON document each
+    def save_scheme(self, sid: str, state: str, created_ms: int, data: dict) -> None:
+        self._x("INSERT OR REPLACE INTO schemes (id, state, created_ms, data) VALUES (?,?,?,?)",
+                (sid, state, created_ms, json.dumps(data)))
+
+    def scheme(self, sid: str) -> dict | None:
+        r = self._x("SELECT data FROM schemes WHERE id=?", (sid,)).fetchone()
+        return json.loads(r["data"]) if r else None
+
+    def schemes(self, limit: int = 20) -> list[dict]:
+        return [json.loads(r["data"]) for r in
+                self._x("SELECT data FROM schemes ORDER BY created_ms DESC LIMIT ?", (limit,))]
+
+    def fail_unfinished_schemes(self) -> list[str]:
+        out = []
+        for r in self._x("SELECT id, created_ms, data FROM schemes WHERE state='running'").fetchall():
+            d = json.loads(r["data"]); d["state"] = "failed"; d["error"] = "controller restarted during the scheme"
+            self.save_scheme(r["id"], "failed", r["created_ms"], d); out.append(r["id"])
+        return out
 
     # phases, events, ticks
     def phase(self, rid: str, idx: int, typ: str, params: dict, at_ms: int) -> None:

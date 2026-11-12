@@ -1,7 +1,8 @@
-// TrafficGenerator web interface, P3c-1: shell, login, Benchmark tab, live view (docs/09).
+// TrafficGenerator web interface: shell, login, Benchmark tab, live view (P3c-1); Test scheme tab in scheme.js (P3c-2). docs/09.
 import { loadTexts, t, num, apply, setLang, lang, languages, onChange } from "./i18n.js";
 import { api, get, post, onUnauthorized, ApiError } from "./api.js";
 import { LatencyChart } from "./chart.js";
+import { initScheme, loadScheme, onSchemeMessage, renderScheme, schemeActive, schemeDoc, stopScheme } from "./scheme.js";
 
 const $ = (id) => document.getElementById(id);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -73,6 +74,7 @@ async function startApp() {
   $("hostLine").textContent = location.host;
   await refreshCluster();
   if (health.run) await loadRun(health.run.id); else { const runs = await get("/api/runs?limit=1"); if (runs[0]) await loadRun(runs[0].id); }
+  await loadScheme(duts, health);
   connectWs();
   route();
   renderAll();
@@ -115,6 +117,13 @@ function renderStrip() {
   let text = null, spin = false, segs = [], time = "", links = [], closable = false;
   if (st.starting) { text = t("ui.strip.starting"); spin = true; }
   else if (st.startError) { text = t("ui.strip.start_failed", { error: st.startError }); box.classList.add("err"); closable = true; }
+  else if (schemeDoc() && !schemeActive() && S.stripScheme === schemeDoc().id && !S.stripClosed) {
+    const d = schemeDoc();
+    if (d.state === "done") { text = t("ui.strip.scheme_done"); box.classList.add("done"); }
+    else if (d.state === "stopped") { text = t("ui.strip.scheme_stopped"); box.classList.add("stopped"); }
+    else { text = t("ui.strip.scheme_failed", { error: d.error || "" }); box.classList.add("err"); }
+    closable = true; links = [[t("ui.strip.scheme_link"), "#scheme"]];
+  }
   else if (r && !S.stripClosed && (RUN_ACTIVE.includes(r.state) || S.stripRun === r.id)) {
     const n = (S.runPhases || []).length, cur = S.lastTick && S.lastTick.phase ? S.lastTick.phase.idx : -1;
     const since = r.started_ms || r.created_ms;
@@ -133,8 +142,15 @@ function renderStrip() {
     if (RUN_ACTIVE.includes(r.state)) S.stripRun = r.id;
     if (location.hash && location.hash !== "#benchmark" && RUN_ACTIVE.includes(r.state)) links.push([t("ui.strip.live"), "#benchmark"]);
   }
+  if (schemeActive()) {
+    const d = schemeDoc(), c = d.current;
+    S.stripScheme = d.id; S.stripClosed = false;
+    const head = t("ui.strip.scheme", { id: d.id, dev: c ? d.results[c.device].label : "…", step: c ? t(`scheme.progress.col.${c.col}`) : "…" });
+    text = text ? head + " — " + text : head; spin = true;
+    if (location.hash !== "#scheme") links.push([t("ui.strip.scheme_link"), "#scheme"]);
+  }
   box.hidden = text === null;
-  document.title = (st.starting || (r && RUN_ACTIVE.includes(r.state)) ? "● " : "") + "TrafficGenerator";
+  document.title = (st.starting || schemeActive() || (r && RUN_ACTIVE.includes(r.state)) ? "● " : "") + "TrafficGenerator";
   if (text === null) return;
   $("stripText").textContent = text; $("stripTime").textContent = time;
   $("stripSpin").hidden = !spin; $("stripClose").hidden = !closable;
@@ -181,8 +197,8 @@ function renderBadge() {
   }
   txt.textContent = s;
   renderStrip();
-  $("startBtn").disabled = runActive() || !!(S.strip && S.strip.starting);
-  $("stopBtn").disabled = !runActive();
+  $("startBtn").disabled = runActive() || schemeActive() || !!(S.strip && S.strip.starting);
+  $("stopBtn").disabled = !runActive() && !schemeActive();
   $$("[data-view=benchmark] section:first-child :is(input,select,button)").forEach((x) => {
     if (x.closest("#previewBox") || x.dataset.dut === "preview" || x.dataset.dut === "status" || x.dataset.dut === "test") return;
     x.disabled = runActive() || x.dataset.forceDisabled === "1";
@@ -458,7 +474,7 @@ async function start() {
     await loadRun(r.id);
     renderAll();
   } catch (e) {
-    const msg = e.status === 409 ? t("ui.start.busy") : e.message;
+    const msg = e.status === 409 ? (e.message.includes("scheme") ? t("ui.start.scheme_busy") : t("ui.start.busy")) : e.message;
     S.strip = { startError: msg };
     addEvent({ t_ms: Date.now(), kind: "run", severity: "error", text: t("ui.strip.start_failed", { error: msg }) });
   } finally {
@@ -466,7 +482,7 @@ async function start() {
     renderBadge();
   }
 }
-async function stop() { if (S.run) { try { await post(`/api/runs/${S.run.id}/stop`); } catch (e) { addEvent({ t_ms: Date.now(), severity: "error", text: e.message }); } } }
+async function stop() { if (schemeActive()) { await stopScheme(); return; } if (S.run) { try { await post(`/api/runs/${S.run.id}/stop`); } catch (e) { addEvent({ t_ms: Date.now(), severity: "error", text: e.message }); } } }
 
 async function loadRun(id) {
   const r = await get(`/api/runs/${id}`);
@@ -512,6 +528,8 @@ async function onMessage(m) {
     if (m.state === "running") { S.run.started_ms = S.run.started_ms || m.t_ms; await loadRouters(); renderRouters(); }
     if (!RUN_ACTIVE.includes(m.state)) { const r = await get(`/api/runs/${m.run}`); Object.assign(S.run, r); S.phaseAt = Object.fromEntries((r.phases || []).map((p) => [p.idx, p])); }
     renderAll();
+  } else if (m.type === "scheme") {
+    onSchemeMessage(m); renderBadge();
   } else if (m.type === "event") {
     addEvent(m);
     if (m.kind === "phase" && S.run) { try { const r = await get(`/api/runs/${S.run.id}`); S.phaseAt = Object.fromEntries((r.phases || []).map((p) => [p.idx, p])); } catch (e) { /* ignore */ } }
@@ -628,10 +646,11 @@ async function idleHealth() {
 }
 
 // ------------------------------------------------------------------ wiring
-function renderAll() { renderDut(); renderScenario(); renderRouters(); renderLive(); renderBadge(); renderNodes(); }
+function renderAll() { renderDut(); renderScenario(); renderRouters(); renderLive(); renderBadge(); renderNodes(); renderScheme(); }
 
 function wire() {
-  window.addEventListener("hashchange", route);
+  window.addEventListener("hashchange", () => { route(); renderStrip(); });
+  initScheme({ runActive: () => runActive(), changed: () => renderBadge() });
   $("device").addEventListener("change", (e) => pickDevice(e.target.value));
   $("auth").addEventListener("change", renderDut);
   $("mrai").addEventListener("change", (e) => { S.mraiMode = e.target.value; renderDut(); });
