@@ -2,7 +2,7 @@
 
 The browser interface at `https://bgp.elfak.net:8443`. It follows the frozen controls (doc 04 v1.2) and the locked design (`docs/design/`, v1.2), and talks only to the controller API (doc 08).
 
-Status: confirmed 2026‑11‑03. **P3c‑1 built** (2026‑11‑03): login, header, Benchmark tab, live view. **P3c‑2 built** (2026‑11‑12): Test scheme tab with the scheme runner and the network topology (§10). Browser test `tests/controller/ui_e2e.py` passes. P3c‑3 to follow.
+Status: confirmed 2026‑11‑03. **P3c‑1 built** (2026‑11‑03): login, header, Benchmark tab, live view. **P3c‑2 built** (2026‑11‑12): Test scheme tab with the scheme runner and the network topology (§10). **P3c‑3 built** (2026‑11‑12): History, Reports, Nodes & settings (§11). Browser test `tests/controller/ui_e2e.py` passes.
 
 ## 1. How it is built and served
 
@@ -119,3 +119,24 @@ K12 approved by the user on 2026‑11‑12 ("this is it"); doc 04 is now v1.3.
   - `tests/controller/test_units.py`: comparison and knee tables, scheme store, restart.
   - Results 2026‑11‑12: test_e2e all pass, ui_e2e 66 checks pass, units 13 pass. Screenshots: `docs/web-ui/scheme-*.png`.
 - **Jira / Confluence:** DOC‑49 (done), DOC‑50 (execute the cluster test plan); Confluence page *TrafficGenerator — Test plan: Web interface P3c‑2 (Test scheme tab)*, 34 tests.
+
+## 11. P3c‑3 as built (2026‑11‑12)
+
+Controls H1–H3, H5 (History), X1, X5, X6 (Reports) and S1, S3, S6 (Nodes & settings), as planned in §2. Figures F1–F12, report comparison (X4) and PDF stay in P4; capture (H4), sink node (S2), IP pool (S4), workers (S5) and the control‑plane reservation form (S7) stay with their phases.
+
+- **History** (`ui/web/js/history.js`): every run (up to 500), newest first: time and run id, name, run type (single run or *Test scheme s‑…*, linked), device, routers × prefixes, duration, key metric (initial convergence and p99), verdict chip (PASS, FAIL, running, stopped, failed). Every column sorts; search by name, run id or device; filters for run type and verdict. Actions: **Open report**, **Re‑run** (loads device, DUT settings, routers and phases into the Benchmark tab; nothing starts until Start), **Delete run** (asks first; refused while the run is active).
+- **Reports** (`ui/web/js/report.js`), `#reports/<run id>`:
+  - header: run id, date, duration, state, scheme it belongs to; title *device · name · routers × prefixes*; DUT role, nodes, controller and agent versions; a picker for other runs;
+  - **Verdict** table from the analysis gate (PASS / FAIL / INFO with the measured result);
+  - **Key figures** (sessions and setup time, initial convergence, after the last send, withdraw convergence, DUT output and prefixes per UPDATE, link use, missing / extra routes, resets, controller health), **latency** percentiles for announce and withdraw, **generator nodes** (routers, CPU p95, memory);
+  - **latency and offered load over the run** from the samples stored during the run (uPlot, elapsed time, All / 5 min / 1 min, cursor and window sliders);
+  - phases with start, duration and parameters; device under test; events; links to every run file;
+  - **Notes** (X5), saved with the run and included in the CSV export; **Regenerate** (X6) runs the analysis again on the run folder; **Export CSV** (`/api/runs/{id}/report.csv`, metric,value), **Export JSON**, **summary.txt**.
+  - The finished‑run strip now links to the report.
+- **Nodes & settings** (`ui/web/js/settings.js`):
+  - **Node status** (S1): reachable, agent version and state, link speed / duplex of the traffic interface, EEE (from `ethtool`, — when not available; ⚠ when on), CPU %, cores, RAM free / total, SoC temperature, clock offset; **Restart agent** per node (asks first; refused during a run or scheme). Needs **agent 0.4.2** (`host` block in `/v1/status`, `POST /v1/restart`, doc 07).
+  - **Safety limits** (S3): max routers (180), max prefixes in total (2 000 000), max duration (from `controller.toml`, 3600 s), max data rate (1000 Mb/s, applies from P6), DUT subnet allow‑list. Saved in the controller's database; checked before every run and scheme step (`422` with the reason).
+  - **Change password** (S6): current password, new one twice (at least 10 characters). The new hash is kept in the database (the controller cannot write `/etc`); `sudo -u tgen tgen-controller set-password` on CMNODE01 sets a new one in `controller.toml` and clears the one from the page.
+- **All texts** in English and Serbian Cyrillic (`history.*`, `report.*`, `settings.*`).
+- **Tests:** `test_e2e.py` (limits, notes, CSV, regenerate, password change and login, node facts, agent restart exits with 75), `ui_e2e.py` (history list, filter, search, sort, report page with every section, notes kept after reload, regenerate, CSV, re‑run, delete, node status, limits applied, password change, Serbian, phone width for every tab). All pass. Screenshots: `docs/web-ui/history-en.png`, `report-en.png`, `report-sr.png`, `settings-en.png`.
+- **Update on CMNODE01:** rebuild the agent (`cmake --build agent/build -j4`, 0.4.2) before running the playbook; install `ethtool` on the nodes for the EEE column.

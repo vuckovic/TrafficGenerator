@@ -67,7 +67,7 @@ export function renderReport() {
   const state = { done: t("state.done"), failed: t("history.state.failed"), stopped: t("history.state.stopped") }[r.state] || t("history.state.running");
   $("repMeta").textContent = t("report.meta", { id: r.id, date: new Date(r.created_ms).toLocaleString(lang()), dur: fmtDur(f.dur), state })
     + (f.scheme ? " · " + t("report.scheme", { id: f.scheme }) : "");
-  $("repTitle").textContent = t("report.title", { dut: (rep && rep.dut && rep.dut.label !== "external" ? rep.dut.label : null) || f.dutLabel,
+  $("repTitle").textContent = t("report.title", { dut: (rep && rep.dut && rep.dut.profile ? rep.dut.label : null) || f.dutLabel,
     name: f.scheme ? r.name.slice(f.scheme.length + 1) : r.name, routers: num(f.routers), prefixes: num(f.prefixes) });
   const role = (rep && rep.dut && rep.dut.role) || (sc.dut || {}).role;
   $("repSub").textContent = t("report.sub", { role: role ? t("dut.role." + role) : "—", nodes: rep ? (rep.generator.nodes || []).length : "—",
