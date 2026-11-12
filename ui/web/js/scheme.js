@@ -284,7 +284,9 @@ function renderKnee() {
   box.innerHTML = "";
   ["kneeSvg", "kneePng"].forEach((id) => { $(id).disabled = !ser.length; });
   if (!ser.length) { box.append(el("p", { class: "small", style: "margin:0", text: t("scheme.empty_chart") })); $("kneeCurBox").hidden = true; $("kneeRead").hidden = true; $("kneeLegend").innerHTML = ""; return; }
-  const all = ser.flatMap((s) => s.points.flatMap((p) => [p[0], p[1]]).filter((v) => v > 0));
+  const all = X.view === 2 ? ser.map((x) => x.sustainable_deliveries_s).filter((v) => v > 0)
+    : ser.flatMap((s) => s.points.flatMap((p) => (X.view === 0 ? [p[0], p[1]] : [p[0]])).filter((v) => v > 0));
+  if (!all.length) all.push(10, 1000);
   const lo = Math.floor(Math.log10(Math.min(...all))), hi = Math.max(lo + 1, Math.log10(Math.max(...all) * 1.3));
   const fx = (v) => VB.xl + (Math.log10(v) - lo) / (hi - lo) * (VB.xr - VB.xl);
   const fyl = (v) => VB.yb - (Math.log10(Math.max(v, Math.pow(10, lo))) - lo) / (hi - lo) * (VB.yb - VB.yt);
@@ -329,12 +331,12 @@ function renderKnee() {
   } else {
     const bars = ser.filter((x) => x.sustainable_deliveries_s);
     ticks.forEach((v) => { const x = fx(v); s += `<line x1="${x}" y1="${VB.yt}" x2="${x}" y2="${VB.yb}" stroke="#ECEEEA"/>` + txt(x, 302, tl(v)); });
-    const bh = Math.min(22, (VB.yb - VB.yt - 10) / Math.max(1, bars.length) - 8);
+    const bh = Math.min(22, (VB.yb - VB.yt - 10) / Math.max(1, bars.length) - 24);
     bars.forEach((x, i) => {
-      const y = VB.yt + 8 + i * (bh + 10), w = fx(x.sustainable_deliveries_s) - VB.xl;
+      const y = VB.yt + 22 + i * (bh + 26), w = fx(x.sustainable_deliveries_s) - VB.xl;
+      s += `<text x="${VB.xl + 2}" y="${y - 5}" fill="${INK}" font-family="IBM Plex Sans, sans-serif" font-size="12">${esc(x.name)}</text>`;
       s += `<rect x="${VB.xl}" y="${y}" width="${Math.max(2, w).toFixed(1)}" height="${bh}" rx="3" fill="${x.color}" fill-opacity="${x.running ? 0.35 : 1}"/>`;
       s += txt(VB.xl + w + 8, y + bh / 2 + 4, (x.knee_rate === null || x.knee_rate === undefined ? "≥ " : "") + num(x.sustainable_deliveries_s), "start", `fill="${INK}"`);
-      s += `<text x="${VB.xl + 6}" y="${y + bh / 2 + 4}" fill="#FFFFFF" font-family="IBM Plex Sans, sans-serif" font-size="11">${esc(x.name)}</text>`;
     });
     s += `<line x1="${VB.xl}" y1="${VB.yb}" x2="${VB.xr}" y2="${VB.yb}" stroke="${LINE}"/>`;
     s += txt((VB.xl + VB.xr) / 2, 324, t("scheme.knee.ax3x"), "middle", 'font-family="IBM Plex Sans, sans-serif" font-size="12"');
