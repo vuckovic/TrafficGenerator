@@ -24,7 +24,7 @@ export function renderFigures(host, f, phaseName) {
   // F1 session establishment
   const f1 = lineFig({ fid: "F1", name: "F1-sessions", title: t("fig.f1"), caption: t("fig.f1.cap"), zoom: true, phases,
     series: [{ name: t("fig.f1.established"), color: C.teal, pts: f.f1.curve, step: true }],
-    xfmt: mmss, cursorFmt: (x) => "t = " + secs(x), yfmt: (v) => num(v), xlabel: t("fig.time"), ylabel: t("fig.f1.sessions"), ymax: f.f1.configured * 1.05,
+    xfmt: mmss, cursorFmt: (x) => "t = " + secs(x), yfmt: (v) => num(v), yint: true, xlabel: t("fig.time"), ylabel: t("fig.f1.sessions"), ymax: f.f1.configured * 1.05,
     hmarks: [{ y: f.f1.configured, label: t("fig.f1.configured", { n: f.f1.configured }), color: C.grey }] });
   if (f.f1.setup_ms.length) {
     const box = el("div", { class: "fig-svg" });
@@ -75,7 +75,7 @@ export function renderFigures(host, f, phaseName) {
   // F6 backlog
   add(lineFig({ fid: "F6", name: "F6-backlog", title: t("fig.f6"), caption: t("fig.f6.cap"), zoom: true, phases, y2: true,
     series: [{ name: t("fig.f6.backlog"), color: C.orange, pts: f.f6.rows.map((r) => [r[0], r[1]]) }, { name: t("fig.f6.held"), color: C.teal, axis: "r", pts: f.f6.rows.map((r) => [r[0], r[2]]) }],
-    xfmt: mmss, yfmt: short, y2fmt: short, xlabel: t("fig.time"), ylabel: t("fig.f6.y"), y2label: t("fig.f6.held") }));
+    xfmt: mmss, yfmt: short, y2fmt: short, yint: true, y2int: true, xlabel: t("fig.time"), ylabel: t("fig.f6.y"), y2label: t("fig.f6.held") }));
 
   // F7 heatmap
   if (f.f7.rows.length) add(heatFig({ fid: "F7", name: "F7-heatmap", title: t("fig.f7"), caption: t("fig.f7.cap", { n: f.f7.rows.length }), rows: f.f7.rows, cols: f.f7.cols_s,
@@ -108,7 +108,7 @@ export function renderFigures(host, f, phaseName) {
     add(lineFig({ fid: "F10", name: "F10-dut-resources", title: t("fig.f10"), caption: t("fig.f10.cap"), zoom: true, phases, y2: true,
       series: [{ name: t("fig.f10.mem"), color: C.teal, pts: r10.map((r) => [r[0], r[1]]) }, { name: "CPU", color: C.orange, pts: r10.map((r) => [r[0], r[2]]) },
         { name: t("fig.f10.sessions"), color: C.grey, dash: "4 3", axis: "r", step: true, pts: r10.map((r) => [r[0], r[3]]) }],
-      xfmt: mmss, yfmt: (v) => num(v) + " %", y2fmt: (v) => num(v), ymin: 0, ymax: 100, xlabel: t("fig.time"), ylabel: "%", y2label: t("fig.f10.sessions") }));
+      xfmt: mmss, yfmt: (v) => num(v) + " %", y2fmt: (v) => num(v), y2int: true, ymin: 0, ymax: 100, xlabel: t("fig.time"), ylabel: "%", y2label: t("fig.f10.sessions") }));
   } else add(note("F10", t("fig.f10"), t("fig.f10.none")));
 
   add(note("F11", t("fig.f11"), t("fig.f11.none")));

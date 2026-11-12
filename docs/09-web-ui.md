@@ -2,7 +2,7 @@
 
 The browser interface at `https://bgp.elfak.net:8443`. It follows the frozen controls (doc 04 v1.2) and the locked design (`docs/design/`, v1.2), and talks only to the controller API (doc 08).
 
-Status: confirmed 2026‑11‑03. **P3c‑1 built** (2026‑11‑03): login, header, Benchmark tab, live view. **P3c‑2 built** (2026‑11‑12): Test scheme tab with the scheme runner and the network topology (§10). **P3c‑3 built** (2026‑11‑12): History, Reports, Nodes & settings (§11). Browser test `tests/controller/ui_e2e.py` passes.
+Status: confirmed 2026‑11‑03. **P3c‑1 built** (2026‑11‑03): login, header, Benchmark tab, live view. **P3c‑2 built** (2026‑11‑12): Test scheme tab with the scheme runner and the network topology (§10). **P3c‑3 built** (2026‑11‑12): History, Reports, Nodes & settings (§11). **P4 reports built** (2026‑11‑12): figures F1–F12, comparison, PDF and HTML export (§12). Browser test `tests/controller/ui_e2e.py` passes.
 
 ## 1. How it is built and served
 
@@ -140,3 +140,32 @@ Controls H1–H3, H5 (History), X1, X5, X6 (Reports) and S1, S3, S6 (Nodes & set
 - **All texts** in English and Serbian Cyrillic (`history.*`, `report.*`, `settings.*`).
 - **Tests:** `test_e2e.py` (limits, notes, CSV, regenerate, password change and login, node facts, agent restart exits with 75), `ui_e2e.py` (history list, filter, search, sort, report page with every section, notes kept after reload, regenerate, CSV, re‑run, delete, node status, limits applied, password change, Serbian, phone width for every tab). All pass. Screenshots: `docs/web-ui/history-en.png`, `report-en.png`, `report-sr.png`, `settings-en.png`.
 - **Update on CMNODE01:** rebuild the agent (`cmake --build agent/build -j4`, 0.4.2) before running the playbook; install `ethtool` on the nodes for the EEE column.
+
+## 12. P4 reports as built (2026‑11‑12)
+
+Spec §12 figures, controls X1–X4 (doc 04), the locked report design (F2, F3, F5, F7, F9 artboards).
+
+- **Figure data** (`tools/tgen/figures.py`): at the end of every run the analysis also writes `figures.json` (about 15–20 kB) from the agents' results (per‑router times, the sampled prefixes), the per‑second live samples (`live.jsonl`), the DUT polls (`dut-sessions.jsonl`), the phases and the events. Served by `GET /api/runs/{id}/figures`; runs analysed before P4 get it with **Regenerate**.
+- **Agent 0.4.2** also records every session up and down with its time (`session_events`), for F7 and F9.
+- **Figures** (`ui/web/js/figs.js`, `repfigs.js`), drawn as SVG so they print, export and compare cleanly:
+
+| Figure | Shows | Source |
+|---|---|---|
+| F1 Session establishment | established sessions over time; slowest routers' setup time | router times |
+| F2 Initial convergence | % of expected routes, all receivers and the slowest, time to 100 % marked | sampled prefixes |
+| F3 Latency CDF | announce and withdraw, log axis, p50/p99 | sampled prefixes |
+| F4 Latency vs offered load | p50/p99 per second, offered rate on the right axis, lin/log | live samples |
+| F5 Throughput knee | delivered vs offered, binned by offered rate, p99 (stepped‑load runs; otherwise a note pointing to the scheme's knee chart) | live samples |
+| F6 Backlog | route copies sent but not yet received, routes held | live samples |
+| F7 Heatmap | routers × time, % of expected routes, session‑down cells | sampled prefixes, session events |
+| F8 Correctness | per receiver: expected, received, missing, extra, looped | router results |
+| F9 Event timeline | phases, our sessions up/down, the DUT's established count, controller events (DUT log lines: P5) | session events, DUT polls, events |
+| F10 DUT resources | free memory, CPU, established sessions (when the controller configured the DUT) | DUT polls |
+| F11 Data‑plane convergence | placeholder: P6 | — |
+| F12 Generator health | CPU per node with the 70 % limit, send lag p99 | live samples |
+
+- **Interaction (X2):** value cursor by mouse and slider with a readout line on every figure; time figures have 1×/2×/4× zoom, a window slider and *zoom to a phase*; series shown or hidden from the legend; lin/log on F4.
+- **Export (X3):** each figure as SVG, PNG and CSV; **Export PDF** prints a print layout (browser print → *Save as PDF*: no controls, two figures per row, cards not split); **Export HTML** downloads the report as one file with the figures inline; CSV / JSON as before.
+- **Comparison (X4):** *Compare…* picks 2–5 finished runs → `#reports/compare:<id>,<id>…`: side‑by‑side metrics (device, role, size, sessions, convergence, withdraw, latencies, output, missing/extra, resets, lowest free memory, verdict; CSV) and overlaid F2, F3, F5, F10.
+- **Texts** in English and Serbian Cyrillic (`fig.*`, `cmp.*`).
+- **Tests:** `test_e2e.py` (figures.json for every run, F2 reaches 100 %, session events), `ui_e2e.py` (F1–F12 on the page, cursor, zoom, legend, heatmap, timeline, SVG export, HTML export, print layout screenshot, comparison of 3+ runs). All pass. Screenshots: `docs/web-ui/report-figures-en.png`, `compare-en.png`.

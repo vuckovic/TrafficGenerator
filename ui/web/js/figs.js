@@ -23,10 +23,11 @@ export const mmss = (s) => { if (s === null || s === undefined) return "—"; co
 export const secs = (s) => (s === null || s === undefined ? "—" : s < 10 ? num(s, 2) + " s" : s < 120 ? num(s, 1) + " s" : mmss(s));
 
 const W = 760, H = 300;
-function niceTicks(a, b, n = 5) {
+function niceTicks(a, b, n = 5, int = false) {
   const span = b - a; if (!(span > 0)) return [a];
   const step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0)));
-  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => span / s <= n) || 10 * mag;
+  let step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => span / s <= n) || 10 * mag;
+  if (int) step = Math.max(1, Math.round(step));
   const out = []; for (let v = Math.ceil(a / step) * step; v <= b + 1e-9; v += step) out.push(+v.toFixed(10));
   return out;
 }
@@ -128,7 +129,8 @@ export function lineFig(o) {
     const y2v = vis.filter(({ s }) => s.axis === "r").flatMap(({ s }) => inWin(s).map((p) => p[1]));
     let ya = o.ymin ?? 0, yb = o.ymax ?? (Math.max(...yv, 0) * 1.1 || 1);
     if (st.ylog) { const pos = yv.filter((v) => v > 0); ya = pos.length ? Math.pow(10, Math.floor(Math.log10(Math.min(...pos)))) : 0.1; yb = pos.length ? Math.pow(10, Math.ceil(Math.log10(Math.max(...pos) * 1.01))) : 10; if (yb <= ya) yb = ya * 10; }
-    const y2a = 0, y2b = Math.max(...y2v, 0) * 1.15 || 1;
+    if (o.yint && !st.ylog) yb = Math.max(yb, 4);
+    const y2a = 0, y2b = Math.max(Math.max(...y2v, 0) * 1.15 || 1, o.y2int ? 4 : 0);
     const fy = (v) => st.ylog ? B - (Math.log10(Math.max(v, ya)) - Math.log10(ya)) / (Math.log10(yb) - Math.log10(ya)) * (B - T) : B - (v - ya) / (yb - ya || 1) * (B - T);
     const fy2 = (v) => B - (v - y2a) / (y2b - y2a || 1) * (B - T);
     let s = `<svg xmlns="${NS}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.title)}" font-family="IBM Plex Mono, monospace" font-size="11"><rect width="${W}" height="${H}" fill="#FFFFFF"/>`;
@@ -139,10 +141,11 @@ export function lineFig(o) {
       if (fx(x1, a, b) - fx(x0, a, b) > 40) s += `<text x="${(fx(x0, a, b) + 4).toFixed(1)}" y="${T + 11}" fill="${C.grey}" font-family="IBM Plex Sans, sans-serif">${esc(p[0])}</text>`;
     });
     const xt = o.xlog ? logTicks(a, b) : niceTicks(a, b, 6);
-    xt.forEach((v) => { const x = fx(v, a, b); s += `<line x1="${x.toFixed(1)}" y1="${T}" x2="${x.toFixed(1)}" y2="${B}" stroke="#ECEEEA"/><text x="${x.toFixed(1)}" y="${B + 16}" text-anchor="middle" fill="${C.muted}">${esc((o.xfmt || short)(v))}</text>`; });
-    const yt = st.ylog ? logTicks(ya, yb) : niceTicks(ya, yb, 5);
+    const xf = o.xfmt === mmss && b - a < 120 ? secs : (o.xfmt || short);
+    xt.forEach((v) => { const x = fx(v, a, b); s += `<line x1="${x.toFixed(1)}" y1="${T}" x2="${x.toFixed(1)}" y2="${B}" stroke="#ECEEEA"/><text x="${x.toFixed(1)}" y="${B + 16}" text-anchor="middle" fill="${C.muted}">${esc(xf(v))}</text>`; });
+    const yt = st.ylog ? logTicks(ya, yb) : niceTicks(ya, yb, 5, o.yint);
     yt.forEach((v) => { const y = fy(v); s += `<line x1="${L}" y1="${y.toFixed(1)}" x2="${R}" y2="${y.toFixed(1)}" stroke="#ECEEEA"/><text x="${L - 6}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${C.muted}">${esc((o.yfmt || short)(v))}</text>`; });
-    if (o.y2 && y2v.length) niceTicks(y2a, y2b, 5).forEach((v) => { s += `<text x="${R + 6}" y="${(fy2(v) + 4).toFixed(1)}" fill="${C.muted}">${esc((o.y2fmt || short)(v))}</text>`; });
+    if (o.y2 && y2v.length) niceTicks(y2a, y2b, 5, o.y2int).forEach((v) => { s += `<text x="${R + 6}" y="${(fy2(v) + 4).toFixed(1)}" fill="${C.muted}">${esc((o.y2fmt || short)(v))}</text>`; });
     s += `<line x1="${L}" y1="${B}" x2="${R}" y2="${B}" stroke="${C.grey}"/><line x1="${L}" y1="${T}" x2="${L}" y2="${B}" stroke="${C.grey}"/>`;
     (o.hmarks || []).forEach((m) => { if (m.y < ya || m.y > yb) return; const y = fy(m.y); s += `<line x1="${L}" y1="${y.toFixed(1)}" x2="${R}" y2="${y.toFixed(1)}" stroke="${m.color || C.grey}" stroke-dasharray="3 4"/><text x="${L + 4}" y="${(y - 4).toFixed(1)}" fill="${m.color || C.grey}">${esc(m.label)}</text>`; });
     (o.diag ? [1] : []).forEach(() => { const lo = Math.max(a, ya), hi = Math.min(b, yb); if (hi > lo) s += `<line x1="${fx(lo, a, b).toFixed(1)}" y1="${fy(lo).toFixed(1)}" x2="${fx(hi, a, b).toFixed(1)}" y2="${fy(hi).toFixed(1)}" stroke="${C.grey}" stroke-dasharray="2 4"/>`; });

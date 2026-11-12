@@ -92,8 +92,8 @@ def build(meta: dict, results: list[dict], ticks: list[dict], dut_polls: list[di
     def cdf(v: list[float]) -> dict:
         if not v:
             return {"pts": [], "p50": None, "p99": None, "n": 0}
-        qs = [i / 200 for i in range(201)]
-        return {"pts": [[_r(max(_pctl(v, q), 0.001), 3), _r(q, 4)] for q in qs], "p50": _r(_pctl(v, 0.5), 3),
+        qs = [i / 200 for i in range(1, 201)]     # from 0.5 %: the fastest few would stretch the log axis
+        return {"pts": [[_r(max(_pctl(v, q), 0.01), 3), _r(q, 4)] for q in qs], "p50": _r(_pctl(v, 0.5), 3),
                 "p99": _r(_pctl(v, 0.99), 3), "n": len(v)}
     out["f3"] = {"announce": cdf(lat("tx", "rx")), "withdraw": cdf(lat("wd_tx", "wd_rx"))}
 
