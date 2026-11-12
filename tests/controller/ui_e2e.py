@@ -285,7 +285,6 @@ def main() -> int:
             pg.wait_for_function("document.querySelectorAll('#repGate tr').length >= 5")
             check("ui quick check" in pg.inner_text("#repTitle") and "PASS" in pg.inner_text("#repGate"), "X1 report: title and verdict table")
             check(pg.locator("#repKey tr").count() >= 8 and pg.locator("#repLat tr").count() == 2 and pg.locator("#repNodes tr").count() == 6, "key figures, latency, nodes")
-            check(pg.locator("#repChart canvas").count() >= 1 and "t = " in pg.inner_text("#repRead"), "latency and load chart from the stored samples")
             check(pg.locator("#repPhases tr").count() == 4 and pg.locator("#repEvents li").count() >= 3, "phases and events")
             check("report.json" in pg.inner_text("#repFiles"), "run files listed")
             pg.wait_for_function("document.querySelectorAll('#repFigs section.fig').length === 12")

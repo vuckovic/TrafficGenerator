@@ -91,7 +91,7 @@ export function renderFigures(host, f, phaseName) {
   tb.append(el("tr", {}, el("td", { class: "td", style: "font-weight:600", text: t("fig.total") }), ...tot.map((v, i) => el("td", { class: "td mono" + (i >= 2 && v ? " bad" : ""), style: "font-weight:600", text: num(v) }))));
   k8.body.append(el("div", { class: "tbl-box" }, el("table", {}, el("thead", {}, el("tr", {}, ...["fig.f8.router", "fig.f8.expected", "fig.f8.received", "fig.f8.missing", "fig.f8.extra", "fig.f8.looped"].map((x) => el("th", { class: "th", text: t(x) })))), tb)));
   k8.tools.append(el("button", { class: "btn btn-sm noprint", type: "button", text: "CSV", onclick: () => download([f.f8.cols.join(",")].concat(f.f8.rows.map((r) => r.join(","))).join("\n") + "\n", "text/csv", "F8-correctness.csv") }));
-  add(k8);
+  add(k8.sec);
 
   // F9 event timeline
   const x1 = Math.max(f.end_s || 0, ...(f.f9.phases.map((p) => p[2] || 0)));
