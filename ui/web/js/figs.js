@@ -147,7 +147,7 @@ export function lineFig(o) {
     yt.forEach((v) => { const y = fy(v); s += `<line x1="${L}" y1="${y.toFixed(1)}" x2="${R}" y2="${y.toFixed(1)}" stroke="#ECEEEA"/><text x="${L - 6}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${C.muted}">${esc((o.yfmt || short)(v))}</text>`; });
     if (o.y2 && y2v.length) niceTicks(y2a, y2b, 5, o.y2int).forEach((v) => { s += `<text x="${R + 6}" y="${(fy2(v) + 4).toFixed(1)}" fill="${C.muted}">${esc((o.y2fmt || short)(v))}</text>`; });
     s += `<line x1="${L}" y1="${B}" x2="${R}" y2="${B}" stroke="${C.grey}"/><line x1="${L}" y1="${T}" x2="${L}" y2="${B}" stroke="${C.grey}"/>`;
-    (o.hmarks || []).forEach((m) => { if (m.y < ya || m.y > yb) return; const y = fy(m.y); s += `<line x1="${L}" y1="${y.toFixed(1)}" x2="${R}" y2="${y.toFixed(1)}" stroke="${m.color || C.grey}" stroke-dasharray="3 4"/><text x="${L + 4}" y="${(y - 4).toFixed(1)}" fill="${m.color || C.grey}">${esc(m.label)}</text>`; });
+    (o.hmarks || []).forEach((m) => { if (m.y < ya || m.y > yb) return; const y = fy(m.y); s += `<line x1="${L}" y1="${y.toFixed(1)}" x2="${R}" y2="${y.toFixed(1)}" stroke="${m.color || C.grey}" stroke-dasharray="3 4"/><text x="${R - 4}" y="${(y - 4).toFixed(1)}" text-anchor="end" fill="${m.color || C.grey}">${esc(m.label)}</text>`; });
     (o.diag ? [1] : []).forEach(() => { const lo = Math.max(a, ya), hi = Math.min(b, yb); if (hi > lo) s += `<line x1="${fx(lo, a, b).toFixed(1)}" y1="${fy(lo).toFixed(1)}" x2="${fx(hi, a, b).toFixed(1)}" y2="${fy(hi).toFixed(1)}" stroke="${C.grey}" stroke-dasharray="2 4"/>`; });
     vis.forEach(({ s: se }) => {
       const f = se.axis === "r" ? fy2 : fy;

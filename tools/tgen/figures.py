@@ -51,7 +51,8 @@ def build(meta: dict, results: list[dict], ticks: list[dict], dut_polls: list[di
 
     # ---------------- F1 session establishment
     est = sorted(ns2s(r["t_established"]) for r in routers if r["t_established"])
-    out["f1"] = {"curve": _thin([[0, 0]] + [[_r(x), i + 1] for i, x in enumerate(est)]),
+    tail = [[_r(est[-1] + max(0.5, 0.2 * est[-1]), 4), len(est)]] if est else []   # room after the last one
+    out["f1"] = {"curve": _thin([[0, 0]] + [[_r(x, 4), i + 1] for i, x in enumerate(est)] + tail),
                  "configured": len(routers),
                  "setup_ms": sorted([[r["name"], _r((r["t_established"] - r["t_connect_start"]) / 1e6, 2)]
                                      for r in routers if r["t_established"] and r["t_connect_start"]],
