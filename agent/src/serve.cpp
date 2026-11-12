@@ -5,6 +5,8 @@
 #include <unistd.h>
 
 #include <atomic>
+#include <cctype>
+#include <cmath>
 #include <chrono>
 #include <cstdio>
 #include <fstream>
@@ -65,6 +67,82 @@ struct Agent {
   }
 };
 
+// node facts for Nodes & settings (S1): memory, load, CPU, temperature, link of the traffic interface
+std::string read_line(const std::string& path) {
+  std::ifstream f(path);
+  std::string s;
+  std::getline(f, s);
+  return s;
+}
+json host_info(const std::string& iface) {
+  json h = json::object();
+  {
+    std::ifstream f("/proc/meminfo");
+    std::string k;
+    long v = 0;
+    std::string unit;
+    long total = -1, avail = -1;
+    while (f >> k >> v >> unit) {
+      if (k == "MemTotal:") total = v;
+      else if (k == "MemAvailable:") avail = v;
+    }
+    if (total > 0) h["mem_total_mb"] = total / 1024;
+    if (avail >= 0) h["mem_avail_mb"] = avail / 1024;
+  }
+  {
+    std::ifstream f("/proc/loadavg");
+    double l1 = 0;
+    if (f >> l1) h["load1"] = l1;
+  }
+  {
+    std::ifstream f("/proc/uptime");
+    double up = 0;
+    if (f >> up) h["uptime_s"] = static_cast<std::int64_t>(up);
+  }
+  {
+    // CPU % since the previous status call (first call: since boot)
+    static std::uint64_t prev_total = 0, prev_idle = 0;
+    std::ifstream f("/proc/stat");
+    std::string cpu;
+    std::uint64_t v[8] = {}, total = 0;
+    f >> cpu;
+    for (auto& x : v) { f >> x; total += x; }
+    const std::uint64_t idle = v[3] + v[4];
+    if (total > prev_total) h["cpu_pct"] = std::round(1000.0 * (1.0 - double(idle - prev_idle) / double(total - prev_total))) / 10.0;
+    prev_total = total; prev_idle = idle;
+  }
+  {
+    std::ifstream f("/sys/class/thermal/thermal_zone0/temp");
+    long milli = 0;
+    h["temp_c"] = (f >> milli) ? json(std::round(milli / 100.0) / 10.0) : json(nullptr);
+  }
+  json link = {{"iface", iface}};
+  bool safe = !iface.empty() && iface.size() < 16;
+  for (char c : iface) safe = safe && (std::isalnum(static_cast<unsigned char>(c)) || c == '.' || c == '-' || c == '_');
+  if (safe) {
+    const std::string base = "/sys/class/net/" + iface + "/";
+    const std::string sp = read_line(base + "speed");
+    try { if (!sp.empty() && std::stol(sp) > 0) link["speed_mbps"] = std::stol(sp); } catch (...) {}
+    const std::string du = read_line(base + "duplex"), op = read_line(base + "operstate");
+    if (!du.empty()) link["duplex"] = du;
+    if (!op.empty()) link["state"] = op;
+    // Energy-Efficient Ethernet (spec §10: must be off); needs ethtool, null otherwise
+    link["eee"] = nullptr;
+    const std::string cmd = "ethtool --show-eee " + iface + " 2>/dev/null";
+    if (FILE* p = popen(cmd.c_str(), "r")) {
+      char buf[256];
+      while (fgets(buf, sizeof buf, p)) {
+        std::string l = buf;
+        const auto at = l.find("EEE status:");
+        if (at != std::string::npos) link["eee"] = l.find("enabled", at) != std::string::npos && l.find("disabled", at) == std::string::npos;
+      }
+      pclose(p);
+    }
+  }
+  h["link"] = link;
+  return h;
+}
+
 void reply(httplib::Response& res, int status, const json& body) {
   res.status = status;
   res.set_content(body.dump(), "application/json");
@@ -119,7 +197,19 @@ int serve_main(const std::string& listen, const std::string& token_file, const s
     reply(res, 200, {{"version", ag.version}, {"node", ag.node_name}, {"state", ag.state},
                      {"run_id", ag.run ? ag.run->plan().run_id : ""}, {"now_ms", now_ns() / 1'000'000},
                      {"routers", ag.run ? ag.run->routers() : 0}, {"sessions", by_state},
-                     {"cores", std::thread::hardware_concurrency()}});
+                     {"cores", std::thread::hardware_concurrency()},
+                     {"host", host_info(ag.default_iface)}});
+  });
+
+  // S1 restart agent: exits with 75 so systemd (Restart=on-failure) starts it again; refused during a run
+  std::atomic<bool> restart{false};
+  svr.Post("/v1/restart", [&](const httplib::Request&, httplib::Response& res) {
+    std::lock_guard lk(ag.m);
+    if (ag.state == "running" || ag.state == "loaded")
+      return reply(res, 409, {{"error", "a run is " + ag.state}});
+    restart = true;
+    reply(res, 202, {{"restarting", true}});
+    std::thread([&svr] { std::this_thread::sleep_for(std::chrono::milliseconds(300)); svr.stop(); }).detach();
   });
 
   svr.Put("/v1/run", [&](const httplib::Request& req, httplib::Response& res) {
@@ -238,10 +328,19 @@ int serve_main(const std::string& listen, const std::string& token_file, const s
   std::fprintf(stderr, "tgen-agent %s serving on %s (node %s)\n", version.c_str(), listen.c_str(), ag.node_name.c_str());
   const bool ok = svr.listen(host, port);
   quit = true;
+  if (restart) {
+    std::lock_guard lk(ag.m);
+    ag.run.reset();
+    ag.remove_addresses();
+  }
   watchdog.join();
   if (!ok) {
     std::fprintf(stderr, "cannot listen on %s\n", listen.c_str());
     return 1;
+  }
+  if (restart) {
+    std::fprintf(stderr, "restart requested by the controller\n");
+    return 75;   // EX_TEMPFAIL: systemd restarts the agent
   }
   return 0;
 }

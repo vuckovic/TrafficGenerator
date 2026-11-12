@@ -34,6 +34,12 @@ def set_password(config: Path) -> int:
     config.parent.mkdir(parents=True, exist_ok=True)
     config.write_text(text)
     config.chmod(0o640)
+    try:   # a password changed in the web page (S6) is kept in the database: this one replaces it
+        from .settings import load
+        from .store import Store
+        Store(load(config).db_path).set_setting("password_hash", None)
+    except Exception as e:  # noqa: BLE001
+        print(f"note: could not reset the password saved from the web page ({e})", file=sys.stderr)
     print(f"password set in {config}; restart tgen-controller to apply")
     return 0
 

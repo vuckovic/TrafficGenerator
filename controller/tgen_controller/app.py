@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ValidationError
 
 from . import REPO, __version__, auth
-from .engine import Busy, Engine
+from .engine import LIMIT_DEFAULTS, Busy, Engine, LimitError
 from .health import Health
 from .live import Hub
 from .scenario import PRESETS, Dut, Scenario
@@ -26,6 +26,24 @@ from .store import Store, now_ms
 
 class Login(BaseModel):
     password: str
+
+
+class PasswordChange(BaseModel):
+    current: str
+    new: str = Field(min_length=10, max_length=200)
+
+
+class Notes(BaseModel):
+    notes: str = Field("", max_length=20000)
+
+
+class Limits(BaseModel):
+    """S3 safety limits."""
+    max_routers: int = Field(ge=1, le=600)
+    max_prefixes_total: int = Field(ge=1, le=10_000_000)
+    max_duration_s: float = Field(ge=60, le=86400)
+    max_rate_mbps: float = Field(gt=0, le=1000)
+    subnet_allow: list[str] = Field(default_factory=list, max_length=50)
 
 
 class DutAction(BaseModel):
@@ -116,7 +134,8 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
         wait = lockout.is_blocked(addr)
         if wait:
             raise HTTPException(429, f"too many failed logins, try again in {int(wait // 60) + 1} min")
-        ok = bool(cfg.password_hash) and await asyncio.to_thread(auth.check_password, body.password, cfg.password_hash)
+        ph = store.setting("password_hash") or cfg.password_hash     # changed in the page (S6) wins over the file
+        ok = bool(ph) and await asyncio.to_thread(auth.check_password, body.password, ph)
         if not ok:
             lockout.failure(addr)
             raise HTTPException(401, "wrong password")
@@ -133,6 +152,45 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
     @app.get("/api/me", dependencies=S)
     async def me():
         return {"user": "admin"}
+
+    @app.post("/api/password", dependencies=S)
+    async def change_password(body: PasswordChange):
+        """S6: the new hash goes to the database (the controller cannot write /etc); set-password resets it."""
+        ph = store.setting("password_hash") or cfg.password_hash
+        if not (ph and await asyncio.to_thread(auth.check_password, body.current, ph)):
+            raise HTTPException(403, "current password is wrong")
+        store.set_setting("password_hash", await asyncio.to_thread(auth.hash_password, body.new))
+        return {"ok": True}
+
+    # ---------------------------------------------------------- settings (S1, S3)
+    @app.get("/api/settings/limits", dependencies=S)
+    async def get_limits():
+        return {"limits": engine.limits(), "defaults": dict(LIMIT_DEFAULTS, max_duration_s=float(cfg.max_duration_s))}
+
+    @app.put("/api/settings/limits", dependencies=S)
+    async def put_limits(body: Limits):
+        import ipaddress
+        try:
+            nets = [str(ipaddress.ip_network(n.strip(), strict=False)) for n in body.subnet_allow if n.strip()]
+        except ValueError as e:
+            raise HTTPException(422, f"subnet: {e}")
+        if engine.task and not engine.task.done():
+            raise HTTPException(409, "a run is active")
+        store.set_setting("limits", body.model_dump() | {"subnet_allow": nets})
+        return {"limits": engine.limits()}
+
+    @app.post("/api/nodes/{name}/restart", dependencies=S)
+    async def restart_agent(name: str):
+        if engine.task and not engine.task.done() or schemes.active():
+            raise HTTPException(409, "a run or test scheme is active")
+        ag = next((a for a in engine.agents() if a.node.name == name), None)
+        if not ag:
+            raise HTTPException(404, "no such node")
+        try:
+            await ag.restart()
+        except Exception as e:  # noqa: BLE001
+            raise HTTPException(502, f"{name}: {e}")
+        return {"ok": True}
 
     # ---------------------------------------------------------- status
     @app.get("/api/health")
@@ -252,6 +310,8 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
             rid = await engine.start(sc)
         except Busy as e:
             raise HTTPException(409, str(e))
+        except LimitError as e:
+            raise HTTPException(422, str(e))
         return {"id": rid}
 
     @app.get("/api/runs", dependencies=S)
@@ -287,6 +347,52 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
         if not f.exists():
             raise HTTPException(404, "no report (yet)")
         return JSONResponse(json.loads(f.read_text()))
+
+    @app.get("/api/runs/{rid}/report.csv", dependencies=S)
+    async def report_csv(rid: str):
+        """X1 export: the report's figures as metric,value rows (lists of values are left out)."""
+        import csv
+        import io
+        r = _get(rid)
+        f = Path(r["dir"]) / "report.json"
+        if not f.exists():
+            raise HTTPException(404, "no report (yet)")
+        rep = json.loads(f.read_text())
+        out = io.StringIO()
+        w = csv.writer(out)
+        w.writerow(["metric", "value"])
+
+        def walk(p: str, v) -> None:
+            if isinstance(v, dict):
+                for k, x in v.items():
+                    walk(f"{p}.{k}" if p else k, x)
+            elif isinstance(v, list):
+                if p == "gate":
+                    for g in v:
+                        w.writerow([f"gate.{g['name']}", "INFO" if g["passed"] is None else "PASS" if g["passed"] else "FAIL"])
+                elif all(not isinstance(x, (dict, list)) for x in v) and len(v) <= 20:
+                    w.writerow([p, " ".join(map(str, v))])
+            else:
+                w.writerow([p, "" if v is None else v])
+        walk("", rep)
+        if r.get("notes"):
+            w.writerow(["notes", r["notes"]])
+        return Response(out.getvalue(), media_type="text/csv",
+                        headers={"Content-Disposition": f'attachment; filename="{rid}-report.csv"'})
+
+    @app.put("/api/runs/{rid}/notes", dependencies=S)
+    async def put_notes(rid: str, body: Notes):
+        _get(rid)
+        store.update_run(rid, notes=body.notes)
+        return {"ok": True}
+
+    @app.post("/api/runs/{rid}/regenerate", dependencies=S)
+    async def regenerate(rid: str):
+        _get(rid)
+        try:
+            return {"summary": await engine.regenerate(rid)}
+        except ValueError as e:
+            raise HTTPException(409, str(e))
 
     @app.get("/api/runs/{rid}/files", dependencies=S)
     async def files(rid: str):

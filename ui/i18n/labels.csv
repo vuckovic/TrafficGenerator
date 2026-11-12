@@ -694,3 +694,92 @@ ui.strip.scheme_stopped,text,Test scheme stopped.,Шема је заустављ
 ui.strip.scheme_failed,text,Test scheme failed: {error},Шема није успела: {error}
 ui.strip.scheme_link,link,results,резултати
 ui.start.scheme_busy,text,A test scheme is running: single runs wait until it ends.,Шема тестирања је у току: појединачни тестови чекају њен крај.
+history.title,heading,Runs,Тестови
+history.search,label,"Search (name, run id, device)","Претрага (назив, ознака теста, уређај)"
+history.all,option,All,Сви
+history.type.single,option,Single run,Појединачни тест
+history.type.scheme,option,Test scheme,Шема тестирања
+history.verdict.other,option,Stopped / failed / no verdict,Заустављен / неуспео / без оцене
+history.count,text,{n} of {m} runs,{n} од {m} тестова
+history.empty,text,No runs yet.,Још нема тестова.
+history.rerun.done,text,Configuration of {id} loaded into the Benchmark tab.,Подешавања теста {id} су учитана у картицу Мерење.
+history.rerun.tip,tooltip,"Loads this run's device, routers and phases into the Benchmark tab; nothing starts until you press Start.","Учитава уређај, рутере и фазе овог теста у картицу Мерење; ништа се не покреће док не притиснете Покрени."
+history.sort,tooltip,Sort by this column,Сортирај по овој колони
+history.key.conv,text,conv. {s} s,конв. {s} s
+history.key.p99,text,p99 {ms} ms,p99 {ms} ms
+history.state.running,state,running,у току
+history.state.stopped,state,stopped,заустављен
+history.state.failed,state,failed,неуспео
+history.delete.active,text,A run that is still active cannot be deleted.,Тест који је још у току не може да се обрише.
+report.none,text,No report selected. Open one from History.,Није изабран извештај. Отворите га из Историје.
+report.go_history,link,Go to History,Иди на Историју
+report.pick,label,Report,Извештај
+report.regenerate,button,Regenerate,Поново анализирај
+report.regenerate.tip,tooltip,Runs the analysis of this run's files again (e.g. after a change in the analysis).,Поново покреће анализу датотека овог теста (нпр. после измене анализе).
+report.regenerated,text,Report regenerated.,Извештај је поново направљен.
+report.export_csv,button,Export CSV,Извези CSV
+report.export_json,button,Export JSON,Извези JSON
+report.summary_txt,button,summary.txt,summary.txt
+report.verdict,heading,Verdict,Оцена
+report.col.check,column,Check,Провера
+report.col.result,column,Result,Резултат
+report.col.verdict,column,Verdict,Оцена
+report.gate.ok,text,All checks passed.,Све провере су прошле.
+report.gate.fail,text,{n} check(s) failed.,Није прошло провера: {n}.
+report.gate.none,text,No analysis for this run (it ended before the routes were announced).,Нема анализе за овај тест (завршио се пре слања рута).
+report.key_figures,heading,Key figures,Кључни резултати
+report.k.sessions,label,Sessions established,Успостављене сесије
+report.k.setup,label,Session setup p50 / p99,Успостављање сесије p50 / p99
+report.k.conv,label,Initial convergence,Почетна конвергенција
+report.k.after,label,After the last send,После последњег слања
+report.k.withdraw,label,Withdraw convergence,Конвергенција повлачења
+report.k.output,label,DUT output,Излаз DUT‑а
+report.k.per_update,label,Prefixes per UPDATE,Префикса по UPDATE поруци
+report.k.link,label,Link use,Искоришћење линка
+report.k.correct,label,Missing / extra routes,Недостајуће / вишак рута
+report.k.resets,label,Unexpected session resets,Неочекивани прекиди сесија
+report.k.health,label,Controller (max API p95 · live delay),Контролер (највише API p95 · кашњење уживо)
+report.latency,heading,Propagation latency (ms),Кашњење преношења (ms)
+report.lat.announce,label,Announce,Оглашавање
+report.lat.withdraw,label,Withdraw,Повлачење
+report.nodes,heading,Generator nodes,Чворови генератора
+report.col.routers,column,Routers,Рутери
+report.col.cpu95,column,CPU p95,CPU p95
+report.col.rss,column,Memory,Меморија
+report.timeline,heading,Latency and offered load over the run,Кашњење и понуђено оптерећење током теста
+report.timeline.note,text,From the live samples stored during the run (one per second). Time from the start of the run.,Из узорака сачуваних током теста (један у секунди). Време од почетка теста.
+report.all,button,All,Све
+report.phases,heading,Phases,Фазе
+report.col.phase,column,Phase,Фаза
+report.col.start,column,Start,Почетак
+report.col.duration,column,Duration,Трајање
+report.col.params,column,Parameters,Параметри
+report.dut,heading,Device under test,Уређај који се тестира
+report.files,heading,Run files,Датотеке теста
+report.notes,heading,Notes,Белешке
+report.notes.save,button,Save notes,Сачувај белешке
+report.notes.saved,text,Saved.,Сачувано.
+report.figures_later,text,"Figures F1–F12 (convergence curves, latency CDF, knee, heatmap, timeline), report comparison and PDF export come with P4.","Графици F1–F12 (криве конвергенције, CDF кашњења, засићење, топлотна мапа, временска линија), поређење извештаја и PDF извоз стижу са P4."
+report.title,text,{dut} · {name} · {routers} routers × {prefixes} prefixes,{dut} · {name} · {routers} рутера × {prefixes} префикса
+report.sub,text,DUT role: {role} · {nodes} nodes · controller {cv} · agent {av},Улога DUT‑а: {role} · {nodes} чворова · контролер {cv} · агент {av}
+report.meta,text,{id} · {date} · {dur} · {state},{id} · {date} · {dur} · {state}
+report.scheme,text,part of test scheme {id},део шеме {id}
+settings.refresh,button,Refresh,Освежи
+settings.eee.tip,tooltip,Energy-Efficient Ethernet must be off on the test links (it adds wake-up delay). Read with ethtool on each node; — = not available.,Energy-Efficient Ethernet мора бити искључен на тестним линковима (додаје кашњење буђења). Чита се алатом ethtool на сваком чвору; — = није доступно.
+settings.restart.confirm,text,Restart the agent on {node}? It is back within a few seconds.,Поново покренути агента на {node}? Враћа се за неколико секунди.
+settings.restart.done,text,Agent on {node} is restarting.,Агент на {node} се поново покреће.
+settings.restart.busy,text,Not possible while a run or test scheme is active.,Није могуће док је тест или шема у току.
+settings.safety.note,text,Checked before every run and scheme step. A run above a limit is refused with the reason.,Проверавају се пре сваког теста и корака шеме. Тест изнад ограничења се одбија уз разлог.
+settings.max_routers_only,label,Max routers,Највише рутера
+settings.max_prefixes,label,Max prefixes in total (routers × prefixes),Највише префикса укупно (рутери × префикси)
+settings.allow_list.hint,text,Comma-separated subnets the DUT address must be in; empty = any.,Подмреже раздвојене зарезом у којима мора бити адреса DUT‑а; празно = било која.
+settings.save,button,Save,Сачувај
+settings.defaults,button,Defaults,Подразумевано
+settings.saved,text,Saved.,Сачувано.
+settings.pw.current,label,Current password,Тренутна лозинка
+settings.pw.new,label,New password (at least 10 characters),Нова лозинка (најмање 10 знакова)
+settings.pw.repeat,label,New password again,Нова лозинка поново
+settings.pw.differ,text,The new passwords differ.,Нове лозинке се разликују.
+settings.pw.wrong,text,The current password is wrong.,Тренутна лозинка није тачна.
+settings.pw.done,text,Password changed. It applies to the next login.,Лозинка је промењена. Важи од следеће пријаве.
+settings.pw.note,text,"If the password is lost: on CMNODE01, sudo -u tgen tgen-controller set-password.","Ако се лозинка изгуби: на CMNODE01, sudo -u tgen tgen-controller set-password."

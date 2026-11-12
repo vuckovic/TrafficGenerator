@@ -282,15 +282,98 @@
 </section>
 </main>
 <main class="wrap" data-view="traffic" hidden><div class="card" style="flex:1 1 auto"><p style="margin:0" data-coming="P6"></p></div></main>
-<main class="wrap" data-view="reports" hidden><div class="card" style="flex:1 1 auto"><p style="margin:0" data-coming="P3c‑3"></p></div></main>
-<main class="wrap" data-view="logs" hidden><div class="card" style="flex:1 1 auto"><p style="margin:0" data-coming="P5"></p></div></main>
-<main class="wrap" data-view="history" hidden><div class="card" style="flex:1 1 auto"><p style="margin:0" data-coming="P3c‑3"></p></div></main>
-<main class="wrap" data-view="settings" hidden>
-<div class="card" style="flex:1 1 auto">
-<h2 class="h2" data-t="ui.nodes.title">Node status</h2>
-<div class="tbl-box"><table><thead><tr><th class="th" data-t="ui.node">Node</th><th class="th" data-t="settings.col.reachable">Reachable</th><th class="th" data-t="settings.col.agent">Agent version</th><th class="th" data-t="ui.nodes.state">Agent state</th><th class="th" data-t="ui.nodes.offset">Clock offset</th></tr></thead><tbody id="nodesBody"></tbody></table></div>
-<p class="small" style="margin:0" data-coming="P3c‑3"></p>
+<main class="wrap col" data-view="reports" hidden>
+<div id="repEmpty" class="card" hidden><p style="margin:0" data-t="report.none"></p><p style="margin:0"><a href="#history" data-t="report.go_history"></a></p></div>
+<div id="repPage" style="display:flex;flex-direction:column;gap:20px" hidden>
+<div class="row-sb" style="align-items:flex-end">
+<div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+<span class="mono small" id="repMeta"></span>
+<h1 style="margin:0;font-size:24px;font-weight:700" id="repTitle"></h1>
+<span class="small" id="repSub"></span>
 </div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<label class="field" style="flex-direction:row;align-items:center;gap:8px"><span class="lbl" data-t="report.pick"></span><select class="inp" id="repPick" style="width:auto;max-width:280px"></select></label>
+<button class="btn" type="button" id="repRegen" data-t="report.regenerate"></button>
+<a class="btn" id="repCsv" style="display:inline-flex;align-items:center;text-decoration:none" data-t="report.export_csv"></a>
+<a class="btn" id="repJson" style="display:inline-flex;align-items:center;text-decoration:none" data-t="report.export_json"></a>
+<a class="btn btn-primary" id="repSummary" target="_blank" style="display:inline-flex;align-items:center;text-decoration:none" data-t="report.summary_txt"></a>
+</div>
+</div>
+<p class="small bad" id="repErr" role="alert" hidden style="margin:0"></p>
+<section class="card" aria-labelledby="repVh"><h2 class="h2" id="repVh" data-t="report.verdict"></h2>
+<div class="tbl-box"><table><thead><tr><th class="th" data-t="report.col.check"></th><th class="th" data-t="report.col.result"></th><th class="th" data-t="report.col.verdict"></th></tr></thead><tbody id="repGate"></tbody></table></div>
+<p class="small" id="repGateNote" style="margin:0"></p></section>
+<div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+<section class="card" style="flex:1 1 460px" aria-labelledby="repKh"><h2 class="h2" id="repKh" data-t="report.key_figures"></h2>
+<div class="tbl-box"><table><tbody id="repKey"></tbody></table></div></section>
+<section class="card" style="flex:1 1 460px" aria-labelledby="repLh"><h2 class="h2" id="repLh" data-t="report.latency"></h2>
+<div class="tbl-box"><table><thead><tr><th class="th"></th><th class="th">n</th><th class="th">p50</th><th class="th">p90</th><th class="th">p99</th><th class="th">max</th></tr></thead><tbody id="repLat"></tbody></table></div>
+<h3 class="lbl" style="margin:6px 0 0" data-t="report.nodes"></h3>
+<div class="tbl-box"><table><thead><tr><th class="th" data-t="ui.node"></th><th class="th" data-t="report.col.routers"></th><th class="th" data-t="report.col.cpu95"></th><th class="th" data-t="report.col.rss"></th></tr></thead><tbody id="repNodes"></tbody></table></div></section>
+</div>
+<section class="card" aria-labelledby="repCh">
+<div class="row-sb"><h2 class="h2" id="repCh" data-t="report.timeline"></h2><div role="group" style="display:flex;gap:4px"><button type="button" class="zb zon" data-rspan="1e9" data-t="report.all"></button><button type="button" class="zb" data-rspan="300" data-t="chart.min5">5 min</button><button type="button" class="zb" data-rspan="60" data-t="chart.min1">1 min</button></div></div>
+<div class="chart-host" id="repChart" role="img" data-t-aria="chart.latency_load.aria"></div>
+<div style="display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:12px;color:#545A61"><label style="display:flex;align-items:center;gap:8px"><span data-t="chart.time_cursor"></span> <input type="range" id="repCur" min="0" max="100" value="100" style="width:200px;accent-color:#0E6E66"></label><label style="display:flex;align-items:center;gap:8px"><span data-t="chart.window_slider"></span> <input type="range" id="repWin" min="0" max="100" value="100" style="width:200px;accent-color:#0E6E66"></label></div>
+<p class="mono" id="repRead" style="margin:0;font-size:12px;background:#F3F4F1;padding:7px 10px;border-radius:6px;min-height:1.5em"></p>
+<p class="small" style="margin:0" data-t="report.timeline.note"></p>
+</section>
+<div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+<section class="card" style="flex:1 1 460px" aria-labelledby="repPh"><h2 class="h2" id="repPh" data-t="report.phases"></h2>
+<div class="tbl-box"><table><thead><tr><th class="th">#</th><th class="th" data-t="report.col.phase"></th><th class="th" data-t="report.col.start"></th><th class="th" data-t="report.col.duration"></th><th class="th" data-t="report.col.params"></th></tr></thead><tbody id="repPhases"></tbody></table></div>
+<h3 class="lbl" style="margin:6px 0 0" data-t="report.dut"></h3>
+<div class="tbl-box"><table><tbody id="repDut"></tbody></table></div></section>
+<section class="card" style="flex:1 1 460px" aria-labelledby="repEh"><h2 class="h2" id="repEh" data-t="live.events"></h2><ul class="events" id="repEvents"></ul>
+<h3 class="lbl" style="margin:6px 0 0" data-t="report.files"></h3><div id="repFiles" class="small" style="display:flex;flex-wrap:wrap;gap:4px 12px"></div></section>
+</div>
+<section class="card" aria-labelledby="repNh"><div class="row-sb"><h2 class="h2" id="repNh" data-t="report.notes"></h2><span class="small" id="repNotesState"></span></div>
+<textarea class="inp" id="repNotes" rows="5" style="height:auto;padding:8px 10px;resize:vertical" data-t-aria="report.notes"></textarea>
+<div><button class="btn" type="button" id="repNotesSave" data-t="report.notes.save"></button></div></section>
+<p class="small" style="margin:0" data-t="report.figures_later"></p>
+</div>
+</main>
+<main class="wrap" data-view="logs" hidden><div class="card" style="flex:1 1 auto"><p style="margin:0" data-coming="P5"></p></div></main>
+<main class="wrap col" data-view="history" hidden>
+<section class="card" aria-labelledby="hisH">
+<div class="row-sb"><h2 class="h2" id="hisH" data-t="history.title"></h2><span class="small" id="hisCount"></span></div>
+<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">
+<div class="field" style="flex:1 1 240px"><label class="lbl" for="hisQ" data-t="history.search"></label><input class="inp" id="hisQ" type="search"></div>
+<div class="field"><label class="lbl" for="hisType" data-t="history.col.type"></label><select class="inp" id="hisType"><option value="" data-t="history.all"></option><option value="single" data-t="history.type.single"></option><option value="scheme" data-t="history.type.scheme"></option></select></div>
+<div class="field"><label class="lbl" for="hisVerdict" data-t="history.col.verdict"></label><select class="inp" id="hisVerdict"><option value="" data-t="history.all"></option><option value="pass" data-t="verdict.pass"></option><option value="fail" data-t="verdict.fail"></option><option value="other" data-t="history.verdict.other"></option></select></div>
+</div>
+<div class="tbl-box"><table><thead><tr id="hisHead"></tr></thead><tbody id="hisBody"></tbody></table></div>
+</section>
+</main>
+<main class="wrap" data-view="settings" hidden>
+<div class="card" style="flex:1 1 100%">
+<div class="row-sb"><h2 class="h2" data-t="ui.nodes.title">Node status</h2><button class="btn btn-sm" type="button" id="nodesRefresh" data-t="settings.refresh"></button></div>
+<div class="tbl-box"><table><thead><tr><th class="th" data-t="ui.node">Node</th><th class="th" data-t="settings.col.reachable">Reachable</th><th class="th" data-t="settings.col.agent">Agent version</th><th class="th" data-t="ui.nodes.state">Agent state</th><th class="th" data-t="settings.col.link">Link</th><th class="th"><span class="hint" tabindex="0">EEE<span class="tt" role="tooltip" data-t="settings.eee.tip"></span></span></th><th class="th" data-t="settings.col.cpu">CPU</th><th class="th" data-t="settings.col.ram">RAM</th><th class="th" data-t="settings.col.temp">Temperature</th><th class="th" data-t="ui.nodes.offset">Clock offset</th><th class="th"></th></tr></thead><tbody id="nodesBody"></tbody></table></div>
+<p class="small" id="nodesMsg" style="margin:0" role="status"></p>
+</div>
+<section class="card" style="flex:1 1 480px" aria-labelledby="limH">
+<h2 class="h2" id="limH" data-t="settings.safety"></h2>
+<p class="small" style="margin:0" data-t="settings.safety.note"></p>
+<div class="grid4" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+<div class="field"><label class="lbl" for="limRouters" data-t="settings.max_routers_only"></label><input class="inp mono" id="limRouters" inputmode="numeric"></div>
+<div class="field"><label class="lbl" for="limPrefixes" data-t="settings.max_prefixes"></label><input class="inp mono" id="limPrefixes" inputmode="numeric"></div>
+<div class="field"><label class="lbl" for="limDuration" data-t="settings.max_duration"></label><input class="inp mono" id="limDuration" inputmode="numeric"></div>
+<div class="field"><label class="lbl" for="limRate" data-t="settings.max_rate"></label><input class="inp mono" id="limRate" inputmode="numeric"></div>
+</div>
+<div class="field"><label class="lbl" for="limAllow" data-t="settings.allow_list"></label><input class="inp mono" id="limAllow" placeholder="10.100.0.0/24"><span class="small" data-t="settings.allow_list.hint"></span></div>
+<p class="small" id="limMsg" role="status" style="margin:0"></p>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" type="button" id="limSave" data-t="settings.save"></button><button class="btn" type="button" id="limDefaults" data-t="settings.defaults"></button></div>
+</section>
+<section class="card" style="flex:1 1 360px" aria-labelledby="pwH">
+<h2 class="h2" id="pwH" data-t="auth.change_password"></h2>
+<form id="pwForm" style="display:flex;flex-direction:column;gap:12px">
+<div class="field"><label class="lbl" for="pwCur" data-t="settings.pw.current"></label><input class="inp" id="pwCur" type="password" autocomplete="current-password" required></div>
+<div class="field"><label class="lbl" for="pwNew" data-t="settings.pw.new"></label><input class="inp" id="pwNew" type="password" autocomplete="new-password" minlength="10" required></div>
+<div class="field"><label class="lbl" for="pwNew2" data-t="settings.pw.repeat"></label><input class="inp" id="pwNew2" type="password" autocomplete="new-password" minlength="10" required></div>
+<p class="small" id="pwMsg" role="status" style="margin:0"></p>
+<div><button class="btn btn-primary" type="submit" data-t="auth.change_password"></button></div>
+<p class="small" style="margin:0" data-t="settings.pw.note"></p>
+</form>
+</section>
 </main>
 </div>
 

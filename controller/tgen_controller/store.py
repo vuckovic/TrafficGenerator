@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS phases (run_id TEXT, idx INTEGER, type TEXT, params T
 CREATE TABLE IF NOT EXISTS events (run_id TEXT, t_ms INTEGER, kind TEXT, severity TEXT, text TEXT);
 CREATE TABLE IF NOT EXISTS ticks (run_id TEXT, t_ms INTEGER, data TEXT);
 CREATE TABLE IF NOT EXISTS schemes (id TEXT PRIMARY KEY, state TEXT, created_ms INTEGER, data TEXT);
+CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
 CREATE INDEX IF NOT EXISTS events_run ON events (run_id, t_ms);
 CREATE INDEX IF NOT EXISTS ticks_run ON ticks (run_id, t_ms);
 """
@@ -31,6 +32,9 @@ class Store:
         self.db.row_factory = sqlite3.Row
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.executescript(SCHEMA)
+        cols = {r[1] for r in self.db.execute("PRAGMA table_info(runs)")}
+        if "notes" not in cols:                       # P3c-3: report notes (X5)
+            self.db.execute("ALTER TABLE runs ADD COLUMN notes TEXT")
         self.lock = threading.Lock()
 
     def _x(self, sql: str, args=()):
@@ -64,6 +68,14 @@ class Store:
         for rid in ids:
             self.update_run(rid, state="failed", error="controller restarted during the run", ended_ms=now_ms())
         return ids
+
+    # settings (P3c-3): admin password hash, safety limits; JSON values
+    def setting(self, key: str, default=None):
+        r = self._x("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+        return json.loads(r["value"]) if r else default
+
+    def set_setting(self, key: str, value) -> None:
+        self._x("INSERT OR REPLACE INTO settings (key, value) VALUES (?,?)", (key, json.dumps(value)))
 
     # test schemes (P3c-2): one JSON document each
     def save_scheme(self, sid: str, state: str, created_ms: int, data: dict) -> None:

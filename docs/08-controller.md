@@ -47,6 +47,11 @@ All bodies are JSON. Times are ms since the Unix epoch.
 | `GET /api/runs/{id}/report` · `GET /api/runs/{id}/files/{name}` | `report.json`; any file of the run folder |
 | `DELETE /api/runs/{id}` | delete a finished run and its folder |
 | `WS /ws/live` | live feed (§4.4) |
+| `POST /api/schemes/plan` · `POST /api/schemes` · `GET /api/schemes` · `GET /api/schemes/{id}` · `POST /api/schemes/{id}/stop` · `GET /api/topology` | test scheme and network topology (P3c‑2, doc 09 §10) |
+| `GET /api/runs/{id}/report.csv` · `PUT /api/runs/{id}/notes {notes}` · `POST /api/runs/{id}/regenerate` | report export, notes (X5), analysis again (X6) — P3c‑3 |
+| `POST /api/password {current, new}` | change the admin password (S6); the hash is kept in the database, `tgen-controller set-password` resets it |
+| `GET/PUT /api/settings/limits` | safety limits (S3): max routers (180), max prefixes in total (2 000 000), max duration (controller.toml, 3600 s), max data rate (1000 Mb/s, used from P6), DUT subnet allow‑list; `422` for a run above a limit |
+| `POST /api/nodes/{name}/restart` | restart that node's agent (S1, agent 0.4.2); `409` during a run or scheme |
 
 ## 4. Scenario engine
 
@@ -137,6 +142,8 @@ Once a second, one message:
 | `phases` | run_id, idx, type, params (json), at_ms, end_ms |
 | `events` | run_id, t_ms, kind, severity, text |
 | `ticks` | run_id, t_ms, json |
+| `schemes` | id, state, created_ms, data (json: plan, progress, results, comparison, knee series) — P3c‑2 |
+| `settings` | key, value (json): `password_hash` (S6), `limits` (S3) — P3c‑3; `runs.notes` holds the report notes (X5) |
 
 ## 6. AC6 self-measurement (§10.2)
 

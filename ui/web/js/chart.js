@@ -10,7 +10,9 @@ function ago(s) {
 }
 
 export class LatencyChart {
-  constructor(host, readout, curSlider, winSlider, zoomButtons) {
+  // t0 (s): label the time axis as elapsed m:ss from t0 (report page) instead of "ago" (live view)
+  constructor(host, readout, curSlider, winSlider, zoomButtons, t0 = null) {
+    this.t0 = t0;
     this.host = host; this.readout = readout; this.cur = curSlider; this.win = winSlider; this.zb = zoomButtons;
     this.data = [[], [], [], []];
     this.span = 300; this.pan = null;   // pan = right edge (null = follow the newest data)
@@ -25,7 +27,7 @@ export class LatencyChart {
         { label: "p99", scale: "ms", stroke: ORANGE, width: 2.5, spanGaps: true },
         { label: "offered", scale: "rate", stroke: GREY, width: 2, dash: [4, 3] }],
       axes: [
-        { stroke: "#545A61", grid: { stroke: "#ECEEEA" }, font: "10px IBM Plex Mono", values: (u, vals) => vals.map((v) => ago(this.last() - v)) },
+        { stroke: "#545A61", grid: { stroke: "#ECEEEA" }, font: "10px IBM Plex Mono", values: (u, vals) => vals.map((v) => this.tl(v)) },
         { scale: "ms", stroke: "#545A61", grid: { stroke: "#ECEEEA" }, font: "10px IBM Plex Mono", values: (u, vals) => vals.map((v) => num(v) + " ms"), size: 64 },
         { scale: "rate", side: 1, stroke: "#545A61", grid: { show: false }, font: "10px IBM Plex Mono", values: (u, vals) => vals.map((v) => num(v) + "/s"), size: 64 }],
       hooks: { setCursor: [(u) => this.onCursor(u)] },
@@ -50,6 +52,11 @@ export class LatencyChart {
       this.placeCursor(); this.read();
     });
     host.addEventListener("mouseleave", () => { this.read(); });
+  }
+  tl(v) {
+    if (this.t0 === null) return ago(this.last() - v);
+    const s = Math.max(0, Math.round(v - this.t0));
+    return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
   }
   last() { const x = this.data[0]; return x.length ? x[x.length - 1] : 0; }
   extent() { const x = this.data[0]; return x.length ? [x[0], x[x.length - 1]] : [0, 1]; }
@@ -86,6 +93,6 @@ export class LatencyChart {
     const [a, b] = this.window();
     this.cur.value = String(Math.round(100 * (xs[idx] - a) / Math.max(1, b - a)));
     const v = (s) => (this.data[s][idx] === null || this.data[s][idx] === undefined ? "—" : num(this.data[s][idx]));
-    this.readout.textContent = `t = ${ago(this.last() - xs[idx])} · p50 ${v(1)} ms · p99 ${v(2)} ms · ${t("chart.offered")} ${v(3)} ${t("unit.prefixes_s")}`;
+    this.readout.textContent = `t = ${this.tl(xs[idx])} · p50 ${v(1)} ms · p99 ${v(2)} ms · ${t("chart.offered")} ${v(3)} ${t("unit.prefixes_s")}`;
   }
 }

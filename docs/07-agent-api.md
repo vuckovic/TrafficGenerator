@@ -20,7 +20,8 @@ tgen-agent serve --listen 192.168.100.12:7700 --token-file /etc/tgen/agent.token
 
 | Method and path | Purpose | Answer |
 |---|---|---|
-| `GET /v1/status` | health, version, node, state, run id, clock | `200 {version, node, state, run_id, now_ms, routers, sessions: {Established: n, …}}` |
+| `GET /v1/status` | health, version, node, state, run id, clock; node facts (0.4.2) | `200 {version, node, state, run_id, now_ms, routers, sessions: {Established: n, …}, cores, host: {cpu_pct, mem_total_mb, mem_avail_mb, load1, uptime_s, temp_c, link: {iface, speed_mbps, duplex, state, eee}}}` |
+| `POST /v1/restart` (0.4.2) | restart the agent (Nodes & settings, S1): it exits with code 75 and systemd (`Restart=on-failure`) starts it again; any loaded run is deleted and its addresses removed | `202` · `409` a run is loaded or running |
 | `PUT /v1/run` | load a plan (same JSON as `plan-<node>.json` today, plus `iface` and `seed`); adds the routers' /32 addresses on `iface` | `200 {routers}` · `409` a run is loaded · `400 {error}` invalid plan |
 | `POST /v1/run/phase` | schedule a phase at an absolute time (see below); may be called many times | `202 {id}` · `409` not loaded/finished |
 | `GET /v1/run/stats` | live counters, plus the latency samples recorded since the previous call | `200 {seq, t_ms, totals, by_state, per_router[], samples{…}}` |

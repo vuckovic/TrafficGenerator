@@ -200,8 +200,11 @@ class SchemeRunner:
             "routers": {"total": routers, "prefixes": prefixes},
             "phases": [{"type": "establish", "timeout_s": 90}, {"type": "announce", "rate": rate, "timeout_s": conv},
                        {"type": "withdraw", "rate": rate, "timeout_s": wd}],
-            "limits": {"max_duration_s": min(self.cfg.max_duration_s, conv + wd + 300)}})
-        rid = await self.engine.start(sc, owner=self.doc["id"])
+            "limits": {"max_duration_s": min(self.engine.limits()["max_duration_s"], conv + wd + 300)}})
+        try:
+            rid = await self.engine.start(sc, owner=self.doc["id"])
+        except ValueError as e:      # outside the safety limits (S3): this step fails, the scheme goes on
+            return {"run": None, "state": "failed", "error": str(e)}
         self.doc["runs"].append(rid)
         self._cell(dev, col, "running", detail, run=rid, info=info)
         task = self.engine.task

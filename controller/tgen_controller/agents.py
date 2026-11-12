@@ -35,6 +35,10 @@ class Agent:
     async def status(self) -> dict:
         return await self._req("GET", "/v1/status", timeout=3)
 
+    async def restart(self) -> dict:
+        """S1: the agent exits and systemd starts it again (agent 0.4.2)."""
+        return await self._req("POST", "/v1/restart", timeout=3)
+
     async def load(self, plan: dict) -> dict:
         return await self._req("PUT", "/v1/run", plan, timeout=120)
 

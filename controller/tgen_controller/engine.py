@@ -35,6 +35,14 @@ class Busy(RuntimeError):
     pass
 
 
+class LimitError(ValueError):
+    """A scenario outside the safety limits (S3)."""
+
+
+LIMIT_DEFAULTS = {"max_routers": 180, "max_prefixes_total": 2_000_000, "max_duration_s": 3600.0,
+                  "max_rate_mbps": 1000.0, "subnet_allow": []}
+
+
 class StopRun(Exception):
     pass
 
@@ -89,11 +97,26 @@ class Engine:
         return [Agent(n, self.cfg.agent_token, self.client) for n in self.cfg.nodes]
 
     # ------------------------------------------------------------------ public
+    def limits(self) -> dict:
+        """Safety limits (S3): defaults, controller.toml max_duration_s, then the values saved in the web page."""
+        d = dict(LIMIT_DEFAULTS, max_duration_s=float(self.cfg.max_duration_s))
+        d.update(self.store.setting("limits", {}) or {})
+        return d
+
+    def check_limits(self, sc: Scenario) -> None:
+        lim = self.limits()
+        total = sc.routers.total * sc.routers.prefixes
+        if sc.routers.total > lim["max_routers"]:
+            raise LimitError(f"{sc.routers.total} routers is above the safety limit of {lim['max_routers']}")
+        if total > lim["max_prefixes_total"]:
+            raise LimitError(f"{total} prefixes in total is above the safety limit of {lim['max_prefixes_total']}")
+
     async def start(self, sc: Scenario, owner: str | None = None) -> str:
         if self.task and not self.task.done():
             raise Busy(f"run {self.ctx.id} is {self.ctx.state}")
         if self.owner and owner != self.owner:
             raise Busy(f"test scheme {self.owner} is running")
+        self.check_limits(sc)
         rid = time.strftime("r-%Y%m%d-%H%M%S")
         rdir = self.cfg.runs_dir / rid
         rdir.mkdir(parents=True)
@@ -123,7 +146,8 @@ class Engine:
                 d.update(reachable=False, error=str(r)[:200])
             else:
                 d.update(reachable=True, version=r.get("version"), state=r.get("state"), run_id=r.get("run_id"),
-                         routers=r.get("routers"), clock_offset_ms=r.get("now_ms", now_ms()) - now_ms())
+                         routers=r.get("routers"), clock_offset_ms=r.get("now_ms", now_ms()) - now_ms(),
+                         cores=r.get("cores"), host=r.get("host"))
             out.append(d)
         return out
 
@@ -179,7 +203,7 @@ class Engine:
             await self._finish(c, result_state, error)
 
     async def _deadline(self, c: Ctx) -> None:
-        limit = min(c.sc.limits.max_duration_s, self.cfg.max_duration_s)
+        limit = min(c.sc.limits.max_duration_s, self.limits()["max_duration_s"])
         await asyncio.sleep(limit)
         self._event("guard", "warning", f"maximum run duration {limit:.0f} s reached")
         await self.stop(c.id, f"maximum duration {limit:.0f} s")
@@ -211,6 +235,11 @@ class Engine:
         dut_ip, asn, role, adapter = info["ip"], info["asn"], info["role"], info["adapter"]
         c.dut_info = {k: info[k] for k in ("profile", "label", "adapter", "ip", "asn", "role", "mrai", "link_mbps",
                                            "min_free_mem_pct", "max_routes", "interface")}
+        allow = self.limits().get("subnet_allow") or []
+        if allow:
+            import ipaddress
+            if not any(ipaddress.ip_address(dut_ip) in ipaddress.ip_network(n, strict=False) for n in allow):
+                raise RuntimeError(f"DUT address {dut_ip} is not in the allowed subnets ({', '.join(allow)})")
         routes = sc.routers.total * sc.routers.prefixes
         if info["max_routes"] and routes > info["max_routes"]:
             raise RuntimeError(f"{routes} routes is above the route limit of {info['max_routes']} for {info['label']}")
@@ -537,6 +566,25 @@ class Engine:
                 self.store.event(c.id, "dut", "error", f"could not remove the tgen neighbours from the DUT: {e}")
         self.store.update_run(c.id, dut={k: v for k, v in c.dut_info.items() if k != "resources"} |
                               {"resources": c.dut_info.get("resources")})
+
+    async def regenerate(self, rid: str) -> dict:
+        """X6: run the analysis again on a finished run's folder (same inputs as at the end of the run)."""
+        r = self.store.run(rid)
+        if not r or r["state"] in ("created", "preparing", "running", "finishing"):
+            raise ValueError("run not finished")
+        d = Path(r["dir"])
+        if not (d / "meta.json").exists() or not list(d.glob("result-*.json")):
+            raise ValueError("this run has no results to analyse")
+        old = json.loads((d / "report.json").read_text()) if (d / "report.json").exists() else {}
+        summ = r.get("summary") or {}
+        dut = old.get("dut") or r.get("dut") or {}
+        cpu = old.get("cpu_node_p95") or summ.get("cpu_node_p95") or {}
+        hm = old.get("controller_health_max") or summ.get("controller_health_max") or {}
+        loop = asyncio.get_running_loop()
+        summary = await loop.run_in_executor(self.pool, analyse, str(d), cpu, dut, hm, r["state"])
+        self.store.update_run(rid, summary=summary)
+        self.store.event(rid, "analysis", "info", "report regenerated")
+        return summary
 
     def delete_run(self, rid: str) -> bool:
         r = self.store.run(rid)

@@ -3,6 +3,9 @@ import { loadTexts, t, num, apply, setLang, lang, languages, onChange } from "./
 import { api, get, post, onUnauthorized, ApiError } from "./api.js";
 import { LatencyChart } from "./chart.js";
 import { initScheme, loadScheme, onSchemeMessage, renderScheme, schemeActive, schemeDoc, stopScheme } from "./scheme.js";
+import { initHistory, loadHistory, renderHistory } from "./history.js";
+import { initReport, openReport, renderReport } from "./report.js";
+import { initSettings, loadSettings, renderNodes as renderNodeTable } from "./settings.js";
 
 const $ = (id) => document.getElementById(id);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -100,10 +103,12 @@ function langMenus() {
 }
 
 function route() {
-  const tab = (location.hash || "#benchmark").slice(1);
+  const [tab, arg] = (location.hash || "#benchmark").slice(1).split("/");
   $$("[data-view]").forEach((m) => { m.hidden = m.dataset.view !== tab; });
   $$("#tabs a").forEach((a) => { if (a.dataset.tab === tab) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
-  if (tab === "settings") refreshCluster().then(renderNodes);
+  if (tab === "settings") loadSettings();
+  if (tab === "history") loadHistory();
+  if (tab === "reports") openReport(arg || null);
 }
 
 function stateWord(st) {
@@ -136,7 +141,7 @@ function renderStrip() {
     } else if (r.state === "finishing") { text = t("ui.strip.finishing"); spin = true; segs = (S.runPhases || []).map(() => "done"); }
     else if (r.state === "done") {
       text = t("ui.strip.done"); box.classList.add("done"); closable = true; segs = (S.runPhases || []).map(() => "done");
-      links = [[t("ui.summary"), `/api/runs/${r.id}/files/summary.txt`], [t("ui.report_json"), `/api/runs/${r.id}/report`]];
+      links = [[t("history.open"), `#reports/${r.id}`], [t("ui.summary"), `/api/runs/${r.id}/files/summary.txt`], [t("ui.report_json"), `/api/runs/${r.id}/report`]];
     } else if (r.state === "failed") { text = t("ui.strip.failed", { error: r.error || "" }); box.classList.add("err"); closable = true; }
     else if (r.state === "stopped") { text = t("ui.strip.stopped"); box.classList.add("stopped"); closable = true; }
     if (RUN_ACTIVE.includes(r.state)) S.stripRun = r.id;
@@ -366,6 +371,25 @@ function renderRouters() {
   foot.append(t("routers.showing", { n: shown.length, m: rows.length }) + " · ");
   if (rows.length > 12) foot.append(el("a", { href: "#benchmark", onclick: (e) => { e.preventDefault(); S.showAllRouters = !S.showAllRouters; renderRouters(); }, text: t("routers.show_all") }), " · ");
   foot.append(el("span", { class: "mono", text: `${num(total)} ${t("routers.col.prefixes").toLowerCase()}` }));
+}
+
+// H3 re-run: a stored scenario back into the form (nothing starts)
+function loadScenario(sc, name) {
+  const d = sc.dut || {};
+  if (d.profile && S.duts[d.profile]) pickDevice(d.profile); else pickDevice("custom");
+  if (d.adapter) S.platform = d.adapter;
+  if (d.role) S.role = d.role;
+  const setv = (id, v) => { if (v !== undefined && v !== null) $(id).value = v; };
+  setv("dutIp", d.ip); setv("dutAsn", d.asn); setv("sshHost", d.ssh_host); setv("sshPort", d.ssh_port); setv("sshUser", d.user);
+  setv("maxRoutes", d.max_routes); setv("guard", d.min_free_mem_pct); setv("pollS", d.poll_s);
+  $("configure").checked = d.configure !== false; $("after").value = d.keep_config ? "keep" : "remove";
+  S.mraiMode = d.mrai === null || d.mrai === undefined ? "default" : d.mrai === 0 ? "0" : "custom";
+  if (S.mraiMode === "custom") $("mraiCustom").value = d.mrai;
+  const r = sc.routers || {};
+  setv("rTotal", r.total); setv("rPrefixes", r.prefixes); setv("rPerUpd", r.per_update); setv("seed", r.seed); setv("rHold", r.hold_time);
+  $("runName").value = name || sc.name || "";
+  S.phases = JSON.parse(JSON.stringify(sc.phases || [])); S.sel = 0; S.preset = "custom";
+  renderDut(); renderScenario();
 }
 
 // ------------------------------------------------------------------ scenario
@@ -628,12 +652,7 @@ function renderLive() {
 }
 
 async function refreshCluster() { try { S.cluster = (await get("/api/cluster")).nodes; } catch (e) { S.cluster = []; } }
-function renderNodes() {
-  const b = $("nodesBody"); b.innerHTML = "";
-  S.cluster.forEach((n) => b.append(el("tr", {}, el("td", { class: "td mono", text: n.node }), el("td", { class: "td " + (n.reachable ? "ok" : "bad"), text: n.reachable ? t("common.yes") : t("common.no") }),
-    el("td", { class: "td mono", text: n.version || "—" }), el("td", { class: "td", text: n.state || n.error || "—" }), el("td", { class: "td mono", text: n.clock_offset_ms !== undefined ? num(n.clock_offset_ms) + " ms" : "—" }))));
-}
-
+function renderNodes() { renderNodeTable(S.cluster); }
 async function idleHealth() {
   if (runActive() || $("app").hidden) return;
   try {
@@ -646,11 +665,18 @@ async function idleHealth() {
 }
 
 // ------------------------------------------------------------------ wiring
-function renderAll() { renderDut(); renderScenario(); renderRouters(); renderLive(); renderBadge(); renderNodes(); renderScheme(); }
+function renderAll() { renderDut(); renderScenario(); renderRouters(); renderLive(); renderBadge(); renderNodes(); renderScheme(); renderHistory(); renderReport(); }
 
 function wire() {
   window.addEventListener("hashchange", () => { route(); renderStrip(); });
   initScheme({ runActive: () => runActive(), changed: () => renderBadge() });
+  initHistory({ duts: () => S.duts, rerun: (r) => {
+    loadScenario(r.scenario, r.name);
+    location.hash = "#benchmark";
+    addEvent({ t_ms: Date.now(), kind: "run", severity: "info", text: t("history.rerun.done", { id: r.id }) });
+  } });
+  initReport({ phaseName: (p) => phaseName(p) });
+  initSettings({ busy: () => runActive() || schemeActive() });
   $("device").addEventListener("change", (e) => pickDevice(e.target.value));
   $("auth").addEventListener("change", renderDut);
   $("mrai").addEventListener("change", (e) => { S.mraiMode = e.target.value; renderDut(); });

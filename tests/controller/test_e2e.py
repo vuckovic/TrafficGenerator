@@ -303,6 +303,41 @@ def main() -> int:
         check(c.post("/api/runs", json={"scenario": sc3.model_dump()}).status_code == 202, "single runs allowed again")
         wait_state(c, c.get("/api/runs").json()[0]["id"], ("done", "failed", "stopped"), 240)
 
+        # --- P3c-3: limits, report extras, password, node status and agent restart
+        print("P3c-3: settings, report extras, password, agent restart", flush=True)
+        lim = c.get("/api/settings/limits").json()
+        check(lim["limits"]["max_routers"] == 180 and lim["limits"]["max_duration_s"] == 600, f"safety limits with defaults {lim['limits']}")
+        r = c.put("/api/settings/limits", json=lim["limits"] | {"max_routers": 5, "subnet_allow": ["10.100.0.0/24"]})
+        check(r.status_code == 200 and r.json()["limits"]["max_routers"] == 5, "limits saved")
+        r = c.post("/api/runs", json={"scenario": sc3.model_dump()})
+        check(r.status_code == 422 and "safety limit" in r.text, f"run above the router limit refused ({r.status_code})")
+        check(c.put("/api/settings/limits", json=lim["limits"] | {"subnet_allow": ["not-a-net"]}).status_code == 422, "bad subnet refused")
+        c.put("/api/settings/limits", json=lim["limits"])
+        done = [x for x in c.get("/api/runs").json() if x["state"] == "done"][0]["id"]
+        check(c.put(f"/api/runs/{done}/notes", json={"notes": "setup note ž"}).status_code == 200
+              and c.get(f"/api/runs/{done}").json()["notes"] == "setup note ž", "report notes saved (X5)")
+        csv_ = c.get(f"/api/runs/{done}/report.csv")
+        check(csv_.status_code == 200 and "sessions.established" in csv_.text and "gate." in csv_.text and "setup note" in csv_.text, "report CSV export")
+        rg = c.post(f"/api/runs/{done}/regenerate", timeout=120)
+        check(rg.status_code == 200 and rg.json()["summary"]["sessions"], f"report regenerated (X6) ({rg.status_code})")
+        check(any("regenerated" in e["text"] for e in c.get(f"/api/runs/{done}").json()["events"]), "regeneration recorded as an event")
+        check(c.post("/api/password", json={"current": "wrong-password", "new": "another-password-1"}).status_code == 403, "password change needs the current password")
+        check(c.post("/api/password", json={"current": PASSWORD, "new": "short"}).status_code == 422, "new password at least 10 characters")
+        check(c.post("/api/password", json={"current": PASSWORD, "new": "another-password-1"}).status_code == 200, "password changed (S6)")
+        c2 = httpx.Client(base_url=f"http://127.0.0.1:{PORT}", timeout=30)
+        check(c2.post("/api/login", json={"password": "another-password-1"}).status_code == 200, "login with the new password")
+        c2.post("/api/password", json={"current": "another-password-1", "new": PASSWORD})
+        check(c2.post("/api/login", json={"password": PASSWORD}).status_code == 200, "password changed back")
+        cl = c.get("/api/cluster").json()["nodes"]
+        check(all(n.get("host") and n["host"].get("mem_total_mb") and "link" in n["host"] for n in cl), "node status: memory, link (agent 0.4.2)")
+        check(c.post("/api/nodes/CMNODE09/restart").status_code == 404, "restart of an unknown node refused")
+        check(c.post("/api/nodes/CMNODE06/restart").status_code == 200, "agent restart accepted (S1)")
+        try:
+            rc = procs[5].wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            rc = None
+        check(rc == 75, f"agent exited with 75 for systemd to restart it ({rc})")
+
         # --- lock-out last: it blocks this address
         for _ in range(5):
             c.post("/api/login", json={"password": "wrong"})
