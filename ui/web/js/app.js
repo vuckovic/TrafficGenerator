@@ -575,7 +575,7 @@ function renderLive() {
   $("portCard").hidden = !(pt && pt.reported);
   if (pt && pt.reported) {
     const speed = pt.speed_mbps >= 1000 ? `${num(pt.speed_mbps)} Mb/s` : `${num(pt.speed_mbps)} Mb/s`;
-    $("portLine").textContent = [pt.interface, speed, pt.duplex ? pt.duplex + "‑duplex" : null, pt.up === false ? "down" : "up"].filter(Boolean).join(" · ");
+    $("portLine").textContent = [pt.interface, speed, pt.duplex ? t("ui.port.duplex", { d: pt.duplex === "full" ? (lang() === "en" ? "full" : "пун") : pt.duplex === "half" ? (lang() === "en" ? "half" : "полу") : pt.duplex }) : null, pt.up === false ? t("ui.port.down") : t("ui.port.up")].filter(Boolean).join(" · ");
     $("portUse").textContent = pt.use_pct !== null ? num(pt.use_pct, pt.use_pct < 10 ? 1 : 0) + " %" : "—";
     $("portMbps").textContent = t("live.port.of", { mbps: num(pt.mbps, 1), speed });
     const bar = $("portBar"); bar.style.width = Math.min(100, Math.max(0.5, pt.use_pct || 0)) + "%";

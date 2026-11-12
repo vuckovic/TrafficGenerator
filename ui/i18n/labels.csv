@@ -636,3 +636,7 @@ ui.strip.elapsed,text,elapsed {t},протекло {t}
 ui.strip.live,link,Live view,Приказ уживо
 ui.strip.close,button,Close,Затвори
 ui.starting,button,Starting…,Покреће се…
+ui.port.duplex,text,{d}‑duplex,{d} дуплекс
+ui.port.up,state,up,активан
+ui.port.down,state,down,неактиван
+ui.node,column,Node,Чвор

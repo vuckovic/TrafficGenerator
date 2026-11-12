@@ -55,6 +55,7 @@ Rendered at 1440 px for documentation and Jira: v1.2 screens on 2026-11-03, the 
 | `benchmark-en.png` | Benchmark tab, live run (English), v1.2 |
 | `benchmark-sr-cyrl.png` | the same screen in Serbian Cyrillic, v1.2 |
 | `test-scheme-en.png`, `test-scheme-sr-cyrl.png` | Test scheme tab (v1.2), English and Serbian |
+| `run-strip-en.png`, `run-strip-sr-cyrl.png` | Run strip (G10, 2026‑11‑12) in the real interface, English and Serbian |
 | `report-en.png` | run report |
 | `header-en.png`, `header-sr-cyrl.png` | header in both languages (one row at 1440 px) |
 | `dut-configuration-en.png` | DUT configuration card (U8–U16) |

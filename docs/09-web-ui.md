@@ -63,3 +63,12 @@ Status: confirmed 2026‑11‑03. **P3c‑1 built** (2026‑11‑03): login, hea
   - a Cisco‑mock run with the port card, stopped from the browser;
   - phone width (390 px, no horizontal scroll), first visit in the browser's language;
   - Nodes & settings, and no browser errors.
+
+## 7. Run strip (2026‑11‑12)
+
+Requested by the user after the first cluster test: pressing Start gave no visible sign that a test was running (the header badge alone was too easy to miss). Added as **G10** (doc 04).
+- **Behaviour:** see doc 04 G10.
+- **Translations:** all texts in English and Serbian Cyrillic (`ui.strip.*`, `ui.starting`). The port line (duplex, up/down) is now translated too.
+- **Browser test:** checks the strip in both languages at Start, while running (phase n of m, progress, spinner), finished (with the summary link) and stopped, plus the title marker.
+- **Previews:** `docs/design/previews/run-strip-en.png`, `run-strip-sr-cyrl.png`.
+- **Commits:** 0476bde (strip), and this change (Serbian checks, translated port line).
