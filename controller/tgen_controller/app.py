@@ -348,6 +348,16 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
             raise HTTPException(404, "no report (yet)")
         return JSONResponse(json.loads(f.read_text()))
 
+    @app.get("/api/runs/{rid}/figures", dependencies=S)
+    async def figures(rid: str):
+        """F1-F12 data (P4); runs analysed before P4 get it with Regenerate."""
+        d = Path(_get(rid)["dir"])
+        f = d / "figures.json"
+        if not f.exists():
+            err = d / "figures-error.txt"
+            raise HTTPException(404, err.read_text().strip() if err.exists() else "no figures (regenerate the report)")
+        return Response(f.read_text(), media_type="application/json")
+
     @app.get("/api/runs/{rid}/report.csv", dependencies=S)
     async def report_csv(rid: str):
         """X1 export: the report's figures as metric,value rows (lists of values are left out)."""

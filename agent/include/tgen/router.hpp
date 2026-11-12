@@ -96,6 +96,9 @@ struct RouterStats {
   // churn / flap
   std::uint64_t churn_ann = 0, churn_wd = 0, churn_attr = 0, churn_updates = 0;
   std::vector<std::pair<std::string, std::int64_t>> flaps;   // kind, time
+  // session ups and downs with times, for the report's event timeline and heatmap (F7, F9); capped
+  struct SessionEvent { std::int64_t t; std::string kind; std::string why; };
+  std::vector<SessionEvent> session_events;
 };
 
 class Router : public std::enable_shared_from_this<Router> {

@@ -321,6 +321,7 @@ void Router::established() {
   ++st_.sessions_established;
   connect_failures_ = 0;
   if (st_.t_established == 0) st_.t_established = rx_time_;
+  if (st_.session_events.size() < 200) st_.session_events.push_back({rx_time_, "up", ""});
   log("Established (peer AS " + std::to_string(st_.peer_asn) + ", hold " + std::to_string(st_.hold_negotiated) +
       " s, " + (st_.as4 ? "4-octet AS" : "2-octet AS") + ")");
   arm_keepalive();
@@ -664,6 +665,7 @@ void Router::down(const std::string& why) {
   if (st_.state == State::Established) {
     if (planned) ++st_.planned_resets;
     else ++st_.resets;
+    if (st_.session_events.size() < 200) st_.session_events.push_back({now_ns(), planned ? "down_planned" : "down", why.substr(0, 120)});
     log(std::string(planned ? "session down (planned): " : "session down: ") + why);
   }
   ++gen_;  // invalidates every pending callback of this connection
@@ -787,6 +789,7 @@ json Router::result() const {
       {"max_keepalive_gap_ms", st_.max_keepalive_gap_ns / 1e6},
       {"notifications_rx", notif_rx}, {"notifications_tx", notif_tx}, {"errors", st_.errors},
       {"flaps", flaps},
+      {"session_events", [&] { json a = json::array(); for (const auto& e : st_.session_events) a.push_back({e.t, e.kind, e.why}); return a; }()},
       {"churn", {{"announced", st_.churn_ann}, {"withdrawn", st_.churn_wd}, {"attribute_changes", st_.churn_attr},
                  {"updates", st_.churn_updates}, {"tx", churn_tx_}, {"rx", churn_rx_}, {"wd_rx", churn_wd_rx_}}},
       {"samples", {{"tx", samples(sample_tx_)}, {"rx", samples(sample_rx_)},

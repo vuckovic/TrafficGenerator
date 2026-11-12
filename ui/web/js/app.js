@@ -4,7 +4,7 @@ import { api, get, post, onUnauthorized, ApiError } from "./api.js";
 import { LatencyChart } from "./chart.js";
 import { initScheme, loadScheme, onSchemeMessage, renderScheme, schemeActive, schemeDoc, stopScheme } from "./scheme.js";
 import { initHistory, loadHistory, renderHistory } from "./history.js";
-import { initReport, openReport, renderReport } from "./report.js";
+import { initReport, openReport, renderReport, renderCompareIfOpen } from "./report.js";
 import { initSettings, loadSettings, renderNodes as renderNodeTable } from "./settings.js";
 
 const $ = (id) => document.getElementById(id);
@@ -665,7 +665,7 @@ async function idleHealth() {
 }
 
 // ------------------------------------------------------------------ wiring
-function renderAll() { renderDut(); renderScenario(); renderRouters(); renderLive(); renderBadge(); renderNodes(); renderScheme(); renderHistory(); renderReport(); }
+function renderAll() { renderDut(); renderScenario(); renderRouters(); renderLive(); renderBadge(); renderNodes(); renderScheme(); renderHistory(); renderReport(); renderCompareIfOpen(); }
 
 function wire() {
   window.addEventListener("hashchange", () => { route(); renderStrip(); });

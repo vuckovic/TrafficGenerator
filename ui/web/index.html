@@ -292,11 +292,14 @@
 <span class="small" id="repSub"></span>
 </div>
 <div style="display:flex;gap:8px;flex-wrap:wrap">
-<label class="field" style="flex-direction:row;align-items:center;gap:8px"><span class="lbl" data-t="report.pick"></span><select class="inp" id="repPick" style="width:auto;max-width:280px"></select></label>
+<label class="field noprint" style="flex-direction:row;align-items:center;gap:8px"><span class="lbl" data-t="report.pick"></span><select class="inp" id="repPick" style="width:auto;max-width:280px"></select></label>
+<button class="btn" type="button" id="repCompare" data-t="report.compare"></button>
 <button class="btn" type="button" id="repRegen" data-t="report.regenerate"></button>
+<button class="btn" type="button" id="repHtml" data-t="report.export_html"></button>
 <a class="btn" id="repCsv" style="display:inline-flex;align-items:center;text-decoration:none" data-t="report.export_csv"></a>
 <a class="btn" id="repJson" style="display:inline-flex;align-items:center;text-decoration:none" data-t="report.export_json"></a>
-<a class="btn btn-primary" id="repSummary" target="_blank" style="display:inline-flex;align-items:center;text-decoration:none" data-t="report.summary_txt"></a>
+<a class="btn" id="repSummary" target="_blank" style="display:inline-flex;align-items:center;text-decoration:none" data-t="report.summary_txt"></a>
+<button class="btn btn-primary" type="button" id="repPdf" data-t="report.export_pdf"></button>
 </div>
 </div>
 <p class="small bad" id="repErr" role="alert" hidden style="margin:0"></p>
@@ -311,13 +314,8 @@
 <h3 class="lbl" style="margin:6px 0 0" data-t="report.nodes"></h3>
 <div class="tbl-box"><table><thead><tr><th class="th" data-t="ui.node"></th><th class="th" data-t="report.col.routers"></th><th class="th" data-t="report.col.cpu95"></th><th class="th" data-t="report.col.rss"></th></tr></thead><tbody id="repNodes"></tbody></table></div></section>
 </div>
-<section class="card" aria-labelledby="repCh">
-<div class="row-sb"><h2 class="h2" id="repCh" data-t="report.timeline"></h2><div role="group" style="display:flex;gap:4px"><button type="button" class="zb zon" data-rspan="1e9" data-t="report.all"></button><button type="button" class="zb" data-rspan="300" data-t="chart.min5">5 min</button><button type="button" class="zb" data-rspan="60" data-t="chart.min1">1 min</button></div></div>
-<div class="chart-host" id="repChart" role="img" data-t-aria="chart.latency_load.aria"></div>
-<div style="display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:12px;color:#545A61"><label style="display:flex;align-items:center;gap:8px"><span data-t="chart.time_cursor"></span> <input type="range" id="repCur" min="0" max="100" value="100" style="width:200px;accent-color:#0E6E66"></label><label style="display:flex;align-items:center;gap:8px"><span data-t="chart.window_slider"></span> <input type="range" id="repWin" min="0" max="100" value="100" style="width:200px;accent-color:#0E6E66"></label></div>
-<p class="mono" id="repRead" style="margin:0;font-size:12px;background:#F3F4F1;padding:7px 10px;border-radius:6px;min-height:1.5em"></p>
-<p class="small" style="margin:0" data-t="report.timeline.note"></p>
-</section>
+<p class="small" id="repFigNote" style="margin:0" hidden></p>
+<div id="repFigs" class="figgrid"></div>
 <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
 <section class="card" style="flex:1 1 460px" aria-labelledby="repPh"><h2 class="h2" id="repPh" data-t="report.phases"></h2>
 <div class="tbl-box"><table><thead><tr><th class="th">#</th><th class="th" data-t="report.col.phase"></th><th class="th" data-t="report.col.start"></th><th class="th" data-t="report.col.duration"></th><th class="th" data-t="report.col.params"></th></tr></thead><tbody id="repPhases"></tbody></table></div>
@@ -329,8 +327,19 @@
 <section class="card" aria-labelledby="repNh"><div class="row-sb"><h2 class="h2" id="repNh" data-t="report.notes"></h2><span class="small" id="repNotesState"></span></div>
 <textarea class="inp" id="repNotes" rows="5" style="height:auto;padding:8px 10px;resize:vertical" data-t-aria="report.notes"></textarea>
 <div><button class="btn" type="button" id="repNotesSave" data-t="report.notes.save"></button></div></section>
-<p class="small" style="margin:0" data-t="report.figures_later"></p>
 </div>
+<div id="cmpPage" style="display:flex;flex-direction:column;gap:20px" hidden>
+<div class="row-sb" style="align-items:flex-end"><div style="display:flex;flex-direction:column;gap:4px"><span class="mono small" id="cmpMeta"></span><h1 style="margin:0;font-size:24px;font-weight:700" data-t="cmp.title"></h1></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap" class="noprint"><button class="btn" type="button" id="cmpChange" data-t="cmp.change"></button><button class="btn" type="button" id="cmpCsvBtn" data-t="report.export_csv"></button><button class="btn btn-primary" type="button" id="cmpPdf" data-t="report.export_pdf"></button></div></div>
+<section class="card" aria-labelledby="cmpTh"><h2 class="h2" id="cmpTh" data-t="cmp.metrics"></h2><div class="tbl-box"><table><thead><tr id="cmpHeadRow"></tr></thead><tbody id="cmpRows"></tbody></table></div></section>
+<div id="cmpFigs" class="figgrid"></div>
+</div>
+<dialog id="cmpDialog" aria-labelledby="cmpDh"><form method="dialog" style="display:flex;flex-direction:column;gap:12px">
+<h2 class="h2" id="cmpDh" data-t="cmp.pick"></h2><p class="small" style="margin:0" data-t="cmp.pick.hint"></p>
+<div id="cmpList" style="max-height:50vh;overflow:auto;display:flex;flex-direction:column;gap:2px"></div>
+<p class="small bad" id="cmpErr" hidden style="margin:0"></p>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" value="cancel" data-t="common.cancel"></button><button class="btn btn-primary" type="button" id="cmpGo" data-t="cmp.go"></button></div>
+</form></dialog>
 </main>
 <main class="wrap" data-view="logs" hidden><div class="card" style="flex:1 1 auto"><p style="margin:0" data-coming="P5"></p></div></main>
 <main class="wrap col" data-view="history" hidden>

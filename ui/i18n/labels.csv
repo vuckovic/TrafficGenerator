@@ -783,3 +783,87 @@ settings.pw.differ,text,The new passwords differ.,Нове лозинке се �
 settings.pw.wrong,text,The current password is wrong.,Тренутна лозинка није тачна.
 settings.pw.done,text,Password changed. It applies to the next login.,Лозинка је промењена. Важи од следеће пријаве.
 settings.pw.note,text,"If the password is lost: on CMNODE01, sudo -u tgen tgen-controller set-password.","Ако се лозинка изгуби: на CMNODE01, sudo -u tgen tgen-controller set-password."
+report.compare,button,Compare…,Упореди…
+report.export_pdf,button,Export PDF,Извези PDF
+report.export_html,button,Export HTML,Извези HTML
+cmp.title,heading,Comparison of runs,Поређење тестова
+cmp.change,button,Change runs…,Промени тестове…
+cmp.metrics,heading,Side by side,Упоредо
+cmp.metric,column,Metric,Метрика
+cmp.pick,heading,Compare runs,Упореди тестове
+cmp.pick.hint,text,"Choose 2 to 5 finished runs, e.g. the same scenario against different devices.","Изаберите 2 до 5 завршених тестова, нпр. исти сценарио на различитим уређајима."
+cmp.go,button,Compare,Упореди
+cmp.count,text,Choose between 2 and 5 runs.,Изаберите између 2 и 5 тестова.
+cmp.dut,label,Device under test,Уређај који се тестира
+cmp.scale,label,Routers × prefixes,Рутери × префикси
+cmp.lat_ann,label,Announce latency p50 / p99,Кашњење оглашавања p50 / p99
+cmp.lat_wd,label,Withdraw latency p50 / p99,Кашњење повлачења p50 / p99
+cmp.min_mem,label,Lowest free DUT memory,Најмање слободне меморије DUT‑а
+cmp.verdict,label,Verdict,Оцена
+fig.time,label,time since the start of the run (m:ss),време од почетка теста (m:ss)
+fig.latency,label,latency,кашњење
+fig.offered_s,label,offered updates/s,понуђено ажурирања/s
+fig.phase_zoom,label,Zoom to a phase,Увећај фазу
+fig.whole_run,option,Whole run,Цео тест
+fig.lin_log,tooltip,Linear or logarithmic scale,Линеарна или логаритамска скала
+fig.none,text,No data for this figure in this run.,Нема података за овај графикон у овом тесту.
+fig.missing,text,This run was analysed before the figures existed: press Regenerate to create them.,Овај тест је анализиран пре увођења графикона: притисните Поново анализирај да их направите.
+fig.total,label,Total,Укупно
+fig.f1.cap,text,Established sessions over time; the bars show the slowest routers' setup time (TCP connect to Established).,Успостављене сесије кроз време; траке приказују време успостављања најспоријих рутера (од TCP повезивања до Established).
+fig.f1.established,label,established,успостављено
+fig.f1.sessions,label,sessions,сесије
+fig.f1.configured,text,configured {n},подешено {n}
+fig.f1.setup,heading,"Setup time, slowest routers","Време успостављања, најспорији рутери"
+fig.f2.cap,text,"Share of the expected routes received, from the first announcement. Solid: all receivers; dashed: the slowest receiver. The dotted line marks full convergence. From the sampled prefixes.","Удео очекиваних рута које су примљене, од првог оглашавања. Пуна линија: сви пријемници; испрекидана: најспорији пријемник. Тачкаста линија означава потпуну конвергенцију. Из узоркованих префикса."
+fig.f2.all,label,all receivers,сви пријемници
+fig.f2.slowest,label,slowest ({r}),најспорији ({r})
+fig.f2.x,label,time since the first announcement,време од првог оглашавања
+fig.f2.y,label,routes received,примљене руте
+fig.f3.cap,text,Teal: announce; violet: withdraw. Log latency axis; height = share of prefixes that arrived faster. {n} sampled prefixes.,Тиркизна: оглашавање; љубичаста: повлачење. Логаритамска оса кашњења; висина = удео префикса који су стигли брже. Узорковано префикса: {n}.
+fig.f3.x,label,latency (log),кашњење (лог)
+fig.f3.y,label,share of prefixes,удео префикса
+fig.f3.read,text,latency {ms} · {a} % of announcements and {w} % of withdrawals arrived faster,кашњење {ms} · брже је стигло {a} % оглашавања и {w} % повлачења
+fig.f3.announce,label,announce,оглашавање
+fig.f3.withdraw,label,withdraw,повлачење
+fig.f4.cap,text,"p50 and p99 latency per second (left) with the offered update rate (right, dashed). Shows when the DUT starts to lag.","Кашњење p50 и p99 по секунди (лево) уз понуђену брзину ажурирања (десно, испрекидано). Показује када DUT почиње да касни."
+fig.f5.cap,text,"Delivered vs offered route deliveries per second, binned by the offered rate; orange: p99 latency. Dashed: ideal 1:1.","Испоручено у односу на понуђено испорука рута у секунди, груписано по понуђеној брзини; наранџаста: кашњење p99. Испрекидано: идеално 1:1."
+fig.f5.none,text,Only for runs with stepped load (stepped churn) — or see the knee chart of a test scheme.,Само за тестове са степенастим оптерећењем (степенаста промена) — или погледајте графикон засићења шеме тестирања.
+fig.f5.x,label,offered deliveries/s,понуђено испорука/s
+fig.f5.y,label,delivered/s,испоручено/s
+fig.f5.delivered,label,delivered,испоручено
+fig.f5.read,text,offered {o}/s · delivered {d}/s ({p} %) · p99 latency {l},понуђено {o}/s · испоручено {d}/s ({p} %) · кашњење p99 {l}
+fig.f6.cap,text,Route copies sent but not yet received (left) and routes held by the receivers (right). Estimated from the per‑second rates.,Копије рута послате а још непримљене (лево) и руте које пријемници држе (десно). Процена из брзина по секунди.
+fig.f6.backlog,label,backlog,заостатак
+fig.f6.held,label,routes held,задржане руте
+fig.f6.y,label,route copies,копије рута
+fig.f7.cap,text,Darker = more expected routes received. Orange = session down. Hover a column or use the slider; the readout lists the five slowest routers. {n} routers.,Тамније = примљено више очекиваних рута. Наранџасто = сесија пала. Пређите мишем преко колоне или користите клизач; очитавање наводи пет најспоријих рутера. Рутера: {n}.
+fig.f7.cursor,label,Time,Време
+fig.f8.cap,text,"Per receiver: expected and received routes, missing, extra and looped routes.","По пријемнику: очекиване и примљене руте, недостајуће, вишак и руте са петљом."
+fig.f8.ok,text,All {n} receivers got exactly the expected routes.,Свих {n} пријемника је добило тачно очекиване руте.
+fig.f8.bad,text,"{n} receivers with missing, extra or looped routes.","Пријемника са недостајућим, вишком или рутама са петљом: {n}."
+fig.f8.router,column,Router,Рутер
+fig.f8.expected,column,Expected,Очекивано
+fig.f8.received,column,Received,Примљено
+fig.f8.missing,column,Missing,Недостаје
+fig.f8.extra,column,Extra,Вишак
+fig.f8.looped,column,Looped,Петља
+fig.f9.cap,text,"Phases, our session events, the DUT's established‑session count from its polls, and controller events on one time axis. DUT log lines come with P5.","Фазе, наши догађаји сесија, број успостављених сесија DUT‑а из његових очитавања и догађаји контролера на једној временској оси. Линије из лога DUT‑а стижу са P5."
+fig.f9.dut,label,DUT sessions,Сесије DUT‑а
+fig.f9.events,label,Events,Догађаји
+fig.f9.up,text,up,успостављена
+fig.f9.down,text,down,пала
+fig.f9.down_planned,text,down (planned),пала (планирано)
+fig.f9.dut_est,text,DUT: {n} established,DUT: успостављено {n}
+fig.f10.cap,text,"Free memory and CPU of the DUT from its polls (every 10 s), with its established sessions (right).","Слободна меморија и CPU DUT‑а из његових очитавања (на 10 s), уз успостављене сесије (десно)."
+fig.f10.none,text,"No DUT polls in this run (the DUT was not configured by the controller, or polling was off).",Нема очитавања DUT‑а у овом тесту (DUT није подесио контролер или је очитавање искључено).
+fig.f10.mem,label,free memory,слободна меморија
+fig.f10.sessions,label,sessions,сесије
+fig.f11.none,text,Comes with the data plane (P6).,Стиже са равни података (P6).
+fig.f12.cap,text,CPU of each node (left; the 70 % line is the validity limit) and the generator's send lag p99 (right). Proves the measurement is valid.,CPU сваког чвора (лево; линија 70 % је граница исправности) и кашњење слања генератора p99 (десно). Доказује да је мерење исправно.
+fig.f12.y,label,node CPU,CPU чвора
+fig.f12.lag,label,send lag p99,кашњење слања p99
+fig.f12.limit,label,limit 70 %,граница 70 %
+fig.cmp.f2,text,All‑receiver convergence curve of each run.,Крива конвергенције свих пријемника за сваки тест.
+fig.cmp.f3,text,Announce latency CDF of each run.,CDF кашњења оглашавања за сваки тест.
+fig.cmp.f5,text,Delivered vs offered of each stepped‑load run.,Испоручено у односу на понуђено за сваки тест са степенастим оптерећењем.
+fig.cmp.f10,text,Free DUT memory of each run.,Слободна меморија DUT‑а за сваки тест.

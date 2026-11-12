@@ -529,7 +529,8 @@ class Engine:
             try:
                 loop = asyncio.get_running_loop()
                 summary = await loop.run_in_executor(self.pool, analyse, str(c.dir), cpu, c.dut_info,
-                                                     self.health.run_max, state)
+                                                     self.health.run_max, state, self.store.phases(c.id),
+                                                     self.store.events(c.id))
             except Exception as e:  # noqa: BLE001
                 self._event("analysis", "error", f"analysis failed: {e}")
         if summary and summary.get("gate_ok") is False and state == "done":
@@ -581,7 +582,8 @@ class Engine:
         cpu = old.get("cpu_node_p95") or summ.get("cpu_node_p95") or {}
         hm = old.get("controller_health_max") or summ.get("controller_health_max") or {}
         loop = asyncio.get_running_loop()
-        summary = await loop.run_in_executor(self.pool, analyse, str(d), cpu, dut, hm, r["state"])
+        summary = await loop.run_in_executor(self.pool, analyse, str(d), cpu, dut, hm, r["state"],
+                                             self.store.phases(rid), self.store.events(rid))
         self.store.update_run(rid, summary=summary)
         self.store.event(rid, "analysis", "info", "report regenerated")
         return summary
@@ -609,7 +611,8 @@ def make_plan(cfg: Settings, sc: Scenario, rid: str, dut_ip: str, asn: int, role
 
 
 # ---------------------------------------------------------------------- analysis (separate process)
-def analyse(rdir: str, cpu: dict, dut_info: dict, health_max: dict, state: str) -> dict:
+def analyse(rdir: str, cpu: dict, dut_info: dict, health_max: dict, state: str,
+            phases: list | None = None, events: list | None = None) -> dict:
     """tools/tgen/analyze.py on the run folder -> report.json, summary.txt; returns the stored summary."""
     from tgen.analyze import analyze, attribute_detail, gate
 
@@ -629,6 +632,17 @@ def analyse(rdir: str, cpu: dict, dut_info: dict, health_max: dict, state: str) 
     if do.get("payload_mbps") is not None and dut_info.get("link_mbps"):
         do["link_use_pct"] = round(100 * do["payload_mbps"] * 1.06 / dut_info["link_mbps"], 2)
     (d / "report.json").write_text(json.dumps(rep, indent=1))
+    try:   # figures F1-F12 for the report page (P4); a failure here never loses the report
+        from tgen.figures import build
+
+        def jl(name: str) -> list:
+            f = d / name
+            return [json.loads(x) for x in f.read_text().splitlines() if x.strip()] if f.exists() else []
+        figs = build(meta, results, jl("live.jsonl"), jl("dut-sessions.jsonl"), phases or [], events or [])
+        figs["f12"]["node_cpu_p95"] = cpu
+        (d / "figures.json").write_text(json.dumps(figs, separators=(",", ":")))
+    except Exception as e:  # noqa: BLE001
+        (d / "figures-error.txt").write_text(f"{e.__class__.__name__}: {e}\n")
     s, cv, la = rep["sessions"], rep["convergence"], rep["latency_announce_ms"]
     lines = [f"run {meta['run_id']}: {len(meta['routers'])} routers, role {role}, DUT {dut_info.get('label')} "
              f"{dut_info.get('ip')} ({state})",

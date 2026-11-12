@@ -179,6 +179,13 @@ def main() -> int:
         need = {"scenario.json", "meta.json", "report.json", "summary.txt", "live.jsonl"} | {f"result-{n}.json" for n in NODES}
         check(need <= files, f"run folder complete (missing {sorted(need - files)})")
         check(c.get(f"/api/runs/{rid}/report").json()["sessions"]["established"] == args.routers, "report.json served")
+        fg = c.get(f"/api/runs/{rid}/figures")
+        fj = fg.json() if fg.status_code == 200 else {}
+        check(fg.status_code == 200 and all(f"f{i}" in fj for i in range(1, 13)), f"figures F1-F12 written ({fg.status_code})")
+        check(fj and max(fj["f2"]["all"]) > 99 and fj["f1"]["curve"][-1][1] == args.routers and fj["f3"]["announce"]["n"] > 0
+              and len(fj["f8"]["rows"]) == args.routers and len(fj["f9"]["phases"]) == 4 and len(fg.content) < 400_000,
+              f"figure data: F2 reaches {max(fj['f2']['all']) if fj else None} %, {len(fg.content)} bytes")
+        check(any(e[2] == "up" for e in fj.get("f9", {}).get("sessions", [])), "session events from the agents (F9)")
         check(c.get(f"/api/runs/{rid}/files/..%2Fcontroller.db").status_code == 404, "no path traversal")
         check(len(c.get(f"/api/runs/{rid}/ticks").json()) >= 5, "ticks stored in SQLite")
         st = [n["state"] for n in c.get("/api/cluster").json()["nodes"]]
