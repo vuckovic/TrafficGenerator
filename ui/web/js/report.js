@@ -82,6 +82,7 @@ export function renderReport() {
   const role = (rep && rep.dut && rep.dut.role) || (sc.dut || {}).role;
   $("repSub").textContent = t("report.sub", { role: role ? t("dut.role." + role) : "—", nodes: rep ? (rep.generator.nodes || []).length : "—",
     cv: rep ? rep.version.controller : "—", av: rep ? (rep.version.agents || []).join(", ") : "—" });
+  $("repDutLog").href = `#logs/${r.id}`;
   $("repCsv").href = `/api/runs/${r.id}/report.csv`; $("repJson").href = `/api/runs/${r.id}/report`;
   $("repJson").setAttribute("download", `${r.id}-report.json`);
   $("repSummary").href = `/api/runs/${r.id}/files/summary.txt`;

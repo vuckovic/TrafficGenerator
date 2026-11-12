@@ -6,13 +6,14 @@ import asyncio
 import contextlib
 import json
 import os
+import re
 import time
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from . import REPO, __version__, auth
 from .engine import LIMIT_DEFAULTS, Busy, Engine, LimitError
@@ -31,6 +32,20 @@ class Login(BaseModel):
 class PasswordChange(BaseModel):
     current: str
     new: str = Field(min_length=10, max_length=200)
+
+
+class DutLogSettings(BaseModel):
+    platform: str = Field("auto", pattern="^(auto|cisco|mikrotik|bird|frr)$")
+    offset: float | str = "auto"
+
+    @field_validator("offset")
+    @classmethod
+    def _off(cls, v):
+        if isinstance(v, str) and v != "auto":
+            raise ValueError("offset is 'auto' or a number of seconds")
+        if not isinstance(v, str) and abs(v) > 86400 * 2:
+            raise ValueError("offset larger than two days")
+        return v
 
 
 class Notes(BaseModel):
@@ -357,6 +372,56 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
             err = d / "figures-error.txt"
             raise HTTPException(404, err.read_text().strip() if err.exists() else "no figures (regenerate the report)")
         return Response(f.read_text(), media_type="application/json")
+
+    # ---------------------------------------------------------- DUT logs (P5, L1-L6)
+    @app.get("/api/runs/{rid}/dutlog", dependencies=S)
+    async def dutlog(rid: str):
+        d = Path(_get(rid)["dir"])
+        f = d / "dut-events.json"
+        files = sorted(p.name for p in (d / "dutlogs").iterdir()) if (d / "dutlogs").is_dir() else []
+        if not f.exists():
+            err = d / "dutlog-error.txt"
+            return {"missing": True, "uploads": files, "error": err.read_text().strip() if err.exists() else None,
+                    "has_log": (d / "dut-bgp.log").exists()}
+        return Response(json.dumps(json.loads(f.read_text()) | {"uploads": files}), media_type="application/json")
+
+    @app.post("/api/runs/{rid}/dutlog/files", dependencies=S)
+    async def dutlog_upload(rid: str, request: Request, name: str):
+        """L1: one file per request, raw body (.txt/.log/.gz, at most 50 MB); the analysis runs again."""
+        d = Path(_get(rid)["dir"])
+        safe = re.sub(r"[^A-Za-z0-9._-]", "_", Path(name).name)[:80]
+        if not safe or safe.startswith(".") or not re.search(r"\.(txt|log|gz)$", safe, re.I):
+            raise HTTPException(422, "file must be .txt, .log or .gz")
+        body = await request.body()
+        if len(body) > 50 * 1024 * 1024:
+            raise HTTPException(413, "file larger than 50 MB")
+        (d / "dutlogs").mkdir(exist_ok=True)
+        (d / "dutlogs" / safe).write_bytes(body)
+        store.event(rid, "dut", "info", f"DUT log uploaded: {safe} ({len(body)} bytes)")
+        return await _dutlog_again(rid)
+
+    @app.delete("/api/runs/{rid}/dutlog/files/{fname}", dependencies=S)
+    async def dutlog_delete(rid: str, fname: str):
+        d = Path(_get(rid)["dir"]) / "dutlogs"
+        f = d / Path(fname).name
+        if not f.is_file():
+            raise HTTPException(404, "no such file")
+        f.unlink()
+        return await _dutlog_again(rid)
+
+    @app.put("/api/runs/{rid}/dutlog/settings", dependencies=S)
+    async def dutlog_settings(rid: str, body: DutLogSettings):
+        """L3, L4: platform (auto or fixed) and clock offset (auto or seconds, DUT clock minus ours)."""
+        d = Path(_get(rid)["dir"])
+        (d / "dutlog-settings.json").write_text(json.dumps({"platform": body.platform, "offset": body.offset}))
+        return await _dutlog_again(rid)
+
+    async def _dutlog_again(rid: str):
+        try:
+            await engine.regenerate(rid)
+        except ValueError as e:
+            raise HTTPException(409, str(e))
+        return await dutlog(rid)
 
     @app.get("/api/runs/{rid}/report.csv", dependencies=S)
     async def report_csv(rid: str):

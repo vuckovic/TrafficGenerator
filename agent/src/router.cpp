@@ -703,6 +703,7 @@ void Router::stop_all() {
     sock_.non_blocking(true, ec);  // never block the thread on a DUT that has stopped reading
     asio::write(sock_, asio::buffer(n), ec);
     st_.notifications_tx.emplace_back(6, 2);
+    if (st_.session_events.size() < 200) st_.session_events.push_back({now_ns(), "down_planned", "end of run (Cease 6/2)"});
   }
   ++gen_;
   std::error_code ec;

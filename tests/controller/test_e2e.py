@@ -328,6 +328,23 @@ def main() -> int:
         rg = c.post(f"/api/runs/{done}/regenerate", timeout=120)
         check(rg.status_code == 200 and rg.json()["summary"]["sessions"], f"report regenerated (X6) ({rg.status_code})")
         check(any("regenerated" in e["text"] for e in c.get(f"/api/runs/{done}").json()["events"]), "regeneration recorded as an event")
+        # P5: DUT log (L1-L6) — the mock DUT's BIRD log, an upload, the settings, removal
+        dl = c.get(f"/api/runs/{done}/dutlog").json()
+        check(not dl.get("missing") and dl["files"] and dl["files"][0]["file"] == "dut-bgp.log" and dl["platform"] == "bird",
+              f"DUT log parsed ({dl.get('platform')}, {dl.get('events')} events, offset {dl.get('offset_source')} {dl.get('offset_s')})")
+        check(dl.get("events", 0) > 0 and dl["offset_source"] == "auto" and abs(dl["offset_s"] - round(dl["offset_s"] / 900) * 900) < 2,
+              f"DUT session events aligned to our clock (BIRD local time) {dl.get('counts')}")
+        check(any(g["name"] == "DUT log" for g in c.get(f"/api/runs/{done}/report").json()["gate"]), "DUT log INFO row in the verdict")
+        check(len(c.get(f"/api/runs/{done}/figures").json()["f9"]["dut_log"]) > 0, "F9 DUT log lane filled")
+        up = c.post(f"/api/runs/{done}/dutlog/files", params={"name": "../evil syslog.log"}, content=b"Nov 12 20:00:00: %SYS-2-MALLOCFAIL: x\n", timeout=120)
+        check(up.status_code == 200 and "evil_syslog.log" in up.json()["uploads"] and len(up.json()["files"]) == 2, f"DUT log uploaded (L1) ({up.status_code})")
+        check(c.post(f"/api/runs/{done}/dutlog/files", params={"name": "x.exe"}, content=b"x").status_code == 422, "upload type checked")
+        st = c.put(f"/api/runs/{done}/dutlog/settings", json={"platform": "bird", "offset": 12.5}, timeout=120).json()
+        check(st["offset_source"] == "manual" and st["offset_s"] == 12.5 and st["settings"]["platform"] == "bird", "DUT log settings applied (L3, L4)")
+        check(c.put(f"/api/runs/{done}/dutlog/settings", json={"platform": "junos", "offset": "auto"}).status_code == 422, "bad platform refused")
+        c.put(f"/api/runs/{done}/dutlog/settings", json={"platform": "auto", "offset": "auto"}, timeout=120)
+        rm = c.delete(f"/api/runs/{done}/dutlog/files/evil_syslog.log", timeout=120)
+        check(rm.status_code == 200 and rm.json()["uploads"] == [], "uploaded DUT log removed")
         check(c.post("/api/password", json={"current": "wrong-password", "new": "another-password-1"}).status_code == 403, "password change needs the current password")
         check(c.post("/api/password", json={"current": PASSWORD, "new": "short"}).status_code == 422, "new password at least 10 characters")
         check(c.post("/api/password", json={"current": PASSWORD, "new": "another-password-1"}).status_code == 200, "password changed (S6)")

@@ -99,6 +99,9 @@ export function renderFigures(host, f, phaseName) {
   const lanes = [
     { name: t("fig.f9.ours"), marks: f.f9.sessions.map((e) => [e[0], e[2] === "up" ? C.green : e[2] === "down" ? C.red : C.grey, "c", `${e[1]} ${t("fig.f9." + e[2])}${e[3] ? " (" + e[3] + ")" : ""}`]) },
     { name: t("fig.f9.dut"), marks: f.f9.dut_sessions.map((e) => [e[0], C.blue, "c", t("fig.f9.dut_est", { n: e[1] })]) },
+    ...((f.f9.dut_log || []).length ? [{ name: t("fig.f9.dut_log", { platform: f.f9.dut_log_platform || "?" }), marks: f.f9.dut_log.map((e) => [e[0],
+      e[3] === "error" ? C.red : e[3] === "warning" ? C.amber : e[2] === "up" ? C.green : C.grey, e[3] === "info" ? "c" : "sq",
+      `DUT ${e[1] || ""} ${t("dl.ev." + e[2])}${e[4] ? " — " + String(e[4]).slice(0, 80) : ""}`]) }] : []),
     { name: t("fig.f9.events"), marks: f.f9.events.filter((e) => e[1] !== "phase").map((e) => [e[0], e[2] === "error" ? C.red : e[2] === "warning" ? C.amber : C.grey, "sq", e[3]]) },
   ];
   add(timelineFig({ fid: "F9", name: "F9-timeline", title: t("fig.f9"), caption: t("fig.f9.cap"), phases, lanes, x0: Math.min(0, ...f.f9.phases.map((p) => p[1])), x1: x1 || 1 }));

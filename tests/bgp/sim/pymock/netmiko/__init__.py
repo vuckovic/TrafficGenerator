@@ -110,7 +110,10 @@ class ConnectHandler:
                 lines.append(f"{ip:<15} 4 {n.get('as', 0):>12}      10      10        1    0    0 00:01:00 "
                              + ("5" if ip in est else "Active"))
             return "\n".join(lines) + "\n"
-        if cmd == "show logging | include BGP":
+        if cmd == "show clock":
+            import time as _t
+            return _t.strftime("*%H:%M:%S.000 UTC %a %b %d %Y", _t.gmtime()) + "\n"
+        if cmd.startswith("show logging | include BGP"):
             log = self.home / "bird.log"
             return log.read_text() if log.exists() else ""
         return INVALID + "\n"

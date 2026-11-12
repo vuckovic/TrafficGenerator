@@ -185,7 +185,7 @@ def build(meta: dict, results: list[dict], ticks: list[dict], dut_polls: list[di
                  "sessions": sess[:600],
                  "dut_sessions": dut_track[:300],
                  "events": [[rel(e["t_ms"]), e["kind"], e["severity"], e["text"][:200]] for e in events][:400],
-                 "dut_log": []}     # parsed DUT log lines: P5
+                 "dut_log": []}     # filled from dut-events.json by the caller (P5)
 
     # ---------------- F10 DUT resources (from the DUT polls, when the device was configured by us)
     f10 = []

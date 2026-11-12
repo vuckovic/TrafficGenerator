@@ -5,6 +5,7 @@ import { LatencyChart } from "./chart.js";
 import { initScheme, loadScheme, onSchemeMessage, renderScheme, schemeActive, schemeDoc, stopScheme } from "./scheme.js";
 import { initHistory, loadHistory, renderHistory } from "./history.js";
 import { initReport, openReport, renderReport, renderCompareIfOpen } from "./report.js";
+import { initDutLogs, openDutLogs, renderDutLogs } from "./dutlogs.js";
 import { initSettings, loadSettings, renderNodes as renderNodeTable } from "./settings.js";
 
 const $ = (id) => document.getElementById(id);
@@ -109,6 +110,7 @@ function route() {
   if (tab === "settings") loadSettings();
   if (tab === "history") loadHistory();
   if (tab === "reports") openReport(arg || null);
+  if (tab === "logs") openDutLogs(arg || null);
 }
 
 function stateWord(st) {
@@ -665,7 +667,7 @@ async function idleHealth() {
 }
 
 // ------------------------------------------------------------------ wiring
-function renderAll() { renderDut(); renderScenario(); renderRouters(); renderLive(); renderBadge(); renderNodes(); renderScheme(); renderHistory(); renderReport(); renderCompareIfOpen(); }
+function renderAll() { renderDut(); renderScenario(); renderRouters(); renderLive(); renderBadge(); renderNodes(); renderScheme(); renderHistory(); renderReport(); renderCompareIfOpen(); renderDutLogs(); }
 
 function wire() {
   window.addEventListener("hashchange", () => { route(); renderStrip(); });
@@ -676,6 +678,7 @@ function wire() {
     addEvent({ t_ms: Date.now(), kind: "run", severity: "info", text: t("history.rerun.done", { id: r.id }) });
   } });
   initReport({ phaseName: (p) => phaseName(p) });
+  initDutLogs({ phaseName: (p) => phaseName(p) });
   initSettings({ busy: () => runActive() || schemeActive() });
   $("device").addEventListener("change", (e) => pickDevice(e.target.value));
   $("auth").addEventListener("change", renderDut);

@@ -153,7 +153,8 @@ class MikroTik(Dut):
             lines = lines[start:]
         keep = [l for l in lines
                 if len(l.split()) > 1 and ("bgp" in l.split()[1].split(",") or f" {TAG}-" in l or f" {TAG} " in l)]
-        return "\n".join(keep) + "\n"
+        clock = " ".join(self.run("/system clock print", check=False).split())
+        return f"# device clock at collection: {clock}\n" + "\n".join(keep) + "\n"
 
 
 def mib_pct(free: str, total: str) -> float | None:

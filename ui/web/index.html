@@ -295,6 +295,7 @@
 <label class="field noprint" style="flex-direction:row;align-items:center;gap:8px"><span class="lbl" data-t="report.pick"></span><select class="inp" id="repPick" style="width:auto;max-width:280px"></select></label>
 <button class="btn" type="button" id="repCompare" data-t="report.compare"></button>
 <button class="btn" type="button" id="repRegen" data-t="report.regenerate"></button>
+<a class="btn noprint" id="repDutLog" style="display:inline-flex;align-items:center;text-decoration:none" data-t="report.dutlog.open"></a>
 <button class="btn" type="button" id="repHtml" data-t="report.export_html"></button>
 <a class="btn" id="repCsv" style="display:inline-flex;align-items:center;text-decoration:none" data-t="report.export_csv"></a>
 <a class="btn" id="repJson" style="display:inline-flex;align-items:center;text-decoration:none" data-t="report.export_json"></a>
@@ -341,7 +342,54 @@
 <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" value="cancel" data-t="common.cancel"></button><button class="btn btn-primary" type="button" id="cmpGo" data-t="cmp.go"></button></div>
 </form></dialog>
 </main>
-<main class="wrap" data-view="logs" hidden><div class="card" style="flex:1 1 auto"><p style="margin:0" data-coming="P5"></p></div></main>
+<main class="wrap col" data-view="logs" hidden>
+<div class="row-sb" style="align-items:flex-end">
+<div style="display:flex;flex-direction:column;gap:4px;min-width:0"><span class="mono small" id="dlMeta"></span><h1 style="margin:0;font-size:24px;font-weight:700" data-t="nav.dut_logs">DUT logs</h1><span class="small" data-t="dl.sub"></span></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+<div class="field"><label class="lbl" for="dlRun" data-t="logs.run"></label><select class="inp" id="dlRun" style="width:auto;max-width:300px"></select></div>
+<a class="btn" id="dlReport" style="display:inline-flex;align-items:center;text-decoration:none" data-t="history.open"></a>
+</div></div>
+<p class="small bad" id="dlErr" role="alert" hidden style="margin:0"></p>
+<div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+<section class="card" style="flex:1 1 420px" aria-labelledby="dlSrcH">
+<h2 class="h2" id="dlSrcH" data-t="dl.sources"></h2>
+<div class="tbl-box"><table><thead><tr><th class="th" data-t="dl.col.file"></th><th class="th" data-t="logs.platform"></th><th class="th" data-t="dl.col.lines"></th><th class="th" data-t="dl.col.events"></th><th class="th"></th></tr></thead><tbody id="dlFiles"></tbody></table></div>
+<label class="btn" style="display:inline-flex;align-items:center;gap:8px;width:fit-content;cursor:pointer"><span data-t="logs.upload"></span><input type="file" id="dlUpload" multiple accept=".txt,.log,.gz,text/plain,application/gzip" style="position:absolute;left:-9999px"></label>
+<p class="small" style="margin:0" data-t="dl.upload.hint"></p>
+<div class="grid4" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+<div class="field"><label class="lbl" for="dlPlatform" data-t="logs.platform"></label><select class="inp" id="dlPlatform"><option value="auto" data-t="logs.platform.auto"></option><option value="cisco">Cisco IOS / IOS‑XE</option><option value="mikrotik">MikroTik RouterOS</option><option value="bird">BIRD</option><option value="frr">FRR / Quagga</option></select></div>
+<div class="field"><label class="lbl" for="dlOffMode" data-t="logs.offset"></label><select class="inp" id="dlOffMode"><option value="auto" data-t="logs.offset.auto"></option><option value="manual" data-t="logs.offset.manual"></option></select></div>
+<div class="field"><label class="lbl" for="dlOff" data-t="dl.offset_s"></label><input class="inp mono" id="dlOff" inputmode="decimal" disabled></div>
+<div class="field" style="justify-content:flex-end"><button class="btn btn-primary" type="button" id="dlApply" data-t="dl.apply"></button></div>
+</div>
+<p class="small" id="dlOffUsed" style="margin:0"></p>
+</section>
+<section class="card" style="flex:1 1 520px" aria-labelledby="dlSumH">
+<h2 class="h2" id="dlSumH" data-t="logs.summary"></h2>
+<div class="kpis" id="dlTiles" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))"></div>
+<div id="dlFirst" class="note" hidden></div>
+<h3 class="lbl" style="margin:4px 0 0" data-t="dl.by_phase"></h3>
+<div class="tbl-box"><table><thead><tr id="dlPhHead"></tr></thead><tbody id="dlPhBody"></tbody></table></div>
+<h3 class="lbl" style="margin:4px 0 0" data-t="dl.unexpected"></h3>
+<div class="tbl-box"><table><tbody id="dlUnexp"></tbody></table></div>
+<h3 class="lbl" style="margin:4px 0 0" data-t="dl.agreement"></h3>
+<p class="small" id="dlAgree" style="margin:0"></p>
+</section>
+</div>
+<section class="card" aria-labelledby="dlEvH">
+<div class="row-sb"><h2 class="h2" id="dlEvH" data-t="dl.events"></h2>
+<div role="tablist" style="display:flex;gap:4px"><button type="button" role="tab" class="zb zon" id="dlTabEv" aria-selected="true" data-t="dl.events"></button><button type="button" role="tab" class="zb" id="dlTabUn" aria-selected="false" data-t="logs.unclassified"></button></div></div>
+<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end" id="dlFilters">
+<div class="field" style="flex:1 1 220px"><label class="lbl" for="dlQ" data-t="dl.search"></label><input class="inp" id="dlQ" type="search"></div>
+<div class="field"><label class="lbl" for="dlFEv" data-t="logs.col.event"></label><select class="inp" id="dlFEv"></select></div>
+<div class="field"><label class="lbl" for="dlFSev" data-t="logs.col.severity"></label><select class="inp" id="dlFSev"><option value="" data-t="history.all"></option><option value="error">error</option><option value="warning">warning</option><option value="info">info</option></select></div>
+<div class="field"><label class="lbl" for="dlFPh" data-t="report.col.phase"></label><select class="inp" id="dlFPh"></select></div>
+<span class="small" id="dlCount"></span>
+</div>
+<div class="tbl-box" style="max-height:560px;overflow:auto"><table><thead><tr id="dlEvHead"></tr></thead><tbody id="dlEvBody"></tbody></table></div>
+</section>
+<div id="dlEmpty" class="card" hidden><p style="margin:0" id="dlEmptyText"></p></div>
+</main>
 <main class="wrap col" data-view="history" hidden>
 <section class="card" aria-labelledby="hisH">
 <div class="row-sb"><h2 class="h2" id="hisH" data-t="history.title"></h2><span class="small" id="hisCount"></span></div>

@@ -631,15 +631,33 @@ def analyse(rdir: str, cpu: dict, dut_info: dict, health_max: dict, state: str,
     do = rep.get("dut_output") or {}
     if do.get("payload_mbps") is not None and dut_info.get("link_mbps"):
         do["link_use_pct"] = round(100 * do["payload_mbps"] * 1.06 / dut_info["link_mbps"], 2)
+
+    def jl(name: str) -> list:
+        f = d / name
+        return [json.loads(x) for x in f.read_text().splitlines() if x.strip()] if f.exists() else []
+    try:   # DUT log events (P5): parsed, aligned, evaluated -> dut-events.json, an INFO row, F9
+        from tgen.dutlog import evaluate, gate_line
+        rep["dut_log"] = evaluate(d, meta, results, phases or [], jl("live.jsonl"), adapter=dut_info.get("adapter"))
+        n, p_, det = gate_line(rep["dut_log"])
+        rep["gate"].append({"name": n, "passed": p_, "detail": det})
+    except Exception as e:  # noqa: BLE001
+        (d / "dutlog-error.txt").write_text(f"{e.__class__.__name__}: {e}\n")
     (d / "report.json").write_text(json.dumps(rep, indent=1))
     try:   # figures F1-F12 for the report page (P4); a failure here never loses the report
         from tgen.figures import build
-
-        def jl(name: str) -> list:
-            f = d / name
-            return [json.loads(x) for x in f.read_text().splitlines() if x.strip()] if f.exists() else []
         figs = build(meta, results, jl("live.jsonl"), jl("dut-sessions.jsonl"), phases or [], events or [])
         figs["f12"]["node_cpu_p95"] = cpu
+        de = d / "dut-events.json"
+        if de.exists():   # F9 DUT log lane: t (aligned), router, event, severity, detail
+            dl = json.loads(de.read_text())
+            evs = [[e[0], e[1], e[2], e[4], e[3]] for e in dl["events_list"] if e[0] is not None]
+            if len(evs) > 600:   # keep every warning and error, thin the info lines
+                bad = [e for e in evs if e[3] != "info"][:600]
+                info = [e for e in evs if e[3] == "info"]
+                evs = sorted(bad + info[::max(1, len(info) // max(1, 600 - len(bad)))][:600 - len(bad)])
+            figs["f9"]["dut_log"] = evs
+            figs["f9"]["dut_log_platform"] = dl.get("platform")
+            figs["f9"]["dut_log_offset_s"] = dl.get("offset_s")
         (d / "figures.json").write_text(json.dumps(figs, separators=(",", ":")))
     except Exception as e:  # noqa: BLE001
         (d / "figures-error.txt").write_text(f"{e.__class__.__name__}: {e}\n")

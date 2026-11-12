@@ -251,7 +251,10 @@ class Cisco(Dut):
         return out, est
 
     def log(self) -> str:
-        return self.cmd("show logging | include BGP", timeout=120)
+        """BGP, session, interface and resource messages (P5); the device clock first, for the time alignment."""
+        clock = self.cmd("show clock", timeout=30).strip()
+        out = self.cmd("show logging | include BGP|SYS-|TCP-|LINK-|LINEPROTO-", timeout=120)
+        return f"# device clock at collection: {clock}\n" + out
 
 
 def check_legacy_ssh() -> None:

@@ -847,7 +847,7 @@ fig.f8.received,column,Received,Примљено
 fig.f8.missing,column,Missing,Недостаје
 fig.f8.extra,column,Extra,Вишак
 fig.f8.looped,column,Looped (dropped),Петља (одбачено)
-fig.f9.cap,text,"Phases, our session events, the DUT's established‑session count from its polls, and controller events on one time axis. DUT log lines come with P5.","Фазе, наши догађаји сесија, број успостављених сесија DUT‑а из његових очитавања и догађаји контролера на једној временској оси. Линије из лога DUT‑а стижу са P5."
+fig.f9.cap,text,"Phases, our session events, the DUT's established‑session count from its polls, and controller events on one time axis. DUT log events (P5) are drawn in their own lane, shifted to our clock.","Фазе, наши догађаји сесија, број успостављених сесија DUT‑а из његових очитавања и догађаји контролера на једној временској оси. Догађаји из лога DUT‑а (P5) цртају се у засебној траци, померени на наш сат."
 fig.f9.dut,label,DUT sessions,Сесије DUT‑а
 fig.f9.events,label,Events,Догађаји
 fig.f9.up,text,up,успостављена
@@ -868,3 +868,50 @@ fig.cmp.f3,text,Announce latency CDF of each run.,CDF кашњења оглаш�
 fig.cmp.f5,text,Delivered vs offered of each stepped‑load run.,Испоручено у односу на понуђено за сваки тест са степенастим оптерећењем.
 fig.cmp.f10,text,Free DUT memory of each run.,Слободна меморија DUT‑а за сваки тест.
 fig.f8.more,text,"… and {n} more receivers, all complete (CSV has all)","… и још {n} пријемника, сви потпуни (CSV садржи све)"
+dl.sub,text,"The DUT's own log for a run: parsed, aligned to our clock and evaluated.","Сопствени лог DUT‑а за један тест: рашчлањен, усклађен са нашим сатом и оцењен."
+dl.sources,heading,Log files,Датотеке лога
+dl.col.file,column,File,Датотека
+dl.col.lines,column,Lines,Редова
+dl.col.events,column,Events,Догађаја
+dl.col.line,column,Line,Ред
+dl.collected,text,collected at the end of the run,прикупљено на крају теста
+dl.unknown,text,not recognised,није препознато
+dl.delete,button,Remove,Уклони
+dl.delete.confirm,text,Remove the uploaded file {f} and evaluate the run again?,Уклонити отпремљену датотеку {f} и поново оценити тест?
+dl.upload.hint,text,"More logs for this run, e.g. from a syslog server: .txt, .log or .gz, up to 50 MB each. The run is evaluated again after the upload.","Додатни логови за овај тест, нпр. са syslog сервера: .txt, .log или .gz, до 50 MB по датотеци. Тест се поново оцењује после отпремања."
+dl.offset_s,label,"Offset, DUT minus ours (s)","Помак, DUT минус наш (s)"
+dl.offset.bad,text,"Enter the offset in seconds, e.g. 3600 or -12.5.","Унесите помак у секундама, нпр. 3600 или -12,5."
+dl.apply,button,Apply and evaluate,Примени и оцени
+dl.working,text,Evaluating…,Оцењивање…
+dl.offset_used.auto,text,"Offset used: {s} s, found from session events (routers matched: {n}).","Коришћени помак: {s} s, нађен из догађаја сесија (поклопљених рутера: {n})."
+dl.offset_used.manual,text,"Offset used: {s} s, entered by hand.","Коришћени помак: {s} s, унет ручно."
+dl.offset_used.zone,text,Offset used: {s} s — time zone only: no session lines matched ours. Check it or enter it by hand.,Коришћени помак: {s} s — само временска зона: ниједан ред сесије се не поклапа са нашим. Проверите га или унесите ручно.
+dl.offset_used.none,text,No offset found; DUT times are shown as logged.,Помак није нађен; времена DUT‑а приказана су како су записана.
+dl.none,text,No DUT log for this run. Upload one above.,Нема лога DUT‑а за овај тест. Отпремите га изнад.
+dl.regenerate,text,This run has a DUT log but no evaluation yet: press Apply and evaluate.,Овај тест има лог DUT‑а али још није оцењен: притисните Примени и оцени.
+dl.t.events,label,Parsed events,Рашчлањени догађаји
+dl.t.unexpected,label,Unexpected session downs,Неочекивани падови сесија
+dl.t.errors,label,Errors and limits,Грешке и ограничења
+dl.t.unclassified,label,Unclassified lines,Неразврстани редови
+dl.first_error,text,"First error: {ev} at {t} on {r} ({ph}), offered {rate} updates/s","Прва грешка: {ev} у {t} на {r} ({ph}), понуђено {rate} ажурирања/s"
+dl.by_phase,heading,Events by phase,Догађаји по фазама
+dl.outside,text,Before the first phase,Пре прве фазе
+dl.unexpected,heading,Unexpected session downs and their cause,Неочекивани падови сесија и њихов узрок
+dl.unexpected.none,text,None: every session down in the DUT log was planned (flap or end of run).,Нема: сваки пад сесије у логу DUT‑а био је планиран (флеп или крај теста).
+dl.agreement,heading,Agreement with our routers,Слагање са нашим рутерима
+dl.agree,text,The DUT logged as many session ups as we saw for {m} of {n} routers.,DUT је записао исто толико успостављања сесија колико смо ми видели за {m} од {n} рутера.
+dl.events,heading,Events,Догађаји
+dl.search,label,Search,Претрага
+dl.count,text,{n} of {m},{n} од {m}
+dl.ev.up,text,Session up,Сесија успостављена
+dl.ev.down,text,Session down,Сесија пала
+dl.ev.notification_sent,text,Notification sent,Послато обавештење
+dl.ev.notification_received,text,Notification received,Примљено обавештење
+dl.ev.hold_expired,text,Hold timer expired,Истекао hold тајмер
+dl.ev.max_prefix_warning,text,Max‑prefix warning,Упозорење max‑prefix
+dl.ev.max_prefix_exceeded,text,Max‑prefix exceeded,Прекорачен max‑prefix
+dl.ev.resource,text,Memory / CPU,Меморија / CPU
+dl.ev.error,text,Error,Грешка
+dl.ev.config,text,Configuration,Конфигурација
+dl.ev.other,text,Other,Остало
+report.dutlog.open,button,DUT log,Лог DUT‑а
