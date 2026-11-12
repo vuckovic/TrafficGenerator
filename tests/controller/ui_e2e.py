@@ -156,6 +156,17 @@ def main() -> int:
             check(True, "initial convergence shown: " + pg.inner_text("#kConv"))
             time.sleep(3)
             pg.screenshot(path=str(shots / "benchmark-running-en.png"), full_page=True)
+            h0 = pg.evaluate("document.getElementById('latChart').getBoundingClientRect().top")
+            fit = pg.evaluate("""() => { const r = []; for (const id of ['kLat','kOut','kConv']) { const e = document.getElementById(id);
+                e.textContent = '999\u202F999 ms'; r.push(e.scrollWidth <= e.parentElement.clientWidth - 30 && e.getBoundingClientRect().height < 40); } return r; }""")
+            h1 = pg.evaluate("document.getElementById('latChart').getBoundingClientRect().top")
+            check(all(fit) and abs(h1 - h0) < 1, f"KPI tiles hold '999 999 ms' on one line, chart does not move ({fit}, {h0:.0f}->{h1:.0f})")
+            for w in (1440, 1280, 1024, 390):
+                pg.set_viewport_size({"width": w, "height": 1000})
+                ok = pg.evaluate("""() => ['kLat','kOut','kConv','kSess'].every(id => { const e = document.getElementById(id);
+                    e.textContent = '999\u202F999 ms'; return e.getBoundingClientRect().height < 40 && e.scrollWidth <= e.parentElement.clientWidth; })""")
+                check(ok, f"KPI values on one line at {w} px")
+            pg.set_viewport_size({"width": 1440, "height": 1000})
             check(pg.locator("#latChart canvas").count() >= 1, "latency chart drawn")
             check("p50" in pg.inner_text("#readout"), "chart readout: " + pg.inner_text("#readout")[:80])
             check(pg.locator("#genHealth .mono").count() >= 12, "generator health for 6 nodes")

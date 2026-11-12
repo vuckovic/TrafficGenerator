@@ -19,8 +19,11 @@ a{color:var(--teal)}a:hover{color:var(--teal-d)}
 .btn-stop{background:var(--red);color:#FFFFFF;border-color:var(--red);font-weight:600}
 .th{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
 .td{padding:8px 10px;border-bottom:1px solid var(--line2);white-space:nowrap}
-.kpi{background:#FFFFFF;border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;flex:1 1 112px;min-width:0}
-.kv{font-size:24px;font-weight:600;font-family:'IBM Plex Mono',ui-monospace,monospace}
+/* KPI tiles: wide enough for "999 999 ms" on one line (10 mono characters at 24 px), so nothing jumps */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.kpi{background:#FFFFFF;border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kpi>.small{min-height:2.8em;line-height:1.4}
+.kv{font-size:24px;font-weight:600;font-family:'IBM Plex Mono',ui-monospace,monospace;white-space:nowrap}
 .hint{position:relative;display:inline-block;cursor:help;border-bottom:1px dotted #8A9097;outline:none;width:fit-content}
 .hint:focus-visible{box-shadow:0 0 0 2px var(--teal);border-radius:2px}
 .tt{display:none;position:absolute;left:0;top:calc(100% + 6px);width:260px;white-space:normal;background:var(--ink);color:#F3F4F1;font-size:12px;font-weight:400;line-height:1.45;padding:8px 10px;border-radius:6px;z-index:30;text-transform:none;letter-spacing:0}

@@ -72,3 +72,9 @@ Requested by the user after the first cluster test: pressing Start gave no visib
 - **Browser test:** checks the strip in both languages at Start, while running (phase n of m, progress, spinner), finished (with the summary link) and stopped, plus the title marker.
 - **Previews:** `docs/design/previews/run-strip-en.png`, `run-strip-sr-cyrl.png`.
 - **Commits:** 0476bde (strip), and this change (Serbian checks, translated port line).
+
+## 8. KPI tiles hold six‑digit values (2026‑11‑12)
+
+Reported by the user: a five‑digit latency made the *Latency p99 (now)* value wrap to a second line, which pushed the chart and everything below it down and back up.
+- **Fix:** every KPI tile is at least 190 px wide, enough for "999 999 ms" on one line (10 monospace characters at 24 px), and the value never wraps. The small line under the value always reserves two lines. The tiles sit two by two in the live column on a 1440 px screen, or four in a row when there is room.
+- **Browser test:** puts "999 999 ms" into the tiles at 1440, 1280, 1024 and 390 px and checks that each stays on one line and the chart does not move.
