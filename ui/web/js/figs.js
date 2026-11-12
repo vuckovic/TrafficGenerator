@@ -158,15 +158,19 @@ export function lineFig(o) {
       const iw = pts.findIndex((p) => p[0] >= a), jw = pts.findIndex((p) => p[0] > b);
       const seg = pts.slice(Math.max(0, iw - 1), jw < 0 ? pts.length : jw + 1);
       if (!seg.length) return;
-      let d = "", pen = false, prev = null;
+      let d = "", pen = false, prev = null, run = [];
+      const lone = [];    // a sample with no neighbour draws no line: show it as a dot
+      const flush = () => { if (run.length === 1) lone.push(run[0]); run = []; };
       seg.forEach((p) => {
-        if (p[1] === null || p[1] === undefined) { pen = false; return; }
-        if (pen && o.gap && !se.step && p[0] - prev[0] > o.gap) pen = false;
+        if (p[1] === null || p[1] === undefined) { pen = false; flush(); return; }
+        if (pen && o.gap && !se.step && p[0] - prev[0] > o.gap) { pen = false; flush(); }
         const x = Math.min(R, Math.max(L, fx(p[0], a, b))), y = f(p[1]);
         if (se.step && pen) d += ` L${x.toFixed(1)},${f(prev[1]).toFixed(1)}`;
         d += `${pen ? " L" : " M"}${x.toFixed(1)},${y.toFixed(1)}`;
-        pen = true; prev = p;
+        pen = true; prev = p; run.push([x, y]);
       });
+      flush();
+      lone.forEach(([x, y]) => { s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="${se.color}"/>`; });
       if (!d) return;
       s += `<path d="${d}" fill="none" stroke="${se.color}" stroke-width="${se.width || 2.2}" ${se.dash ? `stroke-dasharray="${se.dash}"` : ""} stroke-linejoin="round"/>`;
       if (se.dots) seg.filter((p) => p[1] !== null && p[1] !== undefined).forEach((p) => { s += p[2] ? `<circle cx="${fx(p[0], a, b).toFixed(1)}" cy="${f(p[1]).toFixed(1)}" r="5.5" fill="#FFFFFF" stroke="${C.red}" stroke-width="2"/>` : `<circle cx="${fx(p[0], a, b).toFixed(1)}" cy="${f(p[1]).toFixed(1)}" r="3.2" fill="${se.color}"/>`; });
