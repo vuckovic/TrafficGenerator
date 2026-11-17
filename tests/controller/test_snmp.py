@@ -94,3 +94,20 @@ def test_wrong_community_and_no_secret_on_command_line(agent, monkeypatch):
     assert seen and not any("wrong-community" in a for args in seen for a in args)
     with pytest.raises(snmp.SnmpError):
         snmp.Session("127.0.0.1", "", port=agent).system()
+
+
+def test_port_locked_after_rates(agent):
+    """Without a configured port the busiest one that is up is chosen once rates exist; then only it is read."""
+    s = snmp.Session("127.0.0.1", COMMUNITY, port=agent)
+    r1 = s.poll(None, None)
+    assert s.if_index is None and r1["if"]["oper"] == "up"
+    time.sleep(1.1)
+    s.poll(None, None)
+    assert s.if_index is not None
+    walks = []
+    real = s.walk
+    s.walk = lambda oid: walks.append(oid) or real(oid)
+    time.sleep(1.1)
+    r3 = s.poll(None, None)
+    assert r3["if"]["in_mbps"] is not None and not any(o.startswith(".1.3.6.1.2.1.31") or o.startswith(".1.3.6.1.2.1.2.")
+                                                       for o in walks)

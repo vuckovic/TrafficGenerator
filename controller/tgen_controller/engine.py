@@ -504,7 +504,8 @@ class Engine:
     async def _snmp_poll(self, c: Ctx) -> None:
         from tgen.snmp import SnmpError
         try:
-            rec = await asyncio.to_thread(c.snmp.poll, c.dut_info.get("interface"), c.snmp_peers or None)
+            iface = c.dut_info.get("interface") or (c.dut_info.get("port_before") or {}).get("interface")
+            rec = await asyncio.to_thread(c.snmp.poll, iface, c.snmp_peers or None)
         except SnmpError as e:
             rec = {"t": round(time.time(), 3), "errors": [str(e)[:200]]}
         with open(c.dir / "dut-snmp.jsonl", "a") as f:

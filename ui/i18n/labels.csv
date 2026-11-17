@@ -854,7 +854,7 @@ fig.f9.up,text,up,успостављена
 fig.f9.down,text,down,пала
 fig.f9.down_planned,text,down (planned),пала (планирано)
 fig.f9.dut_est,text,DUT: {n} established,DUT: успостављено {n}
-fig.f10.cap,text,"Free memory and CPU of the DUT from its polls (SSH, or SNMP when SSH gives none), with its established sessions (right).","Слободна меморија и CPU DUT‑а из његових очитавања (SSH, или SNMP када их SSH не даје), уз успостављене сесије (десно)."
+fig.f10.cap,text,"Free memory and CPU of the DUT from its polls (SNMP when it is polled, every interval with the 5‑second CPU; else SSH), with its established sessions (right).","Слободна меморија и CPU DUT‑а из његових очитавања (SNMP када се очитава, у сваком интервалу са CPU‑ом за 5 секунди; иначе SSH), уз успостављене сесије (десно)."
 fig.f10.none,text,"No DUT polls in this run (the DUT was not configured by the controller, or polling was off).",Нема очитавања DUT‑а у овом тесту (DUT није подесио контролер или је очитавање искључено).
 fig.f10.mem,label,free memory,слободна меморија
 fig.f10.sessions,label,sessions,сесије

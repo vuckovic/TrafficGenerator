@@ -195,8 +195,11 @@ def build(meta: dict, results: list[dict], ticks: list[dict], dut_polls: list[di
         f10.append([_r(p["t"] - t0 / 1000, 2), p.get("free_pct"), float(m.group(1)) if m else None, p.get("established")])
     # SNMP (U5): resources when the SSH polls have none, and the port and BGP counters
     sn = [p for p in (snmp or []) if "if" in p or "cpu_pct" in p]
-    src = "ssh" if any(r[1] is not None or r[2] is not None for r in f10) else ("snmp" if sn else None)
-    if src != "ssh" and sn:
+    # SNMP first when it answered: every poll interval and the 5-second CPU (the SSH polls every 10 s
+    # missed the ASR-920's 96 % peak at the MRAI burst, 2026-11-17)
+    src = "snmp" if any(p.get("cpu_pct") is not None or p.get("free_mem_pct") is not None for p in sn) else \
+        ("ssh" if any(r[1] is not None or r[2] is not None for r in f10) else None)
+    if src == "snmp":
         f10 = [[_r(p["t"] - t0 / 1000, 2), p.get("free_mem_pct"), p.get("cpu_pct"), (p.get("bgp") or {}).get("established")]
                for p in sn]
     srows = [[_r(p["t"] - t0 / 1000, 2), (p.get("if") or {}).get("in_mbps"), (p.get("if") or {}).get("out_mbps"),

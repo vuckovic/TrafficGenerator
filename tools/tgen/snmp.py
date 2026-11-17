@@ -92,6 +92,8 @@ class Session:
         self.prev: dict | None = None
         self.if_index: str | None = None
         self.kind: str | None = None          # "cisco" | "other", from sysObjectID
+        self._names: dict | None = None
+        self._descr: dict = {}
 
     def _run(self, tool: str, oids: list[str], wall: float = 20) -> dict[str, str]:
         if not available():
@@ -159,10 +161,15 @@ class Session:
         return None
 
     def interfaces(self, want: str | None) -> dict[str, dict]:
-        names = self.walk(IF_NAME) or {}
-        descr = self.walk(IF_DESCR) or {}
-        idx = {k.rsplit(".", 1)[1]: v for k, v in descr.items()}
-        idx.update({k.rsplit(".", 1)[1]: v for k, v in names.items() if v})
+        # names are walked once; once the port is known only its six counters are read (a poll
+        # costs the DUT CPU: IOS's SNMP process is not light, ASR-920 2026-11-17)
+        if self._names is None:
+            names = self.walk(IF_NAME) or {}
+            descr = self.walk(IF_DESCR) or {}
+            self._descr = descr
+            self._names = {k.rsplit(".", 1)[1]: v for k, v in descr.items()}
+            self._names.update({k.rsplit(".", 1)[1]: v for k, v in names.items() if v})
+        idx, descr = self._names, self._descr
         if want and not self.if_index:
             w = want.lower().replace(" ", "")
             for i, n in list(idx.items()) + [(k.rsplit(".", 1)[1], v) for k, v in descr.items()]:
@@ -226,7 +233,7 @@ class Session:
         ifs = rec.pop("ifs", None) or {}
         prev, now = self.prev or {}, rec["t"]
         dt = now - prev.get("t", now)
-        best = None
+        best, best_i = None, None
         for i, d in ifs.items():
             p = (prev.get("ifs") or {}).get(i) or {}
             row = {"name": d["name"], "oper": {1: "up", 2: "down"}.get(d["oper"], d["oper"]),
@@ -235,8 +242,11 @@ class Session:
             for c, k in (("in_oct", "in_mbps"), ("out_oct", "out_mbps")):
                 row[k] = round((d[c] - p[c]) * 8 / dt / 1e6, 3) if dt > 0 and d[c] is not None and p.get(c) is not None \
                     and d[c] >= p[c] else None
-            if self.if_index or best is None or (row["in_mbps"] or 0) > (best["in_mbps"] or 0):
-                best = row
+            if self.if_index or best is None or (row["oper"] == "up", row["in_mbps"] or 0) > \
+                    (best["oper"] == "up", best["in_mbps"] or 0):
+                best, best_i = row, i
+        if not self.if_index and best is not None and best["in_mbps"] is not None:
+            self.if_index = best_i          # the busiest port, once there are rates: read only it from now on
         rec["if"] = best
         b = rec.get("bgp") or {}
         pb = (prev.get("bgp") or {})
