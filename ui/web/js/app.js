@@ -314,7 +314,11 @@ function askPassword(okLabel) {
     const dlg = $("pwDialog"), p = dutProfile();
     $("pwTitle").textContent = t("ui.start.password_title", { device: p ? p.label : $("dutIp").value || "DUT" });
     $("pwOk").textContent = okLabel; $("pwDut").value = "";
+    dlg.returnValue = "";
     dlg.onclose = () => resolve(dlg.returnValue === "ok" ? $("pwDut").value : null);
+    // Enter in the field = the OK button (before, the form's first button, Cancel, took Enter)
+    $("pwDut").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); dlg.close("ok"); } };
+    $("pwCancel").onclick = () => dlg.close("cancel");
     dlg.showModal(); $("pwDut").focus();
   });
 }
