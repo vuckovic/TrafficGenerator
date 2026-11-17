@@ -324,7 +324,7 @@ function renderSnmp() {
   const p = dutProfile(), on = $("snmpOn").checked;
   $("snmpFields").querySelectorAll("input, button").forEach((x) => { x.dataset.forceDisabled = on ? "0" : "1"; x.disabled = !on || runActive(); });
   $("snmpComm").placeholder = p && p.snmp_set ? t("snmp.community.set") : "";
-  $("snmpHost").placeholder = $("dutIp").value.trim();
+  $("snmpHost").placeholder = $("sshHost").value.trim() || $("dutIp").value.trim();
   const tools = Object.values(S.duts)[0];
   $("snmpHint").textContent = tools && tools.snmp_tools === false ? t("snmp.no_tools") : on ? t("snmp.hint") : "";
 }

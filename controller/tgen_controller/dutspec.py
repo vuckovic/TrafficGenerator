@@ -38,7 +38,7 @@ def resolve(d, inv: dict | None = None) -> dict:
         "interface": d.interface or p.get("interface"), "ssh_legacy": pick("ssh_legacy", "ssh_legacy", False),
         "sudo": d.sudo, "bird_include": d.bird_include,
         "snmp": bool(d.snmp if d.snmp is not None else p.get("snmp", False)),
-        "snmp_host": d.snmp_host or p.get("snmp_host") or ip, "snmp_port": pick("snmp_port", "snmp_port", 161),
+        "snmp_host": d.snmp_host or p.get("snmp_host") or d.ssh_host or p.get("ssh_host") or ip, "snmp_port": pick("snmp_port", "snmp_port", 161),
     }
 
 
