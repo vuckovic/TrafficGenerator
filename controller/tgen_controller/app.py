@@ -135,6 +135,9 @@ def create_app(cfg: Settings | None = None) -> FastAPI:
         t0 = time.perf_counter()
         resp = await call_next(request)
         health.request((time.perf_counter() - t0) * 1000)
+        if not request.url.path.startswith("/api/") and "cache-control" not in resp.headers:
+            # page, scripts, labels: always revalidate (ETag), so an update never mixes old and new modules
+            resp.headers["Cache-Control"] = "no-cache"
         return resp
 
     def need_session(request: Request) -> None:
