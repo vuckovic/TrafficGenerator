@@ -97,7 +97,8 @@ export function renderDutLogs() {
   unexp.forEach((u) => ub.append(el("tr", {}, el("td", { class: "td mono", text: ts(u[0]) }), el("td", { class: "td mono", text: u[1] || "—" }),
     el("td", { class: "td", style: "white-space:normal", text: u[2] || "" }), el("td", { class: "td", text: u[3] ? L.ctx.phaseName({ type: u[3] }) : "" }))));
   const ag = d.agreement || {};
-  $("dlAgree").textContent = ag.routers ? t("dl.agree", { m: ag.up_counts_match, n: ag.routers }) : "—";
+  $("dlAgree").textContent = (ag.routers ? t("dl.agree", { m: ag.up_counts_match, n: ag.routers }) : "—")
+    + (d.log_starts_s ? " " + t("dl.log_starts", { s: num(d.log_starts_s) }) : "");
   // filters
   const fev = $("dlFEv"), prev = fev.value; fev.innerHTML = "";
   fev.append(el("option", { value: "", text: t("history.all") }), ...Object.keys(d.counts || {}).map((e) => el("option", { value: e, text: `${evName(e)} (${d.counts[e]})` })));

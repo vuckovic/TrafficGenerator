@@ -76,10 +76,12 @@ P = {
     "cisco": [
         (r"%BGP-5-ADJCHANGE: neighbor " + IP + r"(?: vpn vrf \S+)? Up", "up"),
         (r"%BGP-5-ADJCHANGE: neighbor " + IP + r"(?: vpn vrf \S+)? Down\s*(?P<d>.*)", "down"),
-        (r"%BGP_SESSION-5-ADJCHANGE: neighbor " + IP + r".*?(?:removed from session|session closed)\s*(?P<d>.*)", "down"),
+        # IOS-XE also logs, for the same down, the address family leaving the session and a reset line:
+        # kept as "other" so one down counts once (seen on the ASR-920, 17.15, 2026-11-17)
+        (r"%BGP_SESSION-5-ADJCHANGE: neighbor " + IP + r".*?(?:removed from session|session closed)\s*(?P<d>.*)", "other"),
         (r"%BGP-3-NOTIFICATION: sent to neighbor " + IP + r"\s*(?:\(\S+\)\s*)?(?P<d>.*)", "notification_sent"),
         (r"%BGP-3-NOTIFICATION: received from neighbor " + IP + r"\s*(?:\(\S+\)\s*)?(?P<d>.*)", "notification_received"),
-        (r"%BGP-\d-NBR_RESET: Neighbor " + IP + r" reset\s*(?P<d>.*)", "down"),
+        (r"%BGP-\d-NBR_RESET: Neighbor " + IP + r" reset\s*(?P<d>.*)", "other"),
         (r"%BGP-\d-MAXPFXEXCEED: .*?from " + IP + r"(?P<d>.*)", "max_prefix_exceeded"),
         (r"%BGP-\d-MAXPFX: .*?from " + IP + r"(?P<d>.*)", "max_prefix_warning"),
         (r"%SYS-\d-(?:MALLOCFAIL|CPUHOG|CHUNKMALLOCFAIL|NOMEMORY)\S*:?\s*(?P<d>.*)", "resource"),
@@ -294,6 +296,10 @@ def evaluate(rdir: Path, meta: dict, results: list[dict], phases: list[dict], ti
                 offset, source = float(guess), "zone"
             else:
                 offset = 0.0
+    # where the log begins on our clock: after the run's start means older lines are gone
+    # (a small `logging buffered` on Cisco wraps within minutes)
+    stamped = [e[0] for e in events if e[0] is not None]
+    log_starts = round(min(stamped) - offset - t0, 1) if stamped and offset is not None else None
     # a manual offset is entered as "DUT clock minus ours" like the automatic one
     # keep this run's window: from 60 s before the start to 180 s after the end
     lo, hi = t0 - 60, end + 180
@@ -361,6 +367,7 @@ def evaluate(rdir: Path, meta: dict, results: list[dict], phases: list[dict], ti
                "offset_s": round(offset, 3), "offset_source": source, "offset_pairs": pairs,
                "events": len(out_ev), "unclassified": len(out_un), "counts": counts, "by_phase": by_phase,
                "unexpected_downs": unexpected[:100], "first_error": first_err,
+               "log_starts_s": log_starts if log_starts is not None and log_starts > 5 else None,
                "agreement": {"routers": len(agree), "up_counts_match": matched, "rows": agree[:200]}}
     doc = summary | {"events_list": out_ev[:5000], "unclassified_list": out_un,
                      "settings": {"platform": want, "offset": mode}}
@@ -379,4 +386,6 @@ def gate_line(s: dict) -> tuple[str, None, str]:
     u = len(s["unexpected_downs"])
     fe = s["first_error"]
     return ("DUT log", None, f"{s['events']} events, {u} unexpected session down{'s' if u != 1 else ''}"
-            + (f", first {fe['event'].replace('_', ' ')} at {fe['t_s']:.0f} s" if fe else "") + f"; {off}")
+            + (f", first {fe['event'].replace('_', ' ')} at {fe['t_s']:.0f} s" if fe else "") + f"; {off}"
+            + (f"; the log begins {s['log_starts_s']:.0f} s after the start (device log buffer too small?)"
+               if s.get("log_starts_s") else ""))

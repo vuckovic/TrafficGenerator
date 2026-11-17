@@ -937,3 +937,4 @@ fig.f10s.cap,text,"Traffic on the DUT port {iface} (IF‑MIB, 64‑bit counters)
 fig.f10s.in,label,port in,порт улаз
 fig.f10s.out,label,port out,порт излаз
 fig.f10s.upd,label,updates/s received,примљено ажурирања/s
+dl.log_starts,text,"The DUT log begins {s} s after the run started, so the session‑up lines are missing: the device's log buffer is probably too small (Cisco: logging buffered 1000000 informational).","Лог DUT‑а почиње {s} s после почетка теста, па редови успостављања сесија недостају: бафер лога на уређају је вероватно премали (Cisco: logging buffered 1000000 informational)."

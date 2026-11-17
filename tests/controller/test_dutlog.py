@@ -77,7 +77,7 @@ def test_cisco_parse():
     nmap = dutlog.neighbour_map({}, run()[1])
     ev, un = dutlog.parse(CISCO, "cisco", 2026, DAY, nmap)
     kinds = [e[3] for e in ev]
-    assert kinds == ["up", "up", "max_prefix_warning", "notification_sent", "down", "down", "resource"]
+    assert kinds == ["up", "up", "max_prefix_warning", "notification_sent", "down", "other", "resource"]   # one down counts once
     assert ev[0][2] == "R01" and ev[1][2] == "R02" and ev[3][2] == "R02"
     assert "hold time expired" in ev[3][4]
     assert len(un) == 1 and "LINK-3-UPDOWN" in un[0][1]
@@ -199,3 +199,19 @@ def test_evaluate_zone_fallback_and_no_log(tmp_path):
     empty.mkdir()
     s = dutlog.evaluate(empty, meta, results, phases, ticks)
     assert s["files"] == [] and dutlog.gate_line(s)[2] == "no DUT log for this run"
+
+
+def test_wrapped_buffer_flagged(tmp_path):
+    """ASR-920 2026-11-17: only the teardown lines were left in a small log buffer."""
+    meta, results, phases, ticks = run(downs=[(i, 285, "down_planned") for i in range(12)])
+    f = lambda s: hms(T0 + s).strftime("*%b %d %H:%M:%S.000")  # noqa: E731
+    lines = []
+    for i in range(12):
+        lines += [f"{f(285.1)}: %BGP-5-ADJCHANGE: neighbor 10.100.0.{20 + i} Down Peer closed the session",
+                  f"{f(285.1)}: %BGP_SESSION-5-ADJCHANGE: neighbor 10.100.0.{20 + i} IPv4 Unicast topology base removed from session  Peer closed the session",
+                  f"{f(285.1)}: %BGP-5-NBR_RESET: Neighbor 10.100.0.{20 + i} reset (Peer closed the session)"]
+    (tmp_path / "dut-bgp.log").write_text("\n".join(lines) + "\n")
+    s = dutlog.evaluate(tmp_path, meta, results, phases, ticks, adapter="cisco")
+    assert s["counts"]["down"] == 12 and s["offset_pairs"] == 12 and not s["unexpected_downs"]
+    assert s["log_starts_s"] and s["log_starts_s"] > 280
+    assert "log begins" in dutlog.gate_line(s)[2]
