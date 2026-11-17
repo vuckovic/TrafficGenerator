@@ -921,7 +921,7 @@ snmp.community,label,Community,Community
 snmp.community.set,text,set on the controller,подешено на контролеру
 snmp.host,label,SNMP address,SNMP адреса
 snmp.test,button,Test SNMP,Тестирај SNMP
-snmp.hint,text,"SNMP address: host or host:port (default: the DUT IP, port 161). The community is kept in memory for this run only. For unattended test schemes set TGEN_DUT_SNMP_<PROFILE> in /etc/tgen/dut-passwords.env.","SNMP адреса: host или host:port (подразумевано: IP DUT‑а, порт 161). Community се чува у меморији само за овај тест. За тест шеме без надзора подесите TGEN_DUT_SNMP_<PROFILE> у /etc/tgen/dut-passwords.env."
+snmp.hint,text,"SNMP address: host or host:port (default: the SSH address, port 161). The community is kept in memory for this run only. For unattended test schemes set TGEN_DUT_SNMP_<PROFILE> in /etc/tgen/dut-passwords.env.","SNMP адреса: host или host:port (подразумевано: SSH адреса, порт 161). Community се чува у меморији само за овај тест. За тест шеме без надзора подесите TGEN_DUT_SNMP_<PROFILE> у /etc/tgen/dut-passwords.env."
 snmp.no_tools,text,The net-snmp tools are not installed on the controller (package snmp).,Алати net-snmp нису инсталирани на контролеру (пакет snmp).
 snmp.free_mem,text,{pct} % memory free,слободно {pct} % меморије
 snmp.port,text,port {name},порт {name}

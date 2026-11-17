@@ -75,7 +75,7 @@ API: `GET /api/runs/{id}/dutlog`, `POST /api/runs/{id}/dutlog/files?name=` (raw 
 ## 6. SNMP v2c polling (U5) — `tools/tgen/snmp.py`
 
 - **Control (Benchmark tab, Device under test):** *SNMP polling (v2c, read‑only)* checkbox, community
-  (password field), SNMP address (`host` or `host:port`, default the DUT IP and 161), *Test SNMP*
+  (password field), SNMP address (`host` or `host:port`, default the SSH (management) address and 161), *Test SNMP*
   (system name and description, CPU, free memory, port, our BGP peers Established). Profiles may set
   `snmp = true`, `snmp_host`, `snmp_port` in `duts.toml`.
 - **Community = credential:** typed in the page (kept in memory for the run only, never in the scenario,
