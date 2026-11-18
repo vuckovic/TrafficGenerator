@@ -1,7 +1,7 @@
 // Latency vs offered load (design: value cursor + slider, readout line, 5/2/1 min zoom, window slider).
 import { t, num } from "./i18n.js";
 
-const TEAL = "#0E6E66", ORANGE = "#C2410C", GREY = "#8A9097", VIOLET = "#5B4FC4";
+const TEAL = "#2BB6CA", ORANGE = "#4F3FA8", GREY = "#A3A3B8", VIOLET = "#5B4FC4";
 
 function ago(s) {
   const v = Math.round(s);
@@ -27,9 +27,9 @@ export class LatencyChart {
         { label: "p99", scale: "ms", stroke: ORANGE, width: 2.5, spanGaps: true },
         { label: "offered", scale: "rate", stroke: GREY, width: 2, dash: [4, 3] }],
       axes: [
-        { stroke: "#545A61", grid: { stroke: "#ECEEEA" }, font: "10px IBM Plex Mono", values: (u, vals) => vals.map((v) => this.tl(v)) },
-        { scale: "ms", stroke: "#545A61", grid: { stroke: "#ECEEEA" }, font: "10px IBM Plex Mono", values: (u, vals) => vals.map((v) => num(v) + " ms"), size: 64 },
-        { scale: "rate", side: 1, stroke: "#545A61", grid: { show: false }, font: "10px IBM Plex Mono", values: (u, vals) => vals.map((v) => num(v) + "/s"), size: 64 }],
+        { stroke: "#6E6E87", grid: { stroke: "#EFEFF6" }, font: "10px Manrope", values: (u, vals) => vals.map((v) => this.tl(v)) },
+        { scale: "ms", stroke: "#6E6E87", grid: { stroke: "#EFEFF6" }, font: "10px Manrope", values: (u, vals) => vals.map((v) => num(v) + " ms"), size: 64 },
+        { scale: "rate", side: 1, stroke: "#6E6E87", grid: { show: false }, font: "10px Manrope", values: (u, vals) => vals.map((v) => num(v) + "/s"), size: 64 }],
       hooks: { setCursor: [(u) => this.onCursor(u)] },
     };
     this.u = new uPlot(opts, this.data, host);

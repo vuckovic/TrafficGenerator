@@ -13,7 +13,7 @@ const el = (tag, attrs = {}, ...kids) => {
   kids.flat().forEach((k) => k !== null && k !== undefined && e.append(k));
   return e;
 };
-const SEV = { error: "#B42318", warning: "#A15C07", info: "#545A61" };
+const SEV = { error: "#E0393E", warning: "#B7791F", info: "#6E6E87" };
 const L = { id: null, doc: null, runs: [], tab: "ev", ctx: null };
 const ACTIVE = ["created", "preparing", "running", "finishing"];
 

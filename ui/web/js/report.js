@@ -94,14 +94,14 @@ export function renderReport() {
   const gate = rep ? rep.gate : (r.summary || {}).gate;
   if (gate && gate.length) {
     gate.forEach((g) => {
-      const v = g.passed === null ? ["info", "#545A61"] : g.passed ? ["pass", "#1E7B3A"] : ["fail", "#B42318"];
+      const v = g.passed === null ? ["info", "#6E6E87"] : g.passed ? ["pass", "#1F8A5B"] : ["fail", "#E0393E"];
       gb.append(el("tr", {}, el("td", { class: "td", style: "white-space:normal", text: g.name }), el("td", { class: "td mono", style: "white-space:normal", text: g.detail }),
         el("td", { class: "td" }, el("span", { style: `display:inline-flex;align-items:center;gap:6px;font-weight:600;color:${v[1]}` }, el("span", { class: "dot", style: `background:${v[1]}` }), t("verdict." + v[0])))));
     });
     const bad = gate.filter((g) => g.passed === false).length;
     $("repGateNote").textContent = bad ? t("report.gate.fail", { n: bad }) : t("report.gate.ok");
   } else {
-    gb.append(el("tr", {}, el("td", { class: "td", colspan: "3", style: "white-space:normal;color:#545A61", text: r.error || t("report.gate.none") })));
+    gb.append(el("tr", {}, el("td", { class: "td", colspan: "3", style: "white-space:normal;color:#6E6E87", text: r.error || t("report.gate.none") })));
     $("repGateNote").textContent = "";
   }
   // key figures
@@ -160,8 +160,8 @@ export function renderReport() {
   const st = r.started_ms || r.created_ms;
   (r.events || []).slice(-300).forEach((e) => {
     const rel = Math.max(0, (e.t_ms - st) / 1000);
-    const c = e.severity === "error" ? "#B42318" : e.severity === "warning" ? "#A15C07" : "#545A61";
-    ev.append(el("li", {}, el("span", { class: "mono", style: "color:#545A61", text: `${String(Math.floor(rel / 60)).padStart(2, "0")}:${(rel % 60).toFixed(1).padStart(4, "0")}` }),
+    const c = e.severity === "error" ? "#E0393E" : e.severity === "warning" ? "#B7791F" : "#6E6E87";
+    ev.append(el("li", {}, el("span", { class: "mono", style: "color:#6E6E87", text: `${String(Math.floor(rel / 60)).padStart(2, "0")}:${(rel % 60).toFixed(1).padStart(4, "0")}` }),
       el("span", { style: `color:${c};overflow-wrap:anywhere`, text: e.text })));
   });
   const fl = $("repFiles"); fl.innerHTML = "";
@@ -203,7 +203,7 @@ async function saveNotes() {
 function pickCompare(pre) {
   const box = $("cmpList"); box.innerHTML = "";
   R.list.filter((x) => x.state === "done").slice(0, 100).forEach((x) => box.append(el("label", { style: "display:flex;gap:8px;align-items:center;min-height:36px;font-size:13px" },
-    el("input", { type: "checkbox", value: x.id, checked: pre.includes(x.id) || null, style: "accent-color:#0E6E66;width:18px;height:18px" }),
+    el("input", { type: "checkbox", value: x.id, checked: pre.includes(x.id) || null, style: "accent-color:#4F3FA8;width:18px;height:18px" }),
     el("span", { class: "mono", text: x.id }), el("span", { text: x.name || "" }))));
   $("cmpErr").hidden = true;
   $("cmpDialog").showModal();
@@ -246,7 +246,7 @@ function compareRows() {
 function renderComparePage() {
   $("cmpMeta").textContent = R.cmp.map((x) => x.id).join(" · ");
   const h = $("cmpHeadRow"); h.innerHTML = "";
-  h.append(el("th", { class: "th", text: t("cmp.metric") }), ...R.cmp.map((x, i) => el("th", { class: "th" }, el("a", { href: `#reports/${x.id}`, text: x.label, style: `color:${["#0E6E66", "#C2410C", "#5B4FC4", "#2A6FDB", "#B8860B"][i]}` }))));
+  h.append(el("th", { class: "th", text: t("cmp.metric") }), ...R.cmp.map((x, i) => el("th", { class: "th" }, el("a", { href: `#reports/${x.id}`, text: x.label, style: `color:${["#4F3FA8", "#C2410C", "#5B4FC4", "#2A6FDB", "#B8860B"][i]}` }))));
   const b = $("cmpRows"); b.innerHTML = "";
   compareRows().forEach(([k, vals]) => b.append(el("tr", {}, el("td", { class: "td", text: k }), ...vals.map((v) => el("td", { class: "td mono", style: "white-space:normal", text: v })))));
   renderCompare($("cmpFigs"), R.cmp);
@@ -262,6 +262,6 @@ async function exportHtml() {
   page.querySelectorAll("textarea").forEach((x) => { const p = document.createElement("p"); p.textContent = x.value; p.style.whiteSpace = "pre-wrap"; x.replaceWith(p); });
   page.querySelectorAll("a[href^='/api/']").forEach((a) => a.removeAttribute("href"));
   page.hidden = false;
-  const html = `<!doctype html><html lang="${document.documentElement.lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${R.id} report</title><style>${css}\nbody{background:#F3F4F1}main{max-width:1440px;margin:0 auto;padding:24px}</style></head><body><main>${page.outerHTML}</main></body></html>`;
+  const html = `<!doctype html><html lang="${document.documentElement.lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${R.id} report</title><style>${css}\nbody{background:#F4F4FA}main{max-width:1440px;margin:0 auto;padding:24px}</style></head><body><main>${page.outerHTML}</main></body></html>`;
   const a = el("a", { href: URL.createObjectURL(new Blob([html], { type: "text/html" })), download: `${R.id}-report.html` }); document.body.append(a); a.click(); a.remove();
 }

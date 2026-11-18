@@ -1,4 +1,4 @@
-# UI design — LOCKED v1.3 (2026‑11‑12)
+# UI design — LOCKED v1.4 (2026‑11‑18)
 
 Approved reference for the web interface look and behaviour. The P3 implementation follows it.
 Changes go through a new design version, not ad hoc.
@@ -36,6 +36,20 @@ Sample values in the preview are illustrative, not measured.
 
 Measured with IBM Plex at 1440 px: English 64 px high, Serbian 64 px; at 1280 px only Serbian wraps. |
 | Prefix pool sample | `10.0.0.0/8 · /24–/28` (spec §18 change of 2026‑10‑19). |
+
+## v1.4 — new look (adopted 2026‑11‑18, approved by the user)
+Tried on the test branch `ux/sello-test`, modelled on a reference dashboard the user supplied ("SELLO"); the user chose it for `main`. **Only the look changes**: controls, texts, behaviour and the API stay as in v1.3. This replaces the *Look* and the header part of *Layout* in the table above and the v1.1 header measurements.
+
+| Area | Decision |
+|---|---|
+| Colours | ground #F7F7FB, cards #FFFFFF with #ECECF4 border and 14 px radius; primary purple #4F3FA8 (hover #3E3190, tint #EEEBFA); cyan #49D3E4 (darker #2BB6CA, tint #E4F8FB); text #262640, secondary text #6E6E87; Stop orange #F2734E; OK #1F8A5B, warning #B7791F, error #E0393E |
+| Type | **Manrope** (OFL, variable weight, Latin + Cyrillic, served from `ui/web/vendor/fonts`); IBM Plex Mono stays for addresses, IDs and code |
+| Shell | white **left sidebar**: logo, host name, tabs with icons in three groups (Benchmark · Test scheme · Traffic / Reports · DUT logs · History / Nodes & settings), active tab purple with a bar on the left. White **top bar**: page title; run badge, Start (purple), Stop (orange), Log out and the language flag top right (G9 unchanged). **Node rail** on the right: one round badge per node, dot green / amber / red for CPU under 70 % / 70–90 % / over 90 %, grey when unknown; hidden under 1180 px. Under 860 px the sidebar becomes a row of tabs above the page. |
+| Benchmark tab | **Figures row** across the top: purple *Sessions* card (established / total, small figures along the bottom: routers, routes received, offered rate, phase); cyan *Initial convergence* card; *Latency p99 (now)* and *DUT output* cards with the name on a grey strip down the left side. The §8 rule holds: every value keeps "999 999 ms" on one line at 1440, 1280, 1024 and 390 px. Configuration left, live view right, as before. |
+| Charts | latency chart: p50 cyan #2BB6CA, p99 purple #4F3FA8, offered load grey dashed |
+| Run strip (G10) | light cyan, purple progress segments |
+
+Previews: `previews/v1.4-benchmark-en.png`, `v1.4-benchmark-sr-cyrl.png`, `v1.4-history-en.png`, `v1.4-phone-en.png`.
 
 ## v1.3 (2026‑11‑12)
 

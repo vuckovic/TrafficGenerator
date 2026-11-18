@@ -93,10 +93,10 @@ function langMenus() {
       el("img", { class: "flag", src: `/i18n/flags/${cur.flag}.svg`, alt: "" }),
       el("svg", {}));
     btn.lastChild.outerHTML = '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5 L5 6.5 L8 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    if (box.closest("#login")) { btn.style.color = "#16191D"; btn.style.borderColor = "#C9CDC6"; }
+    if (box.closest("#login")) { btn.style.color = "#262640"; btn.style.borderColor = "#DCDCE8"; }
     const menu = el("div", { class: "menu", role: "menu", hidden: true });
     languages().forEach((l) => menu.append(el("button", { type: "button", role: "menuitemradio", "aria-checked": String(l.tag === lang()), lang: l.html,
-      onclick: () => { setLang(l.tag); langMenus(); } }, el("img", { class: "flag", src: `/i18n/flags/${l.flag}.svg`, alt: "", style: "box-shadow:0 0 0 1px #D9DCD6" }), el("span", { text: l.name }))));
+      onclick: () => { setLang(l.tag); langMenus(); } }, el("img", { class: "flag", src: `/i18n/flags/${l.flag}.svg`, alt: "", style: "box-shadow:0 0 0 1px #E6E6F0" }), el("span", { text: l.name }))));
     btn.addEventListener("click", () => { menu.hidden = !menu.hidden; btn.setAttribute("aria-expanded", String(!menu.hidden)); });
     document.addEventListener("click", (e) => { if (!box.contains(e.target)) { menu.hidden = true; btn.setAttribute("aria-expanded", "false"); } });
     box.append(btn, menu);
@@ -107,6 +107,8 @@ function route() {
   const [tab, arg] = (location.hash || "#benchmark").slice(1).split("/");
   $$("[data-view]").forEach((m) => { m.hidden = m.dataset.view !== tab; });
   $$("#tabs a").forEach((a) => { if (a.dataset.tab === tab) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  const cur = document.querySelector(`#tabs a[data-tab="${tab}"] [data-t]`);   // v1.4 look: page title in the top bar
+  if (cur) { $("pageTitle").dataset.t = cur.dataset.t; $("pageTitle").textContent = t(cur.dataset.t); }
   if (tab === "settings") loadSettings();
   if (tab === "history") loadHistory();
   if (tab === "reports") openReport(arg || null);
@@ -185,19 +187,19 @@ function runActive() { return S.run && RUN_ACTIVE.includes(S.run.state); }
 
 function renderBadge() {
   const r = S.run, b = $("badge"), dot = $("badgeDot"), txt = $("badgeText");
-  b.className = "badge"; dot.style.background = "#8A9097";
+  b.className = "badge"; dot.style.background = "#A3A3B8";
   let s = t("state.idle");
   if (r) {
     const st = r.state;
     const el_s = r.started_ms ? Math.max(0, ((r.ended_ms || Date.now()) - r.started_ms) / 1000) : 0;
     const clock = `${Math.floor(el_s / 60)}:${String(Math.floor(el_s % 60)).padStart(2, "0")}`;
-    if (st === "preparing" || st === "created") { s = t("state.arming"); b.classList.add("run"); dot.style.background = "#5FD3C5"; }
+    if (st === "preparing" || st === "created") { s = t("state.arming"); b.classList.add("run"); dot.style.background = "#49D3E4"; }
     else if (st === "running") {
       const ph = S.lastTick && S.lastTick.phase;
       const n = S.runPhases ? S.runPhases.length : 0;
       s = t("state.running") + (ph && ph.type ? " · " + t("run.phase_of", { phase: phaseName({ type: ph.type, step: ph.type === "churn" && S.runPhases && S.runPhases[ph.idx] && S.runPhases[ph.idx].step }), n: ph.idx + 1, m: n }) : "") + " · " + clock;
-      b.classList.add("run"); dot.style.background = "#5FD3C5";
-    } else if (st === "finishing") { s = t("state.analysing"); b.classList.add("run"); dot.style.background = "#5FD3C5"; }
+      b.classList.add("run"); dot.style.background = "#49D3E4";
+    } else if (st === "finishing") { s = t("state.analysing"); b.classList.add("run"); dot.style.background = "#49D3E4"; }
     else if (st === "done") { s = t("state.done") + " · " + clock; b.classList.add("done"); dot.style.background = "#4CC38A"; }
     else if (st === "failed") { s = t("state.error"); b.classList.add("err"); dot.style.background = "#F97066"; }
     else if (st === "stopped") { s = t("ui.stopped") + " · " + clock; }
@@ -229,7 +231,7 @@ function pickDevice(name) {
     $("dutIp").value = ""; $("dutAsn").value = 64500; $("sshHost").value = ""; $("sshUser").value = ""; $("maxRoutes").value = ""; $("guard").value = 0;
     $("snmpOn").checked = false; $("snmpHost").value = "";
   }
-  $("snmpComm").value = ""; $("snmpStatus").textContent = ""; $("snmpDot").style.background = "#8A9097";
+  $("snmpComm").value = ""; $("snmpStatus").textContent = ""; $("snmpDot").style.background = "#A3A3B8";
   S.dutResult = null;
   renderDut();
 }
@@ -335,18 +337,18 @@ function renderSnmp() {
 
 async function snmpTest() {
   const st = $("snmpStatus"), dot = $("snmpDot");
-  st.textContent = t("ui.dut.working"); dot.style.background = "#8A9097"; $("snmpTest").disabled = true;
+  st.textContent = t("ui.dut.working"); dot.style.background = "#A3A3B8"; $("snmpTest").disabled = true;
   try {
     const r = await post("/api/dut/snmp", { dut: dutSpec(null, null) });
     if (!r.ok) throw new Error(r.error || "failed");
     const p = r.poll || {}, b = p.bgp || {};
-    dot.style.background = "#1E7B3A";
+    dot.style.background = "#1F8A5B";
     st.textContent = [r.system.name, (r.system.descr || "").split("\n")[0].slice(0, 60),
       p.cpu_pct !== null && p.cpu_pct !== undefined ? "CPU " + num(p.cpu_pct) + " %" : null,
       p.free_mem_pct !== null && p.free_mem_pct !== undefined ? t("snmp.free_mem", { pct: num(p.free_mem_pct) }) : null,
       p.if ? t("snmp.port", { name: p.if.name }) : null,
       b.peers !== undefined ? t("snmp.bgp", { n: b.established, m: b.peers }) : t("snmp.no_bgp")].filter(Boolean).join(" · ");
-  } catch (e) { dot.style.background = "#B42318"; st.textContent = t("dutcfg.status.failed") + ": " + e.message; }
+  } catch (e) { dot.style.background = "#E0393E"; st.textContent = t("dutcfg.status.failed") + ": " + e.message; }
   $("snmpTest").disabled = !$("snmpOn").checked || runActive();
 }
 
@@ -358,11 +360,11 @@ async function dutButton(action) {
     if (pw === null) return;
     sessionPw = pw;
   }
-  status.textContent = t("ui.dut.working"); dot.style.background = "#8A9097";
+  status.textContent = t("ui.dut.working"); dot.style.background = "#A3A3B8";
   try {
     const r = await post(`/api/dut/${action}`, { dut: dutSpec(pw, $("enable").value || null), routers: intOr("rTotal", 60) });
     if (!r.ok) { if (/auth|password|login/i.test(r.error || "")) sessionPw = null; throw new Error(r.error || "failed"); }
-    dot.style.background = "#1E7B3A";
+    dot.style.background = "#1F8A5B";
     if (action === "test") {
       S.dutResult = r;
       let s = t("ui.dut.status.ok", { summary: r.resources.summary || "", n: r.tgen_neighbours });
@@ -376,7 +378,7 @@ async function dutButton(action) {
     else if (action === "remove") status.textContent = t("ui.dut.status.pushed", { n: r.tgen_neighbours });
     else if (action === "status") status.textContent = t("ui.dut.status.sessions", { n: r.established });
   } catch (e) {
-    dot.style.background = "#B42318"; status.textContent = t("dutcfg.status.failed") + ": " + e.message;
+    dot.style.background = "#E0393E"; status.textContent = t("dutcfg.status.failed") + ": " + e.message;
   }
 }
 
@@ -608,8 +610,8 @@ function renderEvents() {
   S.events.slice().reverse().slice(0, 100).forEach((e) => {
     const rel = t0 ? Math.max(0, (e.t_ms - t0) / 1000) : null;
     const ts = rel !== null ? `${String(Math.floor(rel / 60)).padStart(2, "0")}:${(rel % 60).toFixed(1).padStart(4, "0")}` : new Date(e.t_ms).toLocaleTimeString();
-    const sev = e.severity === "error" ? ["event.error", "#B42318"] : e.severity === "warning" ? ["event.warn", "#A15C07"] : e.kind === "phase" ? ["event.phase", "#545A61"] : ["event.info", "#1E7B3A"];
-    ul.append(el("li", {}, el("span", { class: "mono", style: "color:#545A61", text: ts }), el("span", { style: `color:${sev[1]};font-weight:600`, text: t(sev[0]) }), el("span", { style: "overflow-wrap:anywhere", text: e.text })));
+    const sev = e.severity === "error" ? ["event.error", "#E0393E"] : e.severity === "warning" ? ["event.warn", "#B7791F"] : e.kind === "phase" ? ["event.phase", "#6E6E87"] : ["event.info", "#1F8A5B"];
+    ul.append(el("li", {}, el("span", { class: "mono", style: "color:#6E6E87", text: ts }), el("span", { style: `color:${sev[1]};font-weight:600`, text: t(sev[0]) }), el("span", { style: "overflow-wrap:anywhere", text: e.text })));
   });
 }
 
@@ -629,7 +631,7 @@ function renderLive() {
   // KPIs
   const total = S.routers.length || (tk ? Object.values(tk.sessions || {}).reduce((a, b) => a + b, 0) : 0);
   const est = tk ? (tk.sessions || {}).Established || 0 : 0;
-  $("kSess").innerHTML = ""; $("kSess").append(tk ? num(est) : "—", el("span", { style: "font-size:15px;color:#545A61", text: tk ? "/" + num(total) : "" }));
+  $("kSess").innerHTML = ""; $("kSess").append(tk ? num(est) : "—", el("span", { style: "font-size:15px;color:#6E6E87", text: tk ? "/" + num(total) : "" }));
   $("kSessSub").textContent = tk && total && est === total ? t("metric.sessions.all_established") : tk ? Object.entries(tk.sessions || {}).filter(([k]) => k !== "Established").map(([k, v]) => `${k} ${v}`).join(" · ") : "";
   $("kSessSub").className = "small" + (tk && total && est === total ? " ok" : "");
   let conv = run && run.summary && run.summary.initial_convergence_s;
@@ -643,7 +645,7 @@ function renderLive() {
   $("kConvSub").textContent = tk && total ? t("metric.routes_received", { pct: num(100 * (tk.converged || 0) / total) + " %" }) : t("ui.convergence.waiting");
   const lat = tk && tk.latency_ms;
   $("kLat").textContent = lat && lat.p99 !== null ? num(lat.p99) + " ms" : "—";
-  $("kLat").style.color = lat && lat.p99 > 250 ? "#A15C07" : "";
+  $("kLat").style.color = lat && lat.p99 > 250 ? "#B7791F" : "";
   $("kLatSub").textContent = lat && lat.p50 !== null ? "p50 " + num(lat.p50) + " ms" : "";
   const rates = tk && tk.rates;
   $("kOut").textContent = rates && rates.rx_s !== null ? num(rates.rx_s) : "—";
@@ -662,14 +664,14 @@ function renderLive() {
     $("portUse").textContent = pt.use_pct !== null ? num(pt.use_pct, pt.use_pct < 10 ? 1 : 0) + " %" : "—";
     $("portMbps").textContent = t("live.port.of", { mbps: num(pt.mbps, 1), speed });
     const bar = $("portBar"); bar.style.width = Math.min(100, Math.max(0.5, pt.use_pct || 0)) + "%";
-    bar.style.background = pt.use_pct >= 90 ? "#B42318" : pt.use_pct >= 70 ? "#A15C07" : "#0E6E66";
+    bar.style.background = pt.use_pct >= 90 ? "#E0393E" : pt.use_pct >= 70 ? "#B7791F" : "#4F3FA8";
     const spark = S.ticks.slice(-300).map((x) => (x.dut_port ? x.dut_port.use_pct || 0 : 0));
     const mx = Math.max(1, ...spark);
     $("portSpark").setAttribute("points", spark.map((v, i) => `${(i * 300 / Math.max(1, spark.length - 1)).toFixed(1)},${(32 - v / mx * 26).toFixed(1)}`).join(" "));
     const errs = pt.errors || {}, nerr = Object.values(errs).reduce((a, b) => a + b, 0);
     const g = (k) => num(errs[k] || 0);
     $("portErr").textContent = nerr ? t("live.port.new_errors", { in: g("input_errors"), crc: g("crc"), drops: g("output_drops") }) : t("live.port.no_errors", { in: g("input_errors"), crc: g("crc"), drops: g("output_drops") });
-    $("portErrLine").style.color = nerr ? "#A15C07" : "#1E7B3A"; $("portErrDot").style.background = nerr ? "#A15C07" : "#1E7B3A";
+    $("portErrLine").style.color = nerr ? "#B7791F" : "#1F8A5B"; $("portErrDot").style.background = nerr ? "#B7791F" : "#1F8A5B";
   }
   // generator health
   const gh = $("genHealth"); gh.innerHTML = "";
@@ -677,21 +679,39 @@ function renderLive() {
   nodes.forEach((n) => {
     const cpu = n.cpu_pct;
     gh.append(el("span", { class: "mono", text: n.node }),
-      el("span", { class: "bar" }, el("span", { class: "fill", style: `width:${Math.min(100, cpu || 0)}%;background:${cpu >= 90 ? "#B42318" : cpu >= 70 ? "#A15C07" : "#0E6E66"}` }), el("span", { class: "m70" }), el("span", { class: "m90" })),
+      el("span", { class: "bar" }, el("span", { class: "fill", style: `width:${Math.min(100, cpu || 0)}%;background:${cpu >= 90 ? "#E0393E" : cpu >= 70 ? "#B7791F" : "#4F3FA8"}` }), el("span", { class: "m70" }), el("span", { class: "m90" })),
       el("span", { class: "mono", text: cpu !== undefined && cpu !== null ? num(cpu) + " %" : "—" }),
       el("span", { class: "small", text: n.temp_c !== undefined && n.temp_c !== null ? num(n.temp_c) + " °C" : "" }));
   });
+  renderRail(nodes);
+  // v1.4 look: small figures along the bottom of the purple hero card
+  const hs = $("heroStats"); hs.innerHTML = "";
+  const ph = tk && tk.phase ? (S.runPhases[tk.phase.idx] ? phaseName(S.runPhases[tk.phase.idx]) : tk.phase.type) : "—";
+  [[t("ui.routers.total"), total ? num(total) : "—"], [t("metric.routes_received", { pct: "" }).replace(/[:\s]+$/, "").trim().replace(/^./, (c) => c.toUpperCase()), tk && total ? num(100 * (tk.converged || 0) / total) + " %" : "—"],
+   [t("chart.offered"), rates && rates.sent_s !== null ? num(rates.sent_s) + "/s" : "—"], [t("scenario.title"), ph]]
+    .forEach(([k, v]) => hs.append(el("span", {}, el("span", { class: "hs-k", text: k }), el("b", { text: v }))));
   // control-plane health (AC6)
   $("reserveLine").textContent = t("live.control_health.reserve", { cpu: "30 %", ram: num(4.8, 1) + " GB", bw: "20 Mbit/s" });
   const ch = tk && tk.controller;
   if (ch) {
     $("cpApi").textContent = num(ch.api_p95_ms) + " ms"; $("cpDelay").textContent = num(ch.ws_delay_ms / 1000, 1) + " s";
     const bad = ch.api_p95_ms > 500 || ch.ws_delay_ms > 2000 || ch.loop_lag_ms > 2000 || (ch.mem_available_mb !== null && ch.mem_available_mb < 4800);
-    $("cpState").textContent = "● " + (bad ? t("ui.warn") : t("live.ok")); $("cpState").style.color = bad ? "#A15C07" : "#1E7B3A";
+    $("cpState").textContent = "● " + (bad ? t("ui.warn") : t("live.ok")); $("cpState").style.color = bad ? "#B7791F" : "#1F8A5B";
   }
   renderEvents();
 }
 
+// v1.4 look: right-hand rail, one round badge per node with a status dot (CPU against the 70 % / 90 % marks)
+const RAIL_BG = ["#FFE3D6", "#DDF6FA", "#E6E1FA", "#FFF1C9", "#DDF5E8", "#FBE0EC"];
+function renderRail(nodes) {
+  const box = $("rail"); if (!box) return; box.innerHTML = "";
+  (nodes || []).forEach((n, i) => {
+    const cpu = n.cpu_pct, known = cpu !== undefined && cpu !== null;
+    const dot = !known ? "#B9B9C9" : cpu >= 90 ? "#E5484D" : cpu >= 70 ? "#E2A100" : "#22A06B";
+    box.append(el("span", { class: "rail-node", title: `${n.node}${known ? " · CPU " + num(cpu) + " %" : ""}`, style: `background:${RAIL_BG[i % 6]}` },
+      el("span", { class: "mono", text: String(n.node || "").replace(/^\D+0*/, "").padStart(2, "0") }), el("span", { class: "rail-dot", style: `background:${dot}` })));
+  });
+}
 async function refreshCluster() { try { S.cluster = (await get("/api/cluster")).nodes; } catch (e) { S.cluster = []; } }
 function renderNodes() { renderNodeTable(S.cluster); }
 async function idleHealth() {
@@ -701,7 +721,7 @@ async function idleHealth() {
     const ch = h.health;
     $("cpApi").textContent = num(ch.api_p95_ms) + " ms"; $("cpDelay").textContent = num(ch.ws_delay_ms / 1000, 1) + " s";
     const bad = h.violations && h.violations.length;
-    $("cpState").textContent = "● " + (bad ? t("ui.warn") : t("live.ok")); $("cpState").style.color = bad ? "#A15C07" : "#1E7B3A";
+    $("cpState").textContent = "● " + (bad ? t("ui.warn") : t("live.ok")); $("cpState").style.color = bad ? "#B7791F" : "#1F8A5B";
   } catch (e) { /* login page will show */ }
 }
 

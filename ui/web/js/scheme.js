@@ -20,7 +20,7 @@ const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 export const STEPS = ["test", "smoke", "series", "scale"];
 const COLS = ["conn", "smoke", "series_device", "series_zero", "scale"];
 const COLORS = ["#2A6FDB", "#D9661F", "#0F8C9C", "#7A4FC4", "#B8860B", "#3A8F3A"];
-const INK = "#16191D", MUTED = "#545A61", LINE = "#8A9097", TEAL = "#0E6E66", BLUE = "#1F5F99";
+const INK = "#262640", MUTED = "#6E6E87", LINE = "#A3A3B8", TEAL = "#4F3FA8", BLUE = "#1F5F99";
 
 const X = {
   duts: {}, topo: null, plan: {}, doc: null, on: {}, pw: {}, test: {}, steps: new Set(STEPS),
@@ -106,14 +106,14 @@ function renderSetup() {
     pw.value = X.pw[n] || "";
     let status = null;
     if (r === "busy") status = el("span", { class: "small", text: t("scheme.testing") });
-    else if (r) status = el("span", { style: `display:inline-flex;align-items:center;gap:6px;font-size:12px;color:${r.ok ? "#1E7B3A" : "#B42318"};white-space:normal` },
-      el("span", { class: "dot", style: `background:${r.ok ? "#1E7B3A" : "#B42318"}` }),
-      el("span", { class: r.ok ? "mono" : "", style: `color:${r.ok ? "#23403C" : "#B42318"}`, text: r.ok ? "OK · " + (((r.resources || {}).summary || "").split(",")[0]) : (r.error || "").slice(0, 160) }));
+    else if (r) status = el("span", { style: `display:inline-flex;align-items:center;gap:6px;font-size:12px;color:${r.ok ? "#1F8A5B" : "#E0393E"};white-space:normal` },
+      el("span", { class: "dot", style: `background:${r.ok ? "#1F8A5B" : "#E0393E"}` }),
+      el("span", { class: r.ok ? "mono" : "", style: `color:${r.ok ? "#3E3190" : "#E0393E"}`, text: r.ok ? "OK · " + (((r.resources || {}).summary || "").split(",")[0]) : (r.error || "").slice(0, 160) }));
     tb.append(el("tr", {},
-      el("td", { class: "td" }, el("input", { type: "checkbox", checked: X.on[n] || null, disabled: running || null, "aria-label": d.label, style: "accent-color:#0E6E66;width:18px;height:18px;margin:0",
+      el("td", { class: "td" }, el("input", { type: "checkbox", checked: X.on[n] || null, disabled: running || null, "aria-label": d.label, style: "accent-color:#4F3FA8;width:18px;height:18px;margin:0",
         onchange: (e) => { X.on[n] = e.target.checked; renderSetup(); } })),
       el("td", { class: "td" }, el("span", { style: "display:flex;flex-direction:column;gap:2px" }, el("span", { style: "font-weight:600", text: d.label }),
-        el("span", { class: "mono", style: "font-size:12px;color:#545A61", text: `${d.peer_ip} · ssh ${d.ssh_host}` }))),
+        el("span", { class: "mono", style: "font-size:12px;color:#6E6E87", text: `${d.peer_ip} · ssh ${d.ssh_host}` }))),
       el("td", { class: "td mono", style: "font-size:12px", text: port || "—" }),
       el("td", { class: "td" }, pw),
       el("td", { class: "td" }, el("span", { style: "display:flex;gap:10px;align-items:center" },
@@ -134,7 +134,7 @@ function renderSetup() {
   // steps
   const st = $("schSteps"); st.innerHTML = "";
   STEPS.forEach((s, i) => st.append(el("label", { style: "display:flex;gap:10px;align-items:flex-start;min-height:44px;padding:6px 0" },
-    el("input", { type: "checkbox", checked: X.steps.has(s) || null, disabled: running || null, style: "accent-color:#0E6E66;width:18px;height:18px;margin:2px 0 0",
+    el("input", { type: "checkbox", checked: X.steps.has(s) || null, disabled: running || null, style: "accent-color:#4F3FA8;width:18px;height:18px;margin:2px 0 0",
       onchange: (e) => { if (e.target.checked) X.steps.add(s); else X.steps.delete(s); schedulePlan(); } }),
     el("span", { style: "display:flex;flex-direction:column;gap:2px" }, el("span", { style: "font-weight:600", text: `${i + 1} · ${t(`scheme.step${i + 1}`)}` }),
       el("span", { class: "small", text: t(`scheme.step${i + 1}.hint`) })))));
@@ -207,7 +207,7 @@ function renderProgress() {
   const tb = $("schProg"); tb.innerHTML = "";
   const d = X.doc;
   $("schLast").textContent = d ? t("scheme.last", { id: d.id, state: t(`scheme.state.${d.state === "done" ? "passed" : d.state === "running" ? "running" : d.state}`), when: new Date(d.created_ms).toLocaleString(lang()) }) : "";
-  if (!d) { tb.append(el("tr", {}, el("td", { class: "td", colspan: "6", style: "white-space:normal;color:#545A61", text: t("scheme.none_yet") }))); return; }
+  if (!d) { tb.append(el("tr", {}, el("td", { class: "td", colspan: "6", style: "white-space:normal;color:#6E6E87", text: t("scheme.none_yet") }))); return; }
   d.devices.forEach((n) => {
     const row = el("tr", {}, el("td", { class: "td", style: "font-weight:600", text: d.results[n].label }));
     COLS.forEach((col) => {
@@ -253,7 +253,7 @@ function renderCompare() {
   CMP.forEach(([, l, tip]) => h.append(el("th", { class: "th" }, tip ? el("span", { class: "hint", tabindex: "0" }, l ? t(l) : "", el("span", { class: "tt", role: "tooltip", text: t(tip) })) : t(l))));
   const b = $("cmpBody"); b.innerHTML = "";
   const rows = compareRows();
-  if (!rows.length) { b.append(el("tr", {}, el("td", { class: "td", colspan: String(CMP.length), style: "color:#545A61", text: "—" }))); }
+  if (!rows.length) { b.append(el("tr", {}, el("td", { class: "td", colspan: String(CMP.length), style: "color:#6E6E87", text: "—" }))); }
   rows.forEach((r) => b.append(el("tr", {}, CMP.map(([k], i) => i === 0
     ? el("td", { class: "td" }, el("span", { style: "display:inline-flex;align-items:center;gap:8px;font-weight:600" }, el("span", { class: "sw", style: `background:${colorOf(r.dev)}` }), r.device))
     : el("td", { class: "td" + (k === "mrai" ? "" : " mono"), style: k === "deliv" ? "font-weight:600" : null, text: r[k] })))));
@@ -300,21 +300,21 @@ function renderKnee() {
   const txt = (x, y, str, anchor = "middle", extra = "") => `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="${anchor}" fill="${MUTED}" ${extra}>${esc(str)}</text>`;
   const read = [];
   if (X.view < 2) {
-    ticks.forEach((v) => { const x = fx(v); s += `<line x1="${x}" y1="${VB.yt}" x2="${x}" y2="${VB.yb}" stroke="#ECEEEA"/>` + txt(x, 302, tl(v)); });
+    ticks.forEach((v) => { const x = fx(v); s += `<line x1="${x}" y1="${VB.yt}" x2="${x}" y2="${VB.yb}" stroke="#EFEFF6"/>` + txt(x, 302, tl(v)); });
     if (X.view === 0) {
-      ticks.forEach((v) => { const y = fyl(v); s += `<line x1="${VB.xl}" y1="${y}" x2="${VB.xr}" y2="${y}" stroke="#ECEEEA"/>` + txt(58, y + 4, tl(v), "end"); });
+      ticks.forEach((v) => { const y = fyl(v); s += `<line x1="${VB.xl}" y1="${y}" x2="${VB.xr}" y2="${y}" stroke="#EFEFF6"/>` + txt(58, y + 4, tl(v), "end"); });
       const top = Math.pow(10, hi);
       s += `<line x1="${fx(Math.pow(10, lo))}" y1="${fyl(Math.pow(10, lo))}" x2="${fx(top)}" y2="${fyl(top)}" stroke="${LINE}" stroke-width="1.2" stroke-dasharray="2 4"/>` + txt(fx(top) - 6, fyl(top) + 16, t("scheme.knee.diagonal"), "end");
     } else {
       const step = smax > 90 ? 20 : 10;
-      for (let v = 0; v <= smax; v += step) { const y = fys(v); s += `<line x1="${VB.xl}" y1="${y}" x2="${VB.xr}" y2="${y}" stroke="#ECEEEA"/>` + txt(58, y + 4, num(v), "end"); }
+      for (let v = 0; v <= smax; v += step) { const y = fys(v); s += `<line x1="${VB.xl}" y1="${y}" x2="${VB.xr}" y2="${y}" stroke="#EFEFF6"/>` + txt(58, y + 4, num(v), "end"); }
       [...new Set(ser.map((x) => x.limit_s))].forEach((l) => { const y = fys(l); s += `<line x1="${VB.xl}" y1="${y}" x2="${VB.xr}" y2="${y}" stroke="${LINE}" stroke-width="1.2" stroke-dasharray="2 4"/>` + txt(VB.xr - 4, y - 5, t("scheme.knee.limit", { s: num(l) }), "end"); });
     }
     s += `<line x1="${VB.xl}" y1="${VB.yb}" x2="${VB.xr}" y2="${VB.yb}" stroke="${LINE}"/><line x1="${VB.xl}" y1="${VB.yt}" x2="${VB.xl}" y2="${VB.yb}" stroke="${LINE}"/>`;
     ser.forEach((x) => {
       const pts = x.points.filter((p) => p[0] > 0 && (X.view === 1 ? p[2] !== null : p[1] > 0)).map((p) => [fx(p[0]), X.view === 0 ? fyl(p[1]) : fys(p[2]), p[3], p]);
       s += `<polyline fill="none" stroke="${x.color}" stroke-width="2.5" ${x.dash ? `stroke-dasharray="${x.dash}"` : ""} points="${pts.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ")}"/>`;
-      pts.forEach((p) => { s += p[2] ? `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="6" fill="#FFFFFF" stroke="#B42318" stroke-width="2"/>` : `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.5" fill="${x.color}"/>`; });
+      pts.forEach((p) => { s += p[2] ? `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="6" fill="#FFFFFF" stroke="#E0393E" stroke-width="2"/>` : `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.5" fill="${x.color}"/>`; });
       // reading at the cursor: nearest measured point in log space within half a decade
       let best = null;
       x.points.forEach((p) => { const dd = Math.abs(Math.log10(p[0]) - X.cur); if (dd < 0.5 && (!best || dd < best.dd)) best = { dd, p }; });
@@ -326,20 +326,20 @@ function renderKnee() {
     });
     const cx = fx(Math.pow(10, X.cur));
     s += `<line x1="${cx.toFixed(1)}" y1="${VB.yt}" x2="${cx.toFixed(1)}" y2="${VB.yb}" stroke="#5B4FC4" stroke-width="1.5"/>`;
-    s += txt((VB.xl + VB.xr) / 2, 324, t("scheme.knee.ax1x"), "middle", 'font-family="IBM Plex Sans, sans-serif" font-size="12"');
-    s += `<text x="14" y="${(VB.yt + VB.yb) / 2}" text-anchor="middle" fill="${MUTED}" font-family="IBM Plex Sans, sans-serif" font-size="12" transform="rotate(-90 14 ${(VB.yt + VB.yb) / 2})">${esc(t(X.view === 0 ? "scheme.knee.ax1y" : "scheme.knee.ax2y"))}</text>`;
+    s += txt((VB.xl + VB.xr) / 2, 324, t("scheme.knee.ax1x"), "middle", 'font-family="Manrope, sans-serif" font-size="12"');
+    s += `<text x="14" y="${(VB.yt + VB.yb) / 2}" text-anchor="middle" fill="${MUTED}" font-family="Manrope, sans-serif" font-size="12" transform="rotate(-90 14 ${(VB.yt + VB.yb) / 2})">${esc(t(X.view === 0 ? "scheme.knee.ax1y" : "scheme.knee.ax2y"))}</text>`;
   } else {
     const bars = ser.filter((x) => x.sustainable_deliveries_s);
-    ticks.forEach((v) => { const x = fx(v); s += `<line x1="${x}" y1="${VB.yt}" x2="${x}" y2="${VB.yb}" stroke="#ECEEEA"/>` + txt(x, 302, tl(v)); });
+    ticks.forEach((v) => { const x = fx(v); s += `<line x1="${x}" y1="${VB.yt}" x2="${x}" y2="${VB.yb}" stroke="#EFEFF6"/>` + txt(x, 302, tl(v)); });
     const bh = Math.min(22, (VB.yb - VB.yt - 10) / Math.max(1, bars.length) - 24);
     bars.forEach((x, i) => {
       const y = VB.yt + 22 + i * (bh + 26), w = fx(x.sustainable_deliveries_s) - VB.xl;
-      s += `<text x="${VB.xl + 2}" y="${y - 5}" fill="${INK}" font-family="IBM Plex Sans, sans-serif" font-size="12">${esc(x.name)}</text>`;
+      s += `<text x="${VB.xl + 2}" y="${y - 5}" fill="${INK}" font-family="Manrope, sans-serif" font-size="12">${esc(x.name)}</text>`;
       s += `<rect x="${VB.xl}" y="${y}" width="${Math.max(2, w).toFixed(1)}" height="${bh}" rx="3" fill="${x.color}" fill-opacity="${x.running ? 0.35 : 1}"/>`;
       s += txt(VB.xl + w + 8, y + bh / 2 + 4, (x.knee_rate === null || x.knee_rate === undefined ? "≥ " : "") + num(x.sustainable_deliveries_s), "start", `fill="${INK}"`);
     });
     s += `<line x1="${VB.xl}" y1="${VB.yb}" x2="${VB.xr}" y2="${VB.yb}" stroke="${LINE}"/>`;
-    s += txt((VB.xl + VB.xr) / 2, 324, t("scheme.knee.ax3x"), "middle", 'font-family="IBM Plex Sans, sans-serif" font-size="12"');
+    s += txt((VB.xl + VB.xr) / 2, 324, t("scheme.knee.ax3x"), "middle", 'font-family="Manrope, sans-serif" font-size="12"');
   }
   s += "</svg>";
   box.innerHTML = s;
@@ -397,23 +397,23 @@ function renderTopo() {
     const th = rows.length * lh;
     const h = Math.max(opt.h || 0, col ? ih + 8 + th + 2 * pad : Math.max(ih, th) + 2 * pad);
     const hl = opt.hl;
-    let g = `<g><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="${hl === "now" ? "#EEF6F5" : "#FFFFFF"}" stroke="${hl === "now" ? TEAL : "#D9DCD6"}" stroke-width="${hl === "now" ? 2 : 1}"/>`;
+    let g = `<g><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="${hl === "now" ? "#EEEBFA" : "#FFFFFF"}" stroke="${hl === "now" ? TEAL : "#E6E6F0"}" stroke-width="${hl === "now" ? 2 : 1}"/>`;
     const ix = col ? x + (w - iw) / 2 : x + pad, iy = col ? y + pad : y + (h - ih) / 2;
     g += `<g transform="translate(${ix} ${iy})">${icon}</g>`;
     let ty = col ? iy + ih + 8 + 13 : y + (h - th) / 2 + 13;
     rows.forEach((r) => {
       const tx = col ? x + w / 2 : x + 2 * pad + iw;
-      g += `<text x="${tx}" y="${ty}" text-anchor="${col ? "middle" : "start"}" font-size="${r.s || 13}" font-weight="${r.b ? 600 : 400}" fill="${r.c || INK}" font-family="${r.m ? "IBM Plex Mono, monospace" : "IBM Plex Sans, sans-serif"}">${esc(r.t)}</text>`;
+      g += `<text x="${tx}" y="${ty}" text-anchor="${col ? "middle" : "start"}" font-size="${r.s || 13}" font-weight="${r.b ? 600 : 400}" fill="${r.c || INK}" font-family="${r.m ? "IBM Plex Mono, monospace" : "Manrope, sans-serif"}">${esc(r.t)}</text>`;
       if (r.chip) {
         const cx = tx + charW(r.s || 13, r.m) * r.t.length + 8, cw = charW(11, false) * r.chip.t.length + 16;
-        g += `<rect x="${cx}" y="${ty - 12}" width="${cw}" height="16" rx="8" fill="${r.chip.bg}"/><text x="${cx + cw / 2}" y="${ty}" text-anchor="middle" font-size="11" font-weight="600" fill="${r.chip.fg}" font-family="IBM Plex Sans, sans-serif">${esc(r.chip.t)}</text>`;
+        g += `<rect x="${cx}" y="${ty - 12}" width="${cw}" height="16" rx="8" fill="${r.chip.bg}"/><text x="${cx + cw / 2}" y="${ty}" text-anchor="middle" font-size="11" font-weight="600" fill="${r.chip.fg}" font-family="Manrope, sans-serif">${esc(r.chip.t)}</text>`;
       }
       ty += lh;
     });
     parts.cards.push(g + "</g>");
     return h;
   }
-  const lab = (x, y, s, anchor = "start") => parts.labels.push(`<text x="${x}" y="${y}" text-anchor="${anchor}" font-size="12" fill="${MUTED}" font-family="IBM Plex Sans, sans-serif">${esc(s)}</text>`);
+  const lab = (x, y, s, anchor = "start") => parts.labels.push(`<text x="${x}" y="${y}" text-anchor="${anchor}" font-size="12" fill="${MUTED}" font-family="Manrope, sans-serif">${esc(s)}</text>`);
   const ctl = tp.nodes.find((n) => n.controller) || tp.nodes[0] || {};
   // left: gateway; middle: lab switch above the board's switch; right: the devices; bottom: the nodes
   const gwLines = [{ t: t("scheme.topo.gw"), b: 1 }];
@@ -428,7 +428,7 @@ function renderTopo() {
   let y = 16;
   tp.devices.forEach((d) => {
     const st = devState(d.profile);
-    const chip = st === "now" ? { t: t("scheme.topo.now"), bg: TEAL, fg: "#FFFFFF" } : st === "done" ? { t: t("scheme.topo.done"), bg: "#E6F4EA", fg: "#1E7B3A" } : st === "waiting" ? { t: t("scheme.topo.waiting"), bg: "#F3F4F1", fg: MUTED } : null;
+    const chip = st === "now" ? { t: t("scheme.topo.now"), bg: TEAL, fg: "#FFFFFF" } : st === "done" ? { t: t("scheme.topo.done"), bg: "#E6F4EA", fg: "#1F8A5B" } : st === "waiting" ? { t: t("scheme.topo.waiting"), bg: "#F4F4FA", fg: MUTED } : null;
     const speed = d.link_mbps ? (d.link_mbps >= 1000 ? `${num(d.link_mbps / 1000)} Gb/s` : `${num(d.link_mbps)} Mb/s`) : "";
     const h = card(dx, y, dw, ICON.router(st === "now" ? TEAL : BLUE), 44, 44, [
       { t: `${d.label} · DUT`, b: 1, chip }, { t: `${d.adapter} · AS ${d.asn}`, s: 12 }, { t: [d.interface, speed].filter(Boolean).join(" · ") || "—", s: 12 },
@@ -460,7 +460,7 @@ function renderTopo() {
   lab((16 + 272 + ls.x) / 2, gy - 12, tp.mgmt_net, "middle");
   lab(ls.x + ls.w + 8, gy + 20, tp.test_net);
   const H = ny + nh + 16;
-  box.innerHTML = `<svg xmlns="${NS}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t("scheme.topo.aria"))}"><rect x="0" y="0" width="${W}" height="${H}" fill="#FAFBF9"/>${parts.lines.join("")}${parts.cards.join("")}${parts.labels.join("")}</svg>`;
+  box.innerHTML = `<svg xmlns="${NS}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t("scheme.topo.aria"))}"><rect x="0" y="0" width="${W}" height="${H}" fill="#FAFAFE"/>${parts.lines.join("")}${parts.cards.join("")}${parts.labels.join("")}</svg>`;
   const lg = $("topoLegend"); lg.innerHTML = "";
   [t("scheme.topo.leg1", { net: tp.test_net }), t("scheme.topo.leg2", { net: tp.mgmt_net }), t("scheme.topo.leg3", { ip: tp.router_first_ip }), tp.lab_switch ? null : t("scheme.topo.wiring")]
     .filter(Boolean).forEach((s) => lg.append(el("li", { text: s })));

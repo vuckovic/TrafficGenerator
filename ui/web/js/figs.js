@@ -6,8 +6,8 @@
 import { t, num } from "./i18n.js";
 
 const NS = "http://www.w3.org/2000/svg";
-export const C = { teal: "#0E6E66", orange: "#C2410C", violet: "#5B4FC4", grey: "#8A9097", blue: "#2A6FDB", amber: "#A15C07", red: "#B42318", green: "#1E7B3A", ink: "#16191D", muted: "#545A61" };
-export const PALETTE = ["#0E6E66", "#C2410C", "#5B4FC4", "#2A6FDB", "#B8860B", "#3A8F3A"];
+export const C = { teal: "#4F3FA8", orange: "#C2410C", violet: "#5B4FC4", grey: "#A3A3B8", blue: "#2A6FDB", amber: "#B7791F", red: "#E0393E", green: "#1F8A5B", ink: "#262640", muted: "#6E6E87" };
+export const PALETTE = ["#4F3FA8", "#C2410C", "#5B4FC4", "#2A6FDB", "#B8860B", "#3A8F3A"];
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 export const el = (tag, attrs = {}, ...kids) => {
   const e = document.createElement(tag);
@@ -138,14 +138,14 @@ export function lineFig(o) {
     // phase bands
     (o.phases || []).forEach((p, i) => {
       const x0 = Math.max(a, p[1]), x1 = Math.min(b, p[2] === null ? X1 : p[2]); if (x1 <= x0) return;
-      s += `<rect x="${fx(x0, a, b).toFixed(1)}" y="${T}" width="${(fx(x1, a, b) - fx(x0, a, b)).toFixed(1)}" height="${B - T}" fill="${i % 2 ? "#F7F8F5" : "#FFFFFF"}"/>`;
-      if (fx(x1, a, b) - fx(x0, a, b) > 40) s += `<text x="${(fx(x0, a, b) + 4).toFixed(1)}" y="${T + 11}" fill="${C.grey}" font-family="IBM Plex Sans, sans-serif">${esc(p[0])}</text>`;
+      s += `<rect x="${fx(x0, a, b).toFixed(1)}" y="${T}" width="${(fx(x1, a, b) - fx(x0, a, b)).toFixed(1)}" height="${B - T}" fill="${i % 2 ? "#F7F7FB" : "#FFFFFF"}"/>`;
+      if (fx(x1, a, b) - fx(x0, a, b) > 40) s += `<text x="${(fx(x0, a, b) + 4).toFixed(1)}" y="${T + 11}" fill="${C.grey}" font-family="Manrope, sans-serif">${esc(p[0])}</text>`;
     });
     const xt = o.xlog ? logTicks(a, b) : niceTicks(a, b, 6);
     const xf = o.xfmt === mmss && b - a < 120 ? secs : (o.xfmt || short);
-    xt.forEach((v) => { const x = fx(v, a, b); s += `<line x1="${x.toFixed(1)}" y1="${T}" x2="${x.toFixed(1)}" y2="${B}" stroke="#ECEEEA"/><text x="${x.toFixed(1)}" y="${B + 16}" text-anchor="middle" fill="${C.muted}">${esc(xf(v))}</text>`; });
+    xt.forEach((v) => { const x = fx(v, a, b); s += `<line x1="${x.toFixed(1)}" y1="${T}" x2="${x.toFixed(1)}" y2="${B}" stroke="#EFEFF6"/><text x="${x.toFixed(1)}" y="${B + 16}" text-anchor="middle" fill="${C.muted}">${esc(xf(v))}</text>`; });
     const yt = st.ylog ? logTicks(ya, yb) : niceTicks(ya, yb, 5, o.yint);
-    yt.forEach((v) => { const y = fy(v); s += `<line x1="${L}" y1="${y.toFixed(1)}" x2="${R}" y2="${y.toFixed(1)}" stroke="#ECEEEA"/><text x="${L - 6}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${C.muted}">${esc((o.yfmt || short)(v))}</text>`; });
+    yt.forEach((v) => { const y = fy(v); s += `<line x1="${L}" y1="${y.toFixed(1)}" x2="${R}" y2="${y.toFixed(1)}" stroke="#EFEFF6"/><text x="${L - 6}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${C.muted}">${esc((o.yfmt || short)(v))}</text>`; });
     if (o.y2 && y2v.length) niceTicks(y2a, y2b, 5, o.y2int).forEach((v) => { s += `<text x="${R + 6}" y="${(fy2(v) + 4).toFixed(1)}" fill="${C.muted}">${esc((o.y2fmt || short)(v))}</text>`; });
     s += `<line x1="${L}" y1="${B}" x2="${R}" y2="${B}" stroke="${C.grey}"/><line x1="${L}" y1="${T}" x2="${L}" y2="${B}" stroke="${C.grey}"/>`;
     (o.hmarks || []).forEach((m) => { if (m.y < ya || m.y > yb) return; const y = fy(m.y); s += `<line x1="${L}" y1="${y.toFixed(1)}" x2="${R}" y2="${y.toFixed(1)}" stroke="${m.color || C.grey}" stroke-dasharray="3 4"/><text x="${R - 4}" y="${(y - 4).toFixed(1)}" text-anchor="end" fill="${m.color || C.grey}">${esc(m.label)}</text>`; });
@@ -180,9 +180,9 @@ export function lineFig(o) {
     s += `<line x1="${cx.toFixed(1)}" y1="${T}" x2="${cx.toFixed(1)}" y2="${B}" stroke="${C.violet}" stroke-width="1.5"/>`;
     const vals = o.series.map((se, i) => (st.hidden.has(i) ? null : valAt(se, st.cur)));
     vals.forEach((v, i) => { if (v === null || v === undefined) return; const se = o.series[i]; const y = (se.axis === "r" ? fy2 : fy)(v); if (y >= T && y <= B) s += `<circle cx="${cx.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${se.color}" stroke="#FFFFFF" stroke-width="1.5"/>`; });
-    if (o.xlabel) s += `<text x="${(L + R) / 2}" y="${H - 6}" text-anchor="middle" fill="${C.muted}" font-family="IBM Plex Sans, sans-serif" font-size="12">${esc(o.xlabel)}</text>`;
-    if (o.ylabel) s += `<text x="12" y="${(T + B) / 2}" text-anchor="middle" fill="${C.muted}" font-family="IBM Plex Sans, sans-serif" font-size="12" transform="rotate(-90 12 ${(T + B) / 2})">${esc(o.ylabel)}</text>`;
-    if (o.y2 && o.y2label) s += `<text x="${W - 8}" y="${(T + B) / 2}" text-anchor="middle" fill="${C.muted}" font-family="IBM Plex Sans, sans-serif" font-size="12" transform="rotate(90 ${W - 8} ${(T + B) / 2})">${esc(o.y2label)}</text>`;
+    if (o.xlabel) s += `<text x="${(L + R) / 2}" y="${H - 6}" text-anchor="middle" fill="${C.muted}" font-family="Manrope, sans-serif" font-size="12">${esc(o.xlabel)}</text>`;
+    if (o.ylabel) s += `<text x="12" y="${(T + B) / 2}" text-anchor="middle" fill="${C.muted}" font-family="Manrope, sans-serif" font-size="12" transform="rotate(-90 12 ${(T + B) / 2})">${esc(o.ylabel)}</text>`;
+    if (o.y2 && o.y2label) s += `<text x="${W - 8}" y="${(T + B) / 2}" text-anchor="middle" fill="${C.muted}" font-family="Manrope, sans-serif" font-size="12" transform="rotate(90 ${W - 8} ${(T + B) / 2})">${esc(o.y2label)}</text>`;
     svgBox.innerHTML = s + "</svg>";
     const svg = svgBox.querySelector("svg");
     svg.addEventListener("mousemove", (e) => { const r = svg.getBoundingClientRect(); const px = (e.clientX - r.left) / r.width * W; if (px < L || px > R) return; st.cur = inv(px, a, b); draw(); });
@@ -205,7 +205,7 @@ export function heatFig(o) {
   k.below.append(el("div", { class: "fig-ctl noprint" }, el("label", {}, el("span", { text: o.cursorLabel }), slider)), read);
   const rows = o.rows, nc = o.cols.length, L = 70, R = W - 10, T = 8, rh = Math.max(6, Math.min(18, 600 / Math.max(1, rows.length)));
   const Hh = T + rows.length * rh + 26, cw = (R - L) / nc;
-  const shade = (v) => { if (v === null) return "#ECEEEA"; const a = Math.max(0, Math.min(1, v / 100)); const mix = (c1, c2) => Math.round(c1 + (c2 - c1) * a); return `rgb(${mix(236, 14)},${mix(238, 110)},${mix(234, 102)})`; };
+  const shade = (v) => { if (v === null) return "#EFEFF6"; const a = Math.max(0, Math.min(1, v / 100)); const mix = (c1, c2) => Math.round(c1 + (c2 - c1) * a); return `rgb(${mix(236, 14)},${mix(238, 110)},${mix(234, 102)})`; };
   let col = +slider.value;
   function draw() {
     let s = `<svg xmlns="${NS}" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="${esc(o.title)}" font-family="IBM Plex Mono, monospace" font-size="10"><rect width="${W}" height="${Hh}" fill="#FFFFFF"/>`;
@@ -265,15 +265,15 @@ export function timelineFig(o) {
     if (st.cur < a || st.cur > b) st.cur = a;
     const fx = (v) => L + (v - a) / (b - a || 1) * (R - L);
     let s = `<svg xmlns="${NS}" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="${esc(o.title)}" font-family="IBM Plex Mono, monospace" font-size="10"><rect width="${W}" height="${Hh}" fill="#FFFFFF"/>`;
-    s += `<text x="${L - 8}" y="${T + 17}" text-anchor="end" fill="${C.muted}" font-family="IBM Plex Sans, sans-serif" font-size="11">${esc(t("report.phases"))}</text>`;
+    s += `<text x="${L - 8}" y="${T + 17}" text-anchor="end" fill="${C.muted}" font-family="Manrope, sans-serif" font-size="11">${esc(t("report.phases"))}</text>`;
     o.phases.forEach((p, i) => {
       const x0 = Math.max(a, p[1]), x1 = Math.min(b, p[2] ?? o.x1); if (x1 <= x0) return;
-      s += `<rect x="${fx(x0).toFixed(1)}" y="${T}" width="${(fx(x1) - fx(x0)).toFixed(1)}" height="${PH - 4}" fill="${["#CDE7E3", "#9FD3CB", "#E3F1EF", "#7FC4BA"][i % 4]}"/>`;
-      if (fx(x1) - fx(x0) > 50) s += `<text x="${(fx(x0) + 5).toFixed(1)}" y="${T + 15}" fill="${C.ink}" font-family="IBM Plex Sans, sans-serif" font-size="11">${esc(p[0])}</text>`;
+      s += `<rect x="${fx(x0).toFixed(1)}" y="${T}" width="${(fx(x1) - fx(x0)).toFixed(1)}" height="${PH - 4}" fill="${["#E2DDF8", "#C8C0F0", "#EEEBFA", "#A99EE6"][i % 4]}"/>`;
+      if (fx(x1) - fx(x0) > 50) s += `<text x="${(fx(x0) + 5).toFixed(1)}" y="${T + 15}" fill="${C.ink}" font-family="Manrope, sans-serif" font-size="11">${esc(p[0])}</text>`;
     });
     lanes.forEach((ln, i) => {
       const y = T + PH + i * LH + LH / 2;
-      s += `<text x="${L - 8}" y="${y + 4}" text-anchor="end" fill="${C.muted}" font-family="IBM Plex Sans, sans-serif" font-size="11">${esc(ln.name)}</text><line x1="${L}" y1="${y}" x2="${R}" y2="${y}" stroke="#ECEEEA"/>`;
+      s += `<text x="${L - 8}" y="${y + 4}" text-anchor="end" fill="${C.muted}" font-family="Manrope, sans-serif" font-size="11">${esc(ln.name)}</text><line x1="${L}" y1="${y}" x2="${R}" y2="${y}" stroke="#EFEFF6"/>`;
       ln.marks.filter((m) => m[0] >= a && m[0] <= b).forEach((m) => {
         s += m[2] === "sq" ? `<rect x="${(fx(m[0]) - 5).toFixed(1)}" y="${y - 5}" width="10" height="10" fill="${m[1]}"/>` : `<circle cx="${fx(m[0]).toFixed(1)}" cy="${y}" r="5" fill="${m[1]}"/>`;
       });

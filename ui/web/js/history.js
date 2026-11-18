@@ -88,7 +88,7 @@ export function renderHistory() {
   rows.sort((a, b) => { const x = sortKey(a[0], a[1], H.sort), y = sortKey(b[0], b[1], H.sort); return (x < y ? -1 : x > y ? 1 : 0) * H.dir; });
   $("hisCount").textContent = t("history.count", { n: rows.length, m: H.runs.length });
   const body = $("hisBody"); body.innerHTML = "";
-  if (!rows.length) body.append(el("tr", {}, el("td", { class: "td", colspan: String(COLS.length), style: "color:#545A61", text: H.loaded ? t("history.empty") : t("common.loading") })));
+  if (!rows.length) body.append(el("tr", {}, el("td", { class: "td", colspan: String(COLS.length), style: "color:#6E6E87", text: H.loaded ? t("history.empty") : t("common.loading") })));
   rows.forEach(([r, f]) => {
     const key = [f.conv !== null && f.conv !== undefined ? t("history.key.conv", { s: num(f.conv, 1) }) : null,
       f.p99 !== null && f.p99 !== undefined ? t("history.key.p99", { ms: num(f.p99) }) : null].filter(Boolean).join(" · ") || "—";
@@ -106,7 +106,7 @@ export function renderHistory() {
         el("a", { class: "btn btn-sm", href: `#reports/${r.id}`, style: "display:inline-flex;align-items:center;text-decoration:none", text: t("history.open") }),
         el("button", { class: "btn btn-sm", type: "button", title: t("history.rerun.tip"), text: t("history.rerun"), disabled: !r.scenario || null,
           onclick: () => H.ctx.rerun(r) }),
-        el("button", { class: "btn btn-sm", type: "button", text: t("history.delete"), disabled: active || null, style: "color:#B42318",
+        el("button", { class: "btn btn-sm", type: "button", text: t("history.delete"), disabled: active || null, style: "color:#E0393E",
           onclick: () => del(r) })))));
   });
 }

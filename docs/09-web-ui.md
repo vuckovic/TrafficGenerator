@@ -183,3 +183,11 @@ Full description in doc 10. In the page:
 - **F10** draws SNMP CPU and memory when the SSH polls give none; new **F10b** "DUT port and BGP over SNMP":
   port in/out Mb/s and BGP updates/s received from our peers (right axis). The report's DUT table gets an SNMP line.
 - Labels `dl.*`, `snmp.*`, `fig.f10s*` in English and Serbian Cyrillic.
+
+## 13. New look, design v1.4 (2026‑11‑18)
+
+The user tried a restyle modelled on a reference dashboard ("SELLO") on the branch `ux/sello-test` and chose it for `main`. Design details in `docs/design/README.md` v1.4.
+- **What changed:** `index.html` (left sidebar with icons, top bar with the page title, node rail, figures row at the top of the Benchmark tab), `app.css`, colours in the scripts, the latency chart colours (`chart.js`), Manrope font files in `vendor/fonts`. In `app.js`: the page title follows the tab, the node rail and the small figures on the *Sessions* card are filled from the same live data as *Generator health*.
+- **Unchanged:** every control and its ID, texts and translations, the API, the language selector top right.
+- **KPI rule (§8):** checked again with "999 999 ms" in every tile at 1440, 1280, 1024 and 390 px: one line each, no overflow.
+- **Tests:** no page has a horizontal scroll at 390 px. `tests/controller/ui_e2e.py` selectors are unchanged (`#tabs a`, `header .langsel`, KPI IDs). Run it on the cluster after the update; its screenshots replace `docs/web-ui/*`.

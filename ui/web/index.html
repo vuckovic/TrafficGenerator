@@ -28,24 +28,18 @@
 </section>
 
 <!-- application -->
-<div id="app" hidden style="min-height:100vh;display:flex;flex-direction:column">
+<div id="app" hidden class="shell">
+<aside class="side">
+<div class="brand"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="#4F3FA8"/><circle cx="17" cy="17" r="9" fill="#49D3E4"/><path d="M11 19 L14.5 14 L18 18 L20.5 15 L23 19" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<span class="brand-t"><b data-t="app.title">TrafficGenerator</b><span class="mono" id="hostLine"></span></span></div>
+<nav id="tabs" data-t-aria="nav.main"><a href="#benchmark" data-tab="benchmark"><svg class="ico" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 15 L7 9 L11 12 L17 4" /><path d="M13 4 H17 V8"/></svg><span data-t="nav.benchmark">Benchmark</span></a><a href="#scheme" data-tab="scheme"><svg class="ico" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="11" y="11" width="6" height="6" rx="1.5"/><path d="M6 9 V14 H11"/></svg><span data-t="nav.test_scheme">Test scheme</span></a><a href="#traffic" data-tab="traffic"><svg class="ico" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7 H15 M12 4 L15 7 L12 10"/><path d="M17 13 H5 M8 10 L5 13 L8 16"/></svg><span data-t="nav.traffic">Traffic</span></a><hr class="navsep"><a href="#reports" data-tab="reports"><svg class="ico" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 13 V10 M10 13 V7 M13 13 V9"/></svg><span data-t="nav.reports">Reports</span></a><a href="#logs" data-tab="logs"><svg class="ico" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5 H15 M5 9 H15 M5 13 H11"/><circle cx="15" cy="15" r="2"/></svg><span data-t="nav.dut_logs">DUT logs</span></a><a href="#history" data-tab="history"><svg class="ico" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 6 V10 L13 12"/></svg><span data-t="nav.history">History</span></a><hr class="navsep"><a href="#settings" data-tab="settings"><svg class="ico" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="2.5"/><path d="M10 2.5 V5 M10 15 V17.5 M2.5 10 H5 M15 10 H17.5 M4.7 4.7 L6.5 6.5 M13.5 13.5 L15.3 15.3 M4.7 15.3 L6.5 13.5 M13.5 6.5 L15.3 4.7"/></svg><span data-t="nav.settings">Nodes &amp; settings</span></a></nav>
+</aside>
+<div class="maincol">
 <header class="top">
-<div style="display:flex;align-items:center;gap:10px">
-<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="1" y="1" width="24" height="24" rx="6" fill="none" stroke="#5FD3C5" stroke-width="2"/><path d="M6 17 L10 9 L14 15 L17 11 L20 17" fill="none" stroke="#5FD3C5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-<span style="display:flex;flex-direction:column;gap:1px;line-height:1.2"><span style="font-weight:700;font-size:16px" data-t="app.title">TrafficGenerator</span><span class="mono" style="font-size:11px;color:#A9AFB5" id="hostLine"></span></span>
-</div>
-<nav id="tabs" data-t-aria="nav.main">
-<a href="#benchmark" data-tab="benchmark" data-t="nav.benchmark">Benchmark</a>
-<a href="#scheme" data-tab="scheme" data-t="nav.test_scheme">Test scheme</a>
-<a href="#traffic" data-tab="traffic" data-t="nav.traffic">Traffic</a>
-<a href="#reports" data-tab="reports" data-t="nav.reports">Reports</a>
-<a href="#logs" data-tab="logs" data-t="nav.dut_logs">DUT logs</a>
-<a href="#history" data-tab="history" data-t="nav.history">History</a>
-<a href="#settings" data-tab="settings" data-t="nav.settings">Nodes &amp; settings</a>
-</nav>
+<h1 id="pageTitle" class="ptitle"></h1>
 <div class="runctl" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px;flex:0 1 auto;min-width:0;margin-left:auto;padding:6px 0">
-<span class="badge" id="badge" role="status"><span class="dot" id="badgeDot" style="background:#8A9097"></span><span id="badgeText">IDLE</span></span>
-<button class="btn" type="button" id="startBtn" data-t="run.start" style="background:#FFFFFF">Start</button>
+<span class="badge" id="badge" role="status"><span class="dot" id="badgeDot" style="background:#A3A3B8"></span><span id="badgeText">IDLE</span></span>
+<button class="btn btn-primary" type="button" id="startBtn" data-t="run.start">Start</button>
 <button class="btn btn-stop" type="button" id="stopBtn" data-t="run.stop">Stop</button>
 <button type="button" class="hbtn" id="logoutBtn" data-t-aria="auth.logout" data-t-title="auth.logout"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M7 3 H4 a1 1 0 0 0 -1 1 v10 a1 1 0 0 0 1 1 h3 M11 12.5 L14.5 9 L11 5.5 M14.5 9 H7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 <div class="langsel" style="position:relative"></div>
@@ -64,7 +58,16 @@
 
 <!-- Benchmark -->
 <main class="wrap" data-view="benchmark">
-<section style="flex:999 1 600px;min-width:0;display:flex;flex-direction:column;gap:20px" data-t-aria="live.config">
+<section class="herorow" data-t-aria="live.title">
+<div class="kpis">
+<div class="kpi hero"><svg class="hero-deco" viewBox="0 0 200 160" aria-hidden="true"><g fill="none" stroke="#49D3E4" stroke-width="3" stroke-linecap="round"><circle cx="150" cy="40" r="16"/><circle cx="150" cy="40" r="34" stroke-dasharray="6 9"/><circle cx="150" cy="40" r="54" opacity=".7"/><circle cx="150" cy="40" r="76" stroke-dasharray="2 10" opacity=".55"/><path d="M84 40 H116 M150 106 V74 M184 74 L172 62 M116 6 L128 18" opacity=".8"/></g><g fill="#49D3E4"><circle cx="84" cy="40" r="5"/><circle cx="150" cy="106" r="5"/><circle cx="184" cy="74" r="5"/><circle cx="116" cy="6" r="5"/></g></svg><span class="lbl hint" tabindex="0"><span data-t="metric.sessions">Sessions</span><span class="tt" role="tooltip" data-t="metric.sessions.tip"></span></span><span class="kv" id="kSess">—</span><span class="small" id="kSessSub"></span><div class="hero-stats" id="heroStats"></div></div>
+<div class="kpi vert cyan"><span class="lbl hint" tabindex="0"><span data-t="metric.initial_conv">Initial convergence</span><span class="tt" role="tooltip" data-t="metric.initial_conv.tip"></span></span><span class="kv" id="kConv">—</span><span class="small" id="kConvSub"></span></div>
+<div class="kpi vert"><span class="lbl hint" tabindex="0"><span data-t="metric.latency_now">Latency p99 (now)</span><span class="tt" role="tooltip" data-t="metric.latency_now.tip"></span></span><span class="kv" id="kLat">—</span><span class="small" id="kLatSub"></span></div>
+<div class="kpi vert"><span class="lbl hint" tabindex="0"><span data-t="metric.dut_output">DUT output</span><span class="tt" role="tooltip" data-t="metric.dut_output.tip"></span></span><span class="kv" id="kOut">—</span><span class="small" id="kOutSub"></span></div>
+</div>
+<p class="small" id="runLine" style="margin:0"></p>
+</section>
+<section style="flex:999 1 540px;min-width:0;display:flex;flex-direction:column;gap:20px" data-t-aria="live.config">
 
 <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">
 <div class="field" style="flex:1 1 220px"><label class="lbl" for="runName" data-t="g.run_name">Run name</label><input id="runName" class="inp"></div>
@@ -75,7 +78,7 @@
 <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2 class="h2" data-t="dut.title">Device under test</h2></div>
 <div style="display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:12px;align-items:end">
 <div class="field"><label class="lbl" for="device"><span data-t="dut.device">Device</span> <span class="tip" data-t-title="dut.device.tip">i</span></label><select id="device" class="inp"></select></div>
-<div class="field"><span class="lbl" data-t="dut.password_on_controller">Password on the controller</span><span id="pwState" style="min-height:36px;display:flex;align-items:center;font-size:13px;color:#23403C"></span></div>
+<div class="field"><span class="lbl" data-t="dut.password_on_controller">Password on the controller</span><span id="pwState" style="min-height:36px;display:flex;align-items:center;font-size:13px;color:#3E3190"></span></div>
 </div>
 <p class="small" style="margin:0;line-height:1.5" data-t="dut.device.note"></p>
 <fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">
@@ -84,25 +87,25 @@
 <p class="note" id="roleNote"></p>
 </fieldset>
 <div class="grid4">
-<div class="field"><span class="lbl" data-t="ui.dut.detected">Detected platform</span><span class="mono" id="detected" style="min-height:36px;display:flex;align-items:center;font-size:13px;color:#23403C"></span></div>
+<div class="field"><span class="lbl" data-t="ui.dut.detected">Detected platform</span><span class="mono" id="detected" style="min-height:36px;display:flex;align-items:center;font-size:13px;color:#3E3190"></span></div>
 <div class="field"><label class="lbl" for="dutIp" data-t="dut.ip">DUT IP</label><input id="dutIp" class="inp mono"></div>
 <div class="field"><label class="lbl" for="dutAsn" data-t="dut.asn">DUT ASN</label><input id="dutAsn" class="inp mono" inputmode="numeric"></div>
 <div class="field"><label class="lbl" for="pollS" data-t="dut.poll_interval">Polling interval (s)</label><input id="pollS" class="inp mono" inputmode="numeric" value="10"></div>
 </div>
 <fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px" id="snmpBox">
-<legend style="padding:0;margin-bottom:8px;display:flex;gap:8px;align-items:center;font-size:13px;font-weight:500"><input id="snmpOn" type="checkbox" style="accent-color:#0E6E66;width:18px;height:18px;margin:0" aria-describedby="snmpHint"><label for="snmpOn" data-t="snmp.enable">SNMP polling (v2c, read‑only)</label> <span class="tip" data-t-title="snmp.enable.tip">i</span></legend>
+<legend style="padding:0;margin-bottom:8px;display:flex;gap:8px;align-items:center;font-size:13px;font-weight:500"><input id="snmpOn" type="checkbox" style="accent-color:#4F3FA8;width:18px;height:18px;margin:0" aria-describedby="snmpHint"><label for="snmpOn" data-t="snmp.enable">SNMP polling (v2c, read‑only)</label> <span class="tip" data-t-title="snmp.enable.tip">i</span></legend>
 <div class="grid4" id="snmpFields">
 <div class="field"><label class="lbl" for="snmpComm" data-t="snmp.community">Community</label><input id="snmpComm" class="inp" type="password" autocomplete="off" maxlength="64"></div>
 <div class="field"><label class="lbl" for="snmpHost" data-t="snmp.host">SNMP address</label><input id="snmpHost" class="inp mono"></div>
 <div class="field" style="justify-content:flex-end"><button class="btn btn-sm" type="button" id="snmpTest" data-t="snmp.test" style="height:36px">Test</button></div>
 </div>
-<span style="display:flex;align-items:center;gap:8px;font-size:12px;min-width:0" role="status"><span class="dot" id="snmpDot" style="background:#8A9097;flex:none"></span><span class="mono" id="snmpStatus" style="color:#23403C;overflow-wrap:anywhere"></span></span>
+<span style="display:flex;align-items:center;gap:8px;font-size:12px;min-width:0" role="status"><span class="dot" id="snmpDot" style="background:#A3A3B8;flex:none"></span><span class="mono" id="snmpStatus" style="color:#3E3190;overflow-wrap:anywhere"></span></span>
 <p class="small" id="snmpHint" style="margin:0"></p>
 </fieldset>
 </div>
 
 <div class="card">
-<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div style="display:flex;flex-direction:column;gap:4px"><h2 class="h2" data-t="dutcfg.title">DUT configuration</h2><span class="small" data-t="dutcfg.subtitle"></span></div><label style="display:flex;gap:8px;align-items:center;font-size:13px;font-weight:500;min-height:36px"><input id="configure" type="checkbox" checked style="accent-color:#0E6E66;width:18px;height:18px;margin:0"><span data-t="dutcfg.auto">Configure the DUT before each run</span></label></div>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div style="display:flex;flex-direction:column;gap:4px"><h2 class="h2" data-t="dutcfg.title">DUT configuration</h2><span class="small" data-t="dutcfg.subtitle"></span></div><label style="display:flex;gap:8px;align-items:center;font-size:13px;font-weight:500;min-height:36px"><input id="configure" type="checkbox" checked style="accent-color:#4F3FA8;width:18px;height:18px;margin:0"><span data-t="dutcfg.auto">Configure the DUT before each run</span></label></div>
 <fieldset style="border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">
 <legend class="lbl" style="padding:0;margin-bottom:8px" data-t="ui.dut.platform">Platform</legend>
 <div class="seg" id="platSeg"></div>
@@ -114,7 +117,7 @@
 <div class="field"><label class="lbl" for="sshUser" data-t="dutcfg.user">User</label><input id="sshUser" class="inp mono"></div>
 <div class="field"><label class="lbl" for="auth" data-t="dutcfg.auth">Authentication</label><select id="auth" class="inp"><option value="password" data-t="dutcfg.auth.password"></option><option value="key" data-t="dutcfg.auth.key"></option></select></div>
 <div class="field" data-only="cisco"><label class="lbl" for="enable"><span data-t="dutcfg.enable">Enable secret</span> <span class="tip" data-t-title="dutcfg.enable.tip">i</span></label><input id="enable" class="inp" type="password" autocomplete="off"></div>
-<div class="field" data-only="linux"><span class="lbl" data-t="dutcfg.sudo">Use sudo</span><label style="display:flex;gap:8px;align-items:center;height:36px"><input id="sudo" type="checkbox" checked style="accent-color:#0E6E66;margin:0"><span data-t="dutcfg.sudo">Use sudo</span> <span class="tip" data-t-title="dutcfg.sudo.tip">i</span></label></div>
+<div class="field" data-only="linux"><span class="lbl" data-t="dutcfg.sudo">Use sudo</span><label style="display:flex;gap:8px;align-items:center;height:36px"><input id="sudo" type="checkbox" checked style="accent-color:#4F3FA8;margin:0"><span data-t="dutcfg.sudo">Use sudo</span> <span class="tip" data-t-title="dutcfg.sudo.tip">i</span></label></div>
 <div class="field" data-only="bird"><label class="lbl" for="birdInc"><span data-t="dutcfg.bird_include">BIRD include file</span> <span class="tip" data-t-title="dutcfg.bird_include.tip">i</span></label><input id="birdInc" class="inp mono" value="/etc/bird/tgen.conf"></div>
 <div class="field"><label class="lbl" for="maxRoutes"><span data-t="dutcfg.max_routes">Route limit</span> <span class="tip" data-t-title="dutcfg.max_routes.tip">i</span></label><input id="maxRoutes" class="inp mono" inputmode="numeric"></div>
 <div class="field"><label class="lbl" for="guard"><span data-t="dutcfg.mem_guard">Memory guard (% free)</span> <span class="tip" data-t-title="dutcfg.mem_guard.tip">i</span></label><input id="guard" class="inp mono" inputmode="numeric"></div>
@@ -128,10 +131,10 @@
 <button class="btn btn-sm" type="button" data-dut="push" data-t="dutcfg.btn.push">Push now</button>
 <button class="btn btn-sm" type="button" data-dut="remove" data-t="dutcfg.btn.remove">Remove</button>
 <button class="btn btn-sm" type="button" data-dut="status" data-t="dutcfg.btn.status">Status</button>
-<span style="display:inline-flex;align-items:center;gap:8px;font-size:12px;flex:1 1 260px;min-width:0" role="status"><span class="dot" id="dutDot" style="background:#8A9097"></span><span class="mono" id="dutStatus" style="color:#23403C;overflow-wrap:anywhere"></span></span>
+<span style="display:inline-flex;align-items:center;gap:8px;font-size:12px;flex:1 1 260px;min-width:0" role="status"><span class="dot" id="dutDot" style="background:#A3A3B8"></span><span class="mono" id="dutStatus" style="color:#3E3190;overflow-wrap:anywhere"></span></span>
 </div>
 <div id="previewBox" hidden style="border:1px solid var(--line2);border-radius:8px;overflow:hidden">
-<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;background:#F3F4F1;font-size:12px;color:#545A61"><span id="previewTitle"></span><span style="display:flex;gap:6px"><button class="btn btn-sm" type="button" id="copyCfg" data-t="dutcfg.preview.copy">Copy</button><button class="btn btn-sm" type="button" id="dlCfg" data-t="dutcfg.preview.download">Download</button></span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;background:#F4F4FA;font-size:12px;color:#6E6E87"><span id="previewTitle"></span><span style="display:flex;gap:6px"><button class="btn btn-sm" type="button" id="copyCfg" data-t="dutcfg.preview.copy">Copy</button><button class="btn btn-sm" type="button" id="dlCfg" data-t="dutcfg.preview.download">Download</button></span></div>
 <pre class="mono" id="previewText" style="margin:0;padding:12px;font-size:12px;line-height:1.55;overflow-x:auto;white-space:pre;max-height:420px"></pre>
 </div>
 </div>
@@ -166,21 +169,13 @@
 
 </section>
 
-<section style="flex:1 1 520px;min-width:0;display:flex;flex-direction:column;gap:16px" data-t-aria="live.title">
-<p class="small" id="runLine" style="margin:0"></p>
-<div class="kpis">
-<div class="kpi"><span class="lbl hint" tabindex="0"><span data-t="metric.sessions">Sessions</span><span class="tt" role="tooltip" data-t="metric.sessions.tip"></span></span><span class="kv" id="kSess">—</span><span class="small" id="kSessSub"></span></div>
-<div class="kpi"><span class="lbl hint" tabindex="0"><span data-t="metric.initial_conv">Initial convergence</span><span class="tt" role="tooltip" data-t="metric.initial_conv.tip"></span></span><span class="kv" id="kConv">—</span><span class="small" id="kConvSub"></span></div>
-<div class="kpi"><span class="lbl hint" tabindex="0"><span data-t="metric.latency_now">Latency p99 (now)</span><span class="tt" role="tooltip" data-t="metric.latency_now.tip"></span></span><span class="kv" id="kLat">—</span><span class="small" id="kLatSub"></span></div>
-<div class="kpi"><span class="lbl hint" tabindex="0"><span data-t="metric.dut_output">DUT output</span><span class="tt" role="tooltip" data-t="metric.dut_output.tip"></span></span><span class="kv" id="kOut">—</span><span class="small" id="kOutSub"></span></div>
-</div>
-
+<section style="flex:1 1 460px;min-width:0;display:flex;flex-direction:column;gap:16px" data-t-aria="live.title">
 <div class="card" style="gap:10px">
 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 class="h2" data-t="chart.latency_load">Propagation latency vs offered load</h2><div role="group" data-t-aria="chart.window" style="display:flex;gap:4px"><button type="button" class="zb zon" data-span="300" data-t="chart.min5">5 min</button><button type="button" class="zb" data-span="120" data-t="chart.min2">2 min</button><button type="button" class="zb" data-span="60" data-t="chart.min1">1 min</button></div></div>
 <div class="chart-host" id="latChart" role="img" data-t-aria="chart.latency_load.aria"></div>
-<div style="display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:12px;color:#545A61"><label style="display:flex;align-items:center;gap:8px"><span data-t="chart.time_cursor">Time cursor</span> <input type="range" id="curSlider" min="0" max="100" value="100" style="width:200px;accent-color:#0E6E66"></label><label style="display:flex;align-items:center;gap:8px"><span data-t="chart.window_slider">Window</span> <input type="range" id="winSlider" min="0" max="100" value="100" style="width:200px;accent-color:#0E6E66"></label></div>
-<p class="mono" id="readout" style="margin:0;font-size:12px;background:#F3F4F1;padding:7px 10px;border-radius:6px;min-height:1.5em"></p>
-<div style="display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:#545A61"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;height:3px;background:#0E6E66"></span>p50</span><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;height:3px;background:#C2410C"></span>p99</span><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;border-top:2px dashed #8A9097"></span><span data-t="chart.offered_right"></span></span></div>
+<div style="display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:12px;color:#6E6E87"><label style="display:flex;align-items:center;gap:8px"><span data-t="chart.time_cursor">Time cursor</span> <input type="range" id="curSlider" min="0" max="100" value="100" style="width:200px;accent-color:#4F3FA8"></label><label style="display:flex;align-items:center;gap:8px"><span data-t="chart.window_slider">Window</span> <input type="range" id="winSlider" min="0" max="100" value="100" style="width:200px;accent-color:#4F3FA8"></label></div>
+<p class="mono" id="readout" style="margin:0;font-size:12px;background:#F4F4FA;padding:7px 10px;border-radius:6px;min-height:1.5em"></p>
+<div style="display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:#6E6E87"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;height:3px;background:#2BB6CA"></span>p50</span><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;height:3px;background:#4F3FA8"></span>p99</span><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;border-top:2px dashed #A3A3B8"></span><span data-t="chart.offered_right"></span></span></div>
 </div>
 
 <div class="card" style="gap:10px" id="portCard" hidden>
@@ -189,7 +184,7 @@
 <div style="display:flex;flex-direction:column;gap:2px;flex:0 0 auto"><span class="kv" id="portUse">—</span><span class="small" id="portMbps"></span></div>
 <div style="display:flex;flex-direction:column;gap:6px;flex:1 1 260px;min-width:0">
 <span class="bar"><span class="fill" id="portBar" style="width:0%"></span><span class="m70"></span><span class="m90"></span></span>
-<svg viewBox="0 0 300 36" preserveAspectRatio="none" aria-hidden="true" style="width:100%;height:36px"><polyline id="portSpark" fill="none" stroke="#0E6E66" stroke-width="2" points=""/></svg>
+<svg viewBox="0 0 300 36" preserveAspectRatio="none" aria-hidden="true" style="width:100%;height:36px"><polyline id="portSpark" fill="none" stroke="#4F3FA8" stroke-width="2" points=""/></svg>
 <span class="small" data-t="live.port.marks"></span>
 </div>
 </div>
@@ -215,9 +210,9 @@
 
 <!-- placeholders for the later steps -->
 <main class="wrap col" data-view="scheme" hidden>
-<div style="display:flex;flex-direction:column;gap:6px;max-width:900px"><h1 style="margin:0;font-size:24px;font-weight:700" data-t="scheme.title">Test scheme</h1><p style="margin:0;color:#545A61;line-height:1.5" data-t="scheme.sub"></p></div>
+<div style="display:flex;flex-direction:column;gap:6px;max-width:900px"><h1 style="margin:0;font-size:24px;font-weight:700" data-t="scheme.title">Test scheme</h1><p style="margin:0;color:#6E6E87;line-height:1.5" data-t="scheme.sub"></p></div>
 
-<section class="card k1" aria-labelledby="k1h" style="background:#F8FBFA;border-color:#C7E3DF">
+<section class="card k1" aria-labelledby="k1h" style="background:#FAF9FF;border-color:#D9D3F5">
 <div class="row-sb"><h2 class="h2" id="k1h" style="font-size:17px" data-t="scheme.k1.title">How this test works</h2><button class="btn btn-sm" type="button" id="k1Toggle" aria-expanded="true" aria-controls="k1body"></button></div>
 <div id="k1body" style="display:flex;flex-wrap:wrap;gap:20px 32px;align-items:flex-start">
 <div style="flex:1 1 380px;min-width:0;display:flex;flex-direction:column;gap:12px">
@@ -262,7 +257,7 @@
 <div id="schSteps" style="display:flex;flex-direction:column"></div>
 <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end">
 <div class="field"><label class="lbl" for="schPause" data-t="scheme.pause"></label><input id="schPause" class="inp mono" inputmode="numeric" value="30"></div>
-<label style="display:flex;gap:8px;align-items:center;min-height:36px;font-size:13px;font-weight:500"><input type="checkbox" id="schStopFail" checked style="accent-color:#0E6E66;width:18px;height:18px;margin:0"><span data-t="scheme.stop_on_failure"></span> <span class="hint tip" tabindex="0">i<span class="tt" role="tooltip" data-t="scheme.stop_on_failure.tip"></span></span></label>
+<label style="display:flex;gap:8px;align-items:center;min-height:36px;font-size:13px;font-weight:500"><input type="checkbox" id="schStopFail" checked style="accent-color:#4F3FA8;width:18px;height:18px;margin:0"><span data-t="scheme.stop_on_failure"></span> <span class="hint tip" tabindex="0">i<span class="tt" role="tooltip" data-t="scheme.stop_on_failure.tip"></span></span></label>
 </div>
 <div class="est"><span class="lbl" data-t="scheme.estimate"></span><span id="schEst" style="font-size:14px">—</span><span class="small" id="schEstPer"></span></div>
 <p class="small bad" id="schErr" role="alert" hidden style="margin:0"></p>
@@ -286,7 +281,7 @@
 <div class="row-sb"><h2 class="h2" id="k11h" data-t="scheme.knee">Knee chart</h2>
 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><div role="group" id="kneeViews" style="display:flex;gap:4px;flex-wrap:wrap"></div><button class="btn btn-sm" type="button" id="kneeSvg" data-t="scheme.export.svg">SVG</button><button class="btn btn-sm" type="button" id="kneePng" data-t="scheme.export.png">PNG</button></div></div>
 <div id="kneeBox" style="position:relative;max-width:1100px"></div>
-<label id="kneeCurBox" style="display:flex;align-items:center;gap:8px;font-size:12px;color:#545A61;flex-wrap:wrap"><span data-t="scheme.knee.cursor"></span> <input type="range" id="kneeCur" min="1" max="4.477" step="0.01" value="3" style="width:260px;max-width:100%;accent-color:#0E6E66"><span class="mono" id="kneeCurLbl"></span></label>
+<label id="kneeCurBox" style="display:flex;align-items:center;gap:8px;font-size:12px;color:#6E6E87;flex-wrap:wrap"><span data-t="scheme.knee.cursor"></span> <input type="range" id="kneeCur" min="1" max="4.477" step="0.01" value="3" style="width:260px;max-width:100%;accent-color:#4F3FA8"><span class="mono" id="kneeCurLbl"></span></label>
 <ul class="mono readout" id="kneeRead"></ul>
 <div class="small" id="kneeLegend" style="display:flex;gap:8px 18px;flex-wrap:wrap;align-items:center"></div>
 </section>
@@ -442,6 +437,8 @@
 </form>
 </section>
 </main>
+</div>
+<aside class="rail" data-t-aria="settings.nodes"><span class="rail-h" data-t="ui.node">Node</span><div id="rail" class="rail-nodes"></div><span class="rail-sp"></span><a class="rail-plus" href="#benchmark" data-t-title="nav.benchmark" data-t-aria="nav.benchmark"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M9 3 V15 M3 9 H15" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></a></aside>
 </div>
 
 <dialog id="pwDialog">
