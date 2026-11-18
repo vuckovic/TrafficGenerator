@@ -1,6 +1,6 @@
 # 09 — Web interface (P3c)
 
-The browser interface at `https://bgp.elfak.net:8443`. It follows the frozen controls (doc 04 v1.2) and the locked design (`docs/design/`, v1.2), and talks only to the controller API (doc 08).
+The browser interface at `https://bgp.elfak.net:8443`. It follows the frozen controls (doc 04 v1.2) and the locked design (`docs/design/`, v1.4 since 2026‑11‑18, §14), and talks only to the controller API (doc 08).
 
 Status: confirmed 2026‑11‑03. **P3c‑1 built** (2026‑11‑03): login, header, Benchmark tab, live view. **P3c‑2 built** (2026‑11‑12): Test scheme tab with the scheme runner and the network topology (§10). **P3c‑3 built** (2026‑11‑12): History, Reports, Nodes & settings (§11). **P4 reports built** (2026‑11‑12): figures F1–F12, comparison, PDF and HTML export (§12). Browser test `tests/controller/ui_e2e.py` passes.
 
@@ -10,7 +10,7 @@ Status: confirmed 2026‑11‑03. **P3c‑1 built** (2026‑11‑03): login, hea
 - **No build step.** Plain HTML, CSS and JavaScript modules in `ui/web/`, copied to `/opt/tgen/ui/web` by `services.yml`. Nothing to compile on the nodes; there is no npm on the cluster.
 - **Libraries, kept in the repo (no CDN at run time; the lab works offline):**
   - **uPlot** (MIT) for the time charts, as the design says;
-  - **IBM Plex Sans and Mono** (OFL) as local font files.
+  - **Manrope** (OFL, since design v1.4) and **IBM Plex Mono** (OFL) as local font files.
 - **Texts** come from `ui/i18n/labels.csv`, served as JSON by `GET /api/i18n` (no login needed, so the login page is translated too). The language choice is kept per browser (G9). Number formats follow the `_lang.*` rows.
 - **Screens follow the design artboards one to one**: the same colours, sizes, explanations on hover and keyboard focus, and phone‑width stacking.
 
@@ -184,7 +184,7 @@ Full description in doc 10. In the page:
   port in/out Mb/s and BGP updates/s received from our peers (right axis). The report's DUT table gets an SNMP line.
 - Labels `dl.*`, `snmp.*`, `fig.f10s*` in English and Serbian Cyrillic.
 
-## 13. New look, design v1.4 (2026‑11‑18)
+## 14. New look, design v1.4 (2026‑11‑18)
 
 The user tried a restyle modelled on a reference dashboard ("SELLO") on the branch `ux/sello-test` and chose it for `main`. Design details in `docs/design/README.md` v1.4.
 - **What changed:** `index.html` (left sidebar with icons, top bar with the page title, node rail, figures row at the top of the Benchmark tab), `app.css`, colours in the scripts, the latency chart colours (`chart.js`), Manrope font files in `vendor/fonts`. In `app.js`: the page title follows the tab, the node rail and the small figures on the *Sessions* card are filled from the same live data as *Generator health*.
